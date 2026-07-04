@@ -1,0 +1,34 @@
+# Local development database only.
+# Pattern: database in Docker, .NET app on the host.
+# Start:  docker compose up -d
+# Stop:   docker compose down          (data persists in the named volume)
+# Reset:  docker compose down -v       (deletes the volume => clean database)
+#
+# The .NET app runs natively (dotnet run / IDE) and connects to localhost:5432.
+# Put the matching connection string in user-secrets, NOT in a tracked file:
+#   dotnet user-secrets set "ConnectionStrings:DefaultConnection" \
+#     "Host=localhost;Port=5432;Database=zajednica;Username=zajednica;Password=devpassword"
+
+services:
+  postgres:
+    # Pin to a major version Azure Database for PostgreSQL Flexible Server supports (16 or 17)
+    # so the local engine matches production.
+    image: postgres:17
+    container_name: zajednica-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: zajednica
+      POSTGRES_USER: zajednica
+      POSTGRES_PASSWORD: devpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - zajednica-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zajednica -d zajednica"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  zajednica-pgdata:
