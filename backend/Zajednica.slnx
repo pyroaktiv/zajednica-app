@@ -1,0 +1,36 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Zajednica.Api/Zajednica.Api.csproj" />
+    <Project Path="src/Zajednica.Architecture.Tests/Zajednica.Architecture.Tests.csproj" />
+  </Folder>
+  <Folder Name="/src/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/Zajednica.BuildingBlocks.Core/Zajednica.BuildingBlocks.Core.csproj" />
+    <Project Path="src/BuildingBlocks/Zajednica.BuildingBlocks.Infrastructure/Zajednica.BuildingBlocks.Infrastructure.csproj" />
+    <Project Path="src/BuildingBlocks/Zajednica.BuildingBlocks.Tests/Zajednica.BuildingBlocks.Tests.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Chat/">
+    <Project Path="src/Modules/Chat/Zajednica.Chat.Api/Zajednica.Chat.Api.csproj" />
+    <Project Path="src/Modules/Chat/Zajednica.Chat.Core/Zajednica.Chat.Core.csproj" />
+    <Project Path="src/Modules/Chat/Zajednica.Chat.Infrastructure/Zajednica.Chat.Infrastructure.csproj" />
+    <Project Path="src/Modules/Chat/Zajednica.Chat.Tests/Zajednica.Chat.Tests.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Community/">
+    <Project Path="src/Modules/Community/Zajednica.Community.Api/Zajednica.Community.Api.csproj" />
+    <Project Path="src/Modules/Community/Zajednica.Community.Core/Zajednica.Community.Core.csproj" />
+    <Project Path="src/Modules/Community/Zajednica.Community.Infrastructure/Zajednica.Community.Infrastructure.csproj" />
+    <Project Path="src/Modules/Community/Zajednica.Community.Tests/Zajednica.Community.Tests.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Feed/">
+    <Project Path="src/Modules/Feed/Zajednica.Feed.Api/Zajednica.Feed.Api.csproj" />
+    <Project Path="src/Modules/Feed/Zajednica.Feed.Core/Zajednica.Feed.Core.csproj" />
+    <Project Path="src/Modules/Feed/Zajednica.Feed.Infrastructure/Zajednica.Feed.Infrastructure.csproj" />
+    <Project Path="src/Modules/Feed/Zajednica.Feed.Tests/Zajednica.Feed.Tests.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/Zajednica.Identity.Api/Zajednica.Identity.Api.csproj" />
+    <Project Path="src/Modules/Identity/Zajednica.Identity.Core/Zajednica.Identity.Core.csproj" />
+    <Project Path="src/Modules/Identity/Zajednica.Identity.Infrastructure/Zajednica.Identity.Infrastructure.csproj" />
+    <Project Path="src/Modules/Identity/Zajednica.Identity.Tests/Zajednica.Identity.Tests.csproj" />
+  </Folder>
+</Solution>
