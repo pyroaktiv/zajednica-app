@@ -15,8 +15,6 @@ public static class AuthConfiguration
 
     private static void ConfigureAuthentication(IServiceCollection services, IConfiguration configuration)
     {
-        // Dev fallbacks so the app runs out of the box. Override via user-secrets locally
-        // and via App Service configuration / Key Vault in production.
         var key = configuration["Jwt:Key"] ?? "dev-only-signing-key-change-me-please-32bytes!!";
         var issuer = configuration["Jwt:Issuer"] ?? "zajednica";
         var audience = configuration["Jwt:Audience"] ?? "zajednica-app";
