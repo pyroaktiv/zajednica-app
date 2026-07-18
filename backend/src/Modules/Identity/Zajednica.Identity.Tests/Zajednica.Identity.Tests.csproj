@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\BuildingBlocks\Zajednica.BuildingBlocks.Tests\Zajednica.BuildingBlocks.Tests.csproj" />
     <ProjectReference Include="..\..\..\Zajednica.Api\Zajednica.Api.csproj" />
+    <ProjectReference Include="..\Zajednica.Identity.Core\Zajednica.Identity.Core.csproj" />
   </ItemGroup>
 
 </Project>
