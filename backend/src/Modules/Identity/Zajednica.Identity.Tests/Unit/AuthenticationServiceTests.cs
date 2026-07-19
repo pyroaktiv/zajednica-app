@@ -2,6 +2,7 @@ using Moq;
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.Identity.Api.Dto;
+using Zajednica.Identity.Core.Domain;
 using Zajednica.Identity.Core.Domain.RepositoryInterfaces;
 using Zajednica.Identity.Core.UseCases;
 
@@ -19,7 +20,6 @@ public class AuthenticationServiceTests
     private readonly Mock<IAccessTokenGenerator> _accessTokens = new();
     private readonly Mock<ISecureTokenGenerator> _secureTokens = new();
     private readonly Mock<IEmailSender> _email = new();
-    private readonly Mock<IIdentityUnitOfWork> _uow = new();
     private readonly Mock<IAuthTokenSettings> _settings = new();
 
     public AuthenticationServiceTests()
@@ -34,18 +34,18 @@ public class AuthenticationServiceTests
     private AuthenticationService Sut() => new(
         _accounts.Object, _emailTokens.Object, _refreshTokens.Object,
         _passwordHasher.Object, _accessTokens.Object, _secureTokens.Object,
-        _email.Object, _uow.Object, _settings.Object);
+        _email.Object, _settings.Object);
 
     private static RegisterAccountRequest Registration(string password = "password123") =>
         new("pera", "pera@example.com", password, null, null, null, null);
 
     [Fact]
-    public async Task Successful_registration_commits_once_and_sends_one_activation_email()
+    public async Task Successful_registration_persists_the_account_and_sends_one_activation_email()
     {
         await Sut().RegisterAsync(Registration());
 
+        _accounts.Verify(r => r.AddAsync(It.IsAny<Account>(), It.IsAny<CancellationToken>()), Times.Once);
         _email.Verify(e => e.SendAsync("pera@example.com", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
-        _uow.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

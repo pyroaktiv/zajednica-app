@@ -1,6 +1,5 @@
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
-using Zajednica.BuildingBlocks.Core.IntegrationEvents;
 using Zajednica.Community.Core.Domain;
 
 namespace Zajednica.Community.Tests.Unit;
@@ -14,17 +13,13 @@ public class MembershipTests
     private static Membership NewMember() => new(Account, CommunityId, Now);
 
     [Fact]
-    public void Confirm_flips_status_and_raises_MembershipConfirmed()
+    public void Confirm_flips_status_to_confirmed()
     {
         var member = NewMember();
 
         member.Confirm();
 
         member.Status.ShouldBe(MembershipStatus.Confirmed);
-        var evt = member.DomainEvents.ShouldHaveSingleItem().ShouldBeOfType<MembershipConfirmed>();
-        evt.MembershipId.ShouldBe(member.Id);
-        evt.CommunityId.ShouldBe(CommunityId);
-        evt.AccountId.ShouldBe(Account);
     }
 
     [Fact]
@@ -37,13 +32,12 @@ public class MembershipTests
     }
 
     [Fact]
-    public void Founder_is_a_confirmed_issuer_and_raises_no_event()
+    public void Founder_is_a_confirmed_issuer()
     {
         var founder = Membership.Founder(Account, CommunityId, Now);
 
         founder.Status.ShouldBe(MembershipStatus.Confirmed);
         founder.CertificateIssuer.ShouldBeTrue();
-        founder.DomainEvents.ShouldBeEmpty(); // creator bootstraps silently — nobody to notify
     }
 
     [Fact]

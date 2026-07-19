@@ -2,7 +2,8 @@ namespace Zajednica.Identity.Core.Domain.RepositoryInterfaces;
 
 public interface IAccountRepository
 {
-    void Add(Account account);
+    Task AddAsync(Account account, CancellationToken ct = default);
+    Task UpdateAsync(Account account, CancellationToken ct = default);
 
     Task<Account?> GetByIdAsync(Guid id, CancellationToken ct = default);
     Task<Account?> GetByUsernameOrEmailAsync(string usernameOrEmail, CancellationToken ct = default);

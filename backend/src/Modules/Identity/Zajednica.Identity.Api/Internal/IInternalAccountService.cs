@@ -2,7 +2,7 @@ using Zajednica.Identity.Api.Internal.Dto;
 
 namespace Zajednica.Identity.Api.Internal;
 
-public interface IAccountDirectory
+public interface IInternalAccountService
 {
     Task<string?> GetUsernameAsync(Guid accountId, CancellationToken ct = default);
     Task<IReadOnlyList<AccountUsernameDto>> GetUsernamesAsync(IReadOnlyCollection<Guid> accountIds, CancellationToken ct = default);

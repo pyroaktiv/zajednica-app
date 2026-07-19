@@ -6,11 +6,11 @@ using Zajednica.Identity.Core.Mappers;
 namespace Zajednica.Identity.Core.UseCases.Internal;
 
 
-public sealed class AccountDirectory : IAccountDirectory
+public sealed class InternalAccountService : IInternalAccountService
 {
     private readonly IAccountRepository _accounts;
 
-    public AccountDirectory(IAccountRepository accounts) => _accounts = accounts;
+    public InternalAccountService(IAccountRepository accounts) => _accounts = accounts;
 
     public async Task<string?> GetUsernameAsync(Guid accountId, CancellationToken ct = default) =>
         (await _accounts.GetByIdAsync(accountId, ct))?.Username;

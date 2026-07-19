@@ -1,6 +1,5 @@
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
-using Zajednica.BuildingBlocks.Core.IntegrationEvents;
 using Zajednica.Community.Core.Domain;
 
 namespace Zajednica.Community.Tests.Unit;
@@ -23,7 +22,6 @@ public class CertificationServiceTests
         var certificate = _service.Certify(issuer, candidate, Now);
 
         candidate.Status.ShouldBe(MembershipStatus.Confirmed);
-        candidate.DomainEvents.ShouldContain(e => e is MembershipConfirmed);
         certificate.CommunityId.ShouldBe(communityId);
         certificate.IssuerMembershipId.ShouldBe(issuer.Id);
         certificate.CandidateMembershipId.ShouldBe(candidate.Id);

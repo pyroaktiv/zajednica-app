@@ -1,6 +1,5 @@
 using Zajednica.BuildingBlocks.Core.Domain;
 using Zajednica.BuildingBlocks.Core.Exceptions;
-using Zajednica.BuildingBlocks.Core.IntegrationEvents;
 
 namespace Zajednica.Community.Core.Domain;
 
@@ -36,7 +35,6 @@ public class Membership : AggregateRoot
     }
 
     // The community creator joins already confirmed and with the right to issue certificates.
-    // No MembershipConfirmed is raised.
     public static Membership Founder(Guid accountId, Guid communityId, DateTime now)
     {
         var membership = new Membership(accountId, communityId, now)
@@ -56,7 +54,6 @@ public class Membership : AggregateRoot
             throw new EntityValidationException("Membership is already confirmed.");
 
         Status = MembershipStatus.Confirmed;
-        Raise(new MembershipConfirmed(CommunityId, Id, AccountId));
     }
 
     public void GrantIssuerRight()

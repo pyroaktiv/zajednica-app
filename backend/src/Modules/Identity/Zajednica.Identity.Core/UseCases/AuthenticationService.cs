@@ -18,7 +18,6 @@ public sealed class AuthenticationService : IAuthenticationService
     private readonly IAccessTokenGenerator _accessTokens;
     private readonly ISecureTokenGenerator _secureTokens;
     private readonly IEmailSender _email;
-    private readonly IIdentityUnitOfWork _uow;
     private readonly IAuthTokenSettings _settings;
 
     public AuthenticationService(
@@ -29,7 +28,6 @@ public sealed class AuthenticationService : IAuthenticationService
         IAccessTokenGenerator accessTokens,
         ISecureTokenGenerator secureTokens,
         IEmailSender email,
-        IIdentityUnitOfWork uow,
         IAuthTokenSettings settings)
     {
         _accounts = accounts;
@@ -39,7 +37,6 @@ public sealed class AuthenticationService : IAuthenticationService
         _accessTokens = accessTokens;
         _secureTokens = secureTokens;
         _email = email;
-        _uow = uow;
         _settings = settings;
     }
 
@@ -59,14 +56,12 @@ public sealed class AuthenticationService : IAuthenticationService
         if (HasProfileData(request))
             account.UpdateProfile(request.FirstName, request.LastName, request.Phone, request.ContactEmail, imageUrl: null);
 
-        _accounts.Add(account);
+        await _accounts.AddAsync(account, ct);
 
         var verificationToken = new EmailVerificationToken(
             account.Id, _secureTokens.Generate(), now.AddHours(_settings.EmailVerificationTokenHours));
-        _emailTokens.Add(verificationToken);
+        await _emailTokens.AddAsync(verificationToken, ct);
 
-        await _uow.SaveChangesAsync(ct);
-        
         await SendActivationEmailAsync(account.Email, verificationToken.Token, ct);
     }
 
@@ -79,16 +74,13 @@ public sealed class AuthenticationService : IAuthenticationService
         var account = await _accounts.GetByIdAsync(token.AccountId, ct)
             ?? throw new NotFoundException("Account not found.");
 
-        _emailTokens.Remove(token);
+        await _emailTokens.RemoveAsync(token, ct); // single-use: consumed even when expired
 
         if (!token.IsValid(now))
-        {
-            await _uow.SaveChangesAsync(ct);
             throw new EntityValidationException("Verification token has expired.");
-        }
 
         account.VerifyEmail();
-        await _uow.SaveChangesAsync(ct);
+        await _accounts.UpdateAsync(account, ct);
     }
 
     public async Task<AuthTokens> LoginAsync(LoginRequest request, CancellationToken ct = default)
@@ -113,22 +105,15 @@ public sealed class AuthenticationService : IAuthenticationService
         var current = await _refreshTokens.GetByTokenAsync(request.RefreshToken, ct)
             ?? throw new EntityValidationException("Invalid refresh token.");
 
-        _refreshTokens.Remove(current); // rotation: the presented token is single-use
+        await _refreshTokens.RemoveAsync(current, ct); // rotation: the presented token is single-use
 
         if (!current.IsValid(now))
-        {
-            await _uow.SaveChangesAsync(ct);
             throw new EntityValidationException("Refresh token has expired.");
-        }
 
         var account = await _accounts.GetByIdAsync(current.AccountId, ct);
         if (account is null || account.Status == AccountStatus.Deleted)
-        {
-            await _uow.SaveChangesAsync(ct);
             throw new EntityValidationException("Invalid refresh token.");
-        }
 
-        // Removal of the old token and insertion of the new one commit in the same transaction.
         return await IssueTokensAsync(account, now, ct);
     }
 
@@ -138,16 +123,14 @@ public sealed class AuthenticationService : IAuthenticationService
         if (token is null)
             return; // idempotent: an unknown / already-revoked token is a no-op
 
-        _refreshTokens.Remove(token);
-        await _uow.SaveChangesAsync(ct);
+        await _refreshTokens.RemoveAsync(token, ct);
     }
 
     private async Task<AuthTokens> IssueTokensAsync(Account account, DateTime now, CancellationToken ct)
     {
         var accessToken = _accessTokens.Generate(account.Id, account.Username);
         var refreshToken = new RefreshToken(account.Id, _secureTokens.Generate(), now.AddDays(_settings.RefreshTokenDays));
-        _refreshTokens.Add(refreshToken);
-        await _uow.SaveChangesAsync(ct);
+        await _refreshTokens.AddAsync(refreshToken, ct);
         return new AuthTokens(accessToken, refreshToken.Token);
     }
 
