@@ -13,5 +13,5 @@ public sealed class JwtOptions
     public string Issuer { get; set; } = "";
     public string Audience { get; set; } = "";
     public int AccessTokenMinutes { get; set; } = 15;
-    public int RefreshTokenDays { get; set; } = 30;
+    // Refresh-token lifetime is application policy, not a JWT signing concern — see Core AuthOptions.
 }

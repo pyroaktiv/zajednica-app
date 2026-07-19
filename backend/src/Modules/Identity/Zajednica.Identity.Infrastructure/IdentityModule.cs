@@ -1,9 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Zajednica.BuildingBlocks.Infrastructure.DomainEvents;
+using Zajednica.Identity.Api.Internal;
+using Zajednica.Identity.Api.Public;
 using Zajednica.Identity.Core.Domain.RepositoryInterfaces;
 using Zajednica.Identity.Core.UseCases;
+using Zajednica.Identity.Core.UseCases.Internal;
 using Zajednica.Identity.Infrastructure.Authentication;
 using Zajednica.Identity.Infrastructure.Database;
 using Zajednica.Identity.Infrastructure.Database.Repositories;
@@ -17,6 +21,9 @@ public static class IdentityModule
     {
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
+        services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.SectionName));
+        // Expose the bound options as the Core-facing settings port.
+        services.AddSingleton<IAuthTokenSettings>(sp => sp.GetRequiredService<IOptions<AuthOptions>>().Value);
 
         services.AddDbContext<IdentityDbContext>((sp, o) =>
             o.UseNpgsql(connectionString, npg => npg.MigrationsHistoryTable("__EFMigrationsHistory", "identity"))
@@ -25,8 +32,15 @@ public static class IdentityModule
         AddPersistence(services, configuration);
         AddAuthentication(services);
         AddEmail(services, configuration);
+        AddApplicationServices(services);
 
         return services;
+    }
+
+    private static void AddApplicationServices(IServiceCollection services)
+    {
+        services.AddScoped<IAuthenticationService, AuthenticationService>();
+        services.AddScoped<IAccountDirectory, AccountDirectory>();
     }
     
     private static void AddPersistence(IServiceCollection services, IConfiguration configuration)
