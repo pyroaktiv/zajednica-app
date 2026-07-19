@@ -27,7 +27,7 @@ public sealed class AccountDirectory : IAccountDirectory
     public async Task<AccountProfileDto?> GetProfileAsync(Guid accountId, CancellationToken ct = default)
     {
         var account = await _accounts.GetByIdAsync(accountId, ct);
-        return account?.ToProfileDto();
+        return account?.ToAccountProfileDto();
     }
 
     public async Task<IReadOnlyList<AccountProfileDto>> GetProfilesAsync(
@@ -36,6 +36,6 @@ public sealed class AccountDirectory : IAccountDirectory
         if (accountIds.Count == 0)
             return [];
         var accounts = await _accounts.GetManyByIdsAsync(accountIds, ct);
-        return accounts.Select(a => a.ToProfileDto()).ToList();
+        return accounts.Select(a => a.ToAccountProfileDto()).ToList();
     }
 }

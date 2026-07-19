@@ -40,6 +40,7 @@ public static class IdentityModule
     private static void AddApplicationServices(IServiceCollection services)
     {
         services.AddScoped<IAuthenticationService, AuthenticationService>();
+        services.AddScoped<IProfileService, ProfileService>();
         services.AddScoped<IAccountDirectory, AccountDirectory>();
     }
     
