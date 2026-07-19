@@ -1,5 +1,6 @@
 using Zajednica.Api.Middleware;
 using Zajednica.Api.Startup;
+using Zajednica.BuildingBlocks.Infrastructure.Realtime;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,7 @@ app.UseAuthorization();
 
 app.MapHealthChecks("/health");
 app.MapControllers();
+app.MapRealtimeHub();
 
 app.Run();
 

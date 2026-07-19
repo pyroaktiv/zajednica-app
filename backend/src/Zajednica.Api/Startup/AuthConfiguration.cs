@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Zajednica.BuildingBlocks.Infrastructure.Realtime;
 
 namespace Zajednica.Api.Startup;
 
@@ -31,6 +32,20 @@ public static class AuthConfiguration
                     ValidIssuer = issuer,
                     ValidAudience = audience,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+                };
+
+                // WebSocket upgrade can't carry an Authorization header, so SignalR clients pass the
+                // token as ?access_token=... on the hub URL. Lift it into the pipeline only there.
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var token = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(token) && path.StartsWithSegments(RealtimeInstaller.HubPath))
+                            context.Token = token;
+                        return Task.CompletedTask;
+                    }
                 };
             });
     }
