@@ -37,9 +37,6 @@ public static class AuthConfiguration
 
     private static void ConfigureAuthorization(IServiceCollection services)
     {
-        // Roles in zajednica.app (unconfirmed / confirmed / issuer / manager) live on Membership
-        // and are per-community, so they don't map to flat JWT role policies. Named policies get
-        // added here once the Identity module and the authorization model are in place.
         services.AddAuthorization();
     }
 }
