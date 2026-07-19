@@ -19,7 +19,7 @@ public static class ModulesConfiguration
         services.AddDomainEvents();
 
         // One line per module. New module = one more call here.
-        services.AddIdentityModule(connectionString);
+        services.AddIdentityModule(connectionString, configuration);
         services.AddCommunityModule(connectionString);
         services.AddFeedModule(connectionString);
         services.AddChatModule(connectionString);
