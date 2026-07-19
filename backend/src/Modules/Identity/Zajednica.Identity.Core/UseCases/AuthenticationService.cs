@@ -6,12 +6,7 @@ using Zajednica.Identity.Core.Domain.RepositoryInterfaces;
 
 namespace Zajednica.Identity.Core.UseCases;
 
-/// <summary>
-/// Public application service of the Identity module. Orchestrates the auth flows over the domain
-/// and the Infrastructure ports, committing each flow through the module unit of work exactly once
-/// (which is also where post-commit domain events would dispatch). The service is the impure edge:
-/// it reads the clock and drives I/O, keeping the aggregates pure.
-/// </summary>
+
 public sealed class AuthenticationService : IAuthenticationService
 {
     private const int MinPasswordLength = 8;

@@ -5,11 +5,7 @@ using Zajednica.Identity.Core.Mappers;
 
 namespace Zajednica.Identity.Core.UseCases.Internal;
 
-/// <summary>
-/// Implements the Internal seam other modules use to resolve account facts by id. Read-only; the
-/// batch overloads fetch many ids in one round-trip. A Redis cache could later slot in behind this
-/// class without callers noticing (CLAUDE.md §5).
-/// </summary>
+
 public sealed class AccountDirectory : IAccountDirectory
 {
     private readonly IAccountRepository _accounts;

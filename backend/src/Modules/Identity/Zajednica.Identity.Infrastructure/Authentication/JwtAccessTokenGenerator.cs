@@ -7,10 +7,6 @@ using Zajednica.Identity.Core.UseCases;
 
 namespace Zajednica.Identity.Infrastructure.Authentication;
 
-/// <summary>
-/// Signs a short-lived HS256 access token carrying the account identity only (sub = accountId,
-/// username). No role claims — see <see cref="IAccessTokenGenerator"/>.
-/// </summary>
 public sealed class JwtAccessTokenGenerator(IOptions<JwtOptions> options) : IAccessTokenGenerator
 {
     private readonly JwtOptions _options = options.Value;

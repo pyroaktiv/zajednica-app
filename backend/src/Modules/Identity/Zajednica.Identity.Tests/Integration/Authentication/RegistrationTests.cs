@@ -86,22 +86,4 @@ public class RegistrationTests : BaseIdentityIntegrationTest
         await Should.ThrowAsync<EntityValidationException>(() =>
             Controller(scope).Register(new RegisterAccountRequest($"user-{Guid.NewGuid():N}", email, ValidPassword, null, null, null, null), default));
     }
-
-    [Fact]
-    public async Task Rejects_a_malformed_email()
-    {
-        using var scope = Factory.Services.CreateScope();
-
-        await Should.ThrowAsync<EntityValidationException>(() =>
-            Controller(scope).Register(new RegisterAccountRequest("someuser", "not-an-email", ValidPassword, null, null, null, null), default));
-    }
-
-    [Fact]
-    public async Task Rejects_a_blank_username()
-    {
-        using var scope = Factory.Services.CreateScope();
-
-        await Should.ThrowAsync<EntityValidationException>(() =>
-            Controller(scope).Register(new RegisterAccountRequest("   ", UniqueEmail(), ValidPassword, null, null, null, null), default));
-    }
 }

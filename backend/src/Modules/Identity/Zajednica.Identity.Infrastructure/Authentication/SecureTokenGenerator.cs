@@ -3,7 +3,6 @@ using Zajednica.Identity.Core.UseCases;
 
 namespace Zajednica.Identity.Infrastructure.Authentication;
 
-/// <summary>256 bits of CSPRNG entropy, Base64Url-encoded so it is safe in URLs and headers.</summary>
 public sealed class SecureTokenGenerator : ISecureTokenGenerator
 {
     public string Generate()
@@ -12,6 +11,6 @@ public sealed class SecureTokenGenerator : ISecureTokenGenerator
         return Convert.ToBase64String(bytes)
             .TrimEnd('=')
             .Replace('+', '-')
-            .Replace('/', '_');
+            .Replace('/', '_'); // url safety
     }
 }

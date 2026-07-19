@@ -2,10 +2,6 @@ using System.Security.Claims;
 
 namespace Zajednica.Identity.Infrastructure.Authentication;
 
-/// <summary>
-/// Reads the account identity from a validated principal. The JWT handler maps the "sub" claim to
-/// <see cref="ClaimTypes.NameIdentifier"/> by default, so we accept either spelling.
-/// </summary>
 public static class ClaimsPrincipalExtensions
 {
     public static Guid AccountId(this ClaimsPrincipal user)

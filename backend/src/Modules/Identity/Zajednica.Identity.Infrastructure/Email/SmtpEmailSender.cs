@@ -5,11 +5,6 @@ using Zajednica.Identity.Core.UseCases;
 
 namespace Zajednica.Identity.Infrastructure.Email;
 
-/// <summary>
-/// Sends mail over SMTP using the built-in <see cref="SmtpClient"/>. Configured entirely from
-/// <see cref="SmtpOptions"/> so the same code targets a local relay (dev) or a managed provider
-/// (Azure) with no code change.
-/// </summary>
 public sealed class SmtpEmailSender(IOptions<SmtpOptions> options) : IEmailSender
 {
     private readonly SmtpOptions _options = options.Value;

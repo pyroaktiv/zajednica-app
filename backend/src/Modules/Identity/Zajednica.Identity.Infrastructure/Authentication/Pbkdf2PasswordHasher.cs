@@ -3,10 +3,6 @@ using Zajednica.Identity.Core.UseCases;
 
 namespace Zajednica.Identity.Infrastructure.Authentication;
 
-/// <summary>
-/// PBKDF2 (SHA-256) password hasher using only the built-in crypto — no external dependency.
-/// Stored form is "base64(salt).base64(hash)". Verification is constant-time.
-/// </summary>
 public sealed class Pbkdf2PasswordHasher : IPasswordHasher
 {
     private const int SaltSize = 16;

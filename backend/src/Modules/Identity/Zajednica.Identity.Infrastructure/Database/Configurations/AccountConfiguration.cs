@@ -17,9 +17,7 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
 
         builder.HasIndex(a => a.Username).IsUnique();
         builder.HasIndex(a => a.Email).IsUnique();
-
-        // Profile is part of the aggregate: one-to-zero/one, its own table, shadow FK on the child,
-        // always loaded with the root, and deleted with it (soft delete severs the navigation).
+        
         builder.HasOne(a => a.Profile)
             .WithOne()
             .HasForeignKey<Profile>("AccountId")
