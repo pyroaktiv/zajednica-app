@@ -2,11 +2,6 @@ using Zajednica.BuildingBlocks.Core.Domain;
 
 namespace Zajednica.Identity.Core.Domain;
 
-/// <summary>
-/// Optional personal data, entity inside the Account aggregate. Its lifecycle is owned by
-/// <see cref="Account"/> (created / updated / removed only through the root). All fields are
-/// optional; a blank value is stored as null so <see cref="HasManagerData"/> is unambiguous.
-/// </summary>
 public class Profile : Entity
 {
     public string? ImageUrl { get; private set; }
@@ -29,8 +24,7 @@ public class Profile : Entity
         Email = Clean(contactEmail);
         ImageUrl = Clean(imageUrl);
     }
-
-    /// <summary>Manager candidacy requires first name, last name and phone.</summary>
+    
     public bool HasManagerData() => FirstName is not null && LastName is not null && Phone is not null;
 
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();

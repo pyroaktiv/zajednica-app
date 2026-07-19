@@ -1,6 +1,5 @@
 namespace Zajednica.Identity.Core.Domain.RepositoryInterfaces;
 
-/// <summary>Repository for refresh tokens. Rotation = remove the presented token and add a fresh one.</summary>
 public interface IRefreshTokenRepository
 {
     void Add(RefreshToken token);

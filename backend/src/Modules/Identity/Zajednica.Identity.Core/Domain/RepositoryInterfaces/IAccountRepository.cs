@@ -1,10 +1,5 @@
 namespace Zajednica.Identity.Core.Domain.RepositoryInterfaces;
 
-/// <summary>
-/// Collection-like repository for the Account aggregate: it tracks changes but does not persist —
-/// the unit of work commits (see <see cref="UseCases.IIdentityUnitOfWork"/>). Loading an account
-/// brings its Profile along (it is part of the aggregate).
-/// </summary>
 public interface IAccountRepository
 {
     void Add(Account account);

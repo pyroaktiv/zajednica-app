@@ -23,7 +23,6 @@ public class EmailVerificationToken : AggregateRoot
         Token = token;
         ExpiresAt = expiresAt;
     }
-
-    /// <summary>A screenshot/stale link guard: the token is usable only before it expires.</summary>
+    
     public bool IsValid(DateTime now) => now < ExpiresAt;
 }

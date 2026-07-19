@@ -3,12 +3,6 @@ using Zajednica.BuildingBlocks.Core.Exceptions;
 
 namespace Zajednica.Identity.Core.Domain;
 
-/// <summary>
-/// Aggregate root of the Identity module. Holds the credentials/login identity of a user and,
-/// optionally, a <see cref="Domain.Profile"/> with personal data. Deletion is a soft delete:
-/// the account row is kept forever (username/email must stay unique across the system) while
-/// the profile with personal data is removed (spec §1).
-/// </summary>
 public class Account : AggregateRoot
 {
     public string Username { get; private set; } = null!;
@@ -31,8 +25,7 @@ public class Account : AggregateRoot
         Status = AccountStatus.Active;
         DateCreated = now;
     }
-
-    /// <summary>Confirms the email after the activation link is followed.</summary>
+    
     public void VerifyEmail()
     {
         EnsureActive();
