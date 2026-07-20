@@ -5,47 +5,47 @@ namespace Zajednica.Community.Core.Domain;
 
 public class Community : AggregateRoot
 {
-    public Guid CreatorAccountId { get; private set; }
-    public Guid? ManagerMembershipId { get; private set; }
     public string Name { get; private set; } = null!;
     public Address Address { get; private set; } = null!;
-    public RegistrationNumber? MB { get; private set; }
-    public TaxId? PIB { get; private set; }
+    public RegistrationNumber? RegistrationNumber { get; private set; }
+    public TaxId? TaxId { get; private set; }
     public string? BankAccountNumber { get; private set; }
     public string QrToken { get; private set; } = null!;
     public DateTime DateCreated { get; private set; }
-
-    // EF
+    
     private Community() { }
 
-    public Community(Guid creatorAccountId, string name, Address address, string qrToken, DateTime now,
-        RegistrationNumber? mb = null, TaxId? pib = null, string? bankAccountNumber = null)
+    public Community(string name, Address address, string qrToken, DateTime now,
+        RegistrationNumber? registrationNumber = null, TaxId? taxId = null, string? bankAccountNumber = null)
     {
-        if (creatorAccountId == Guid.Empty)
-            throw new EntityValidationException("CreatorAccountId is required.");
-
-        CreatorAccountId = creatorAccountId;
         Name = RequireName(name);
         Address = address ?? throw new EntityValidationException("Address is required.");
         QrToken = RequireToken(qrToken);
-        MB = mb;
-        PIB = pib;
+        RegistrationNumber = registrationNumber;
+        TaxId = taxId;
         BankAccountNumber = Clean(bankAccountNumber);
         DateCreated = now;
     }
-
-    // Profile-completeness of the candidate manager is checked in the UseCase via Identity.Api.Internal
-    // (cross-module fact), then this only records the structural change.
-    public void SetManager(Guid membershipId)
+    
+    public void UpdateDetails(Membership actor, string name, Address address,
+        RegistrationNumber? registrationNumber, TaxId? taxId, string? bankAccountNumber)
     {
-        if (membershipId == Guid.Empty)
-            throw new EntityValidationException("ManagerMembershipId is required.");
-        ManagerMembershipId = membershipId;
+        RequireManager(actor);
+
+        Name = RequireName(name);
+        Address = address ?? throw new EntityValidationException("Address is required.");
+        RegistrationNumber = registrationNumber;
+        TaxId = taxId;
+        BankAccountNumber = Clean(bankAccountNumber);
     }
 
-    public void RemoveManager() => ManagerMembershipId = null;
-
-    public bool HasManager() => ManagerMembershipId.HasValue;
+    private void RequireManager(Membership actor)
+    {
+        if (actor.CommunityId != Id)
+            throw new ForbiddenException("Membership belongs to another community.");
+        if (!actor.IsActive() || !actor.HasRole(CommunityRole.Manager))
+            throw new ForbiddenException("Only the community manager can change community details.");
+    }
 
     private static string RequireName(string name)
     {

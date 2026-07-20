@@ -1,6 +1,6 @@
 namespace Zajednica.Community.Core.Domain;
 
-public enum MembershipStatus
+public enum CertificationStatus
 {
     Unconfirmed,
     Confirmed

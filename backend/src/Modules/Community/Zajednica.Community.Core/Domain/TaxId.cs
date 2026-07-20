@@ -3,12 +3,10 @@ using Zajednica.BuildingBlocks.Core.Exceptions;
 
 namespace Zajednica.Community.Core.Domain;
 
-// PIB (poreski identifikacioni broj) - exactly 9 digits.
 public class TaxId : ValueObject
 {
     public string Value { get; private set; } = null!;
-
-    // EF
+    
     private TaxId() { }
 
     public TaxId(string value)

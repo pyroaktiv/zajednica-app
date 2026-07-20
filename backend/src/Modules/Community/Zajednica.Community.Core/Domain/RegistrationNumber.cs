@@ -3,12 +3,10 @@ using Zajednica.BuildingBlocks.Core.Exceptions;
 
 namespace Zajednica.Community.Core.Domain;
 
-// MB (maticni broj) - exactly 8 digits.
 public class RegistrationNumber : ValueObject
 {
     public string Value { get; private set; } = null!;
-
-    // EF
+    
     private RegistrationNumber() { }
 
     public RegistrationNumber(string value)

@@ -12,6 +12,13 @@ public class MembershipTests
 
     private static Membership NewMember() => new(Account, CommunityId, Now);
 
+    private static Membership ConfirmedMember()
+    {
+        var member = NewMember();
+        member.Confirm();
+        return member;
+    }
+
     [Fact]
     public void Confirm_flips_status_to_confirmed()
     {
@@ -19,51 +26,128 @@ public class MembershipTests
 
         member.Confirm();
 
-        member.Status.ShouldBe(MembershipStatus.Confirmed);
+        member.CertificationStatus.ShouldBe(CertificationStatus.Confirmed);
     }
 
     [Fact]
     public void Confirm_is_rejected_when_already_confirmed()
     {
-        var member = NewMember();
-        member.Confirm();
+        var member = ConfirmedMember();
 
         Should.Throw<EntityValidationException>(() => member.Confirm());
     }
 
     [Fact]
-    public void Founder_is_a_confirmed_issuer()
+    public void Creator_is_a_confirmed_issuer_and_nothing_more()
     {
-        var founder = Membership.Founder(Account, CommunityId, Now);
+        var creator = Membership.Creator(Account, CommunityId, Now);
 
-        founder.Status.ShouldBe(MembershipStatus.Confirmed);
-        founder.CertificateIssuer.ShouldBeTrue();
+        creator.CertificationStatus.ShouldBe(CertificationStatus.Confirmed);
+        creator.HasRole(CommunityRole.Issuer).ShouldBeTrue();
+        creator.HasRole(CommunityRole.Manager).ShouldBeFalse();
     }
 
     [Fact]
-    public void GrantIssuerRight_requires_a_confirmed_member()
-    {
-        var member = NewMember(); // unconfirmed
-
-        Should.Throw<EntityValidationException>(() => member.GrantIssuerRight());
-
-        member.Confirm();
-        member.GrantIssuerRight();
-        member.CertificateIssuer.ShouldBeTrue();
-    }
-
-    [Fact]
-    public void Leave_preserves_confirmation_and_stars_but_deactivates()
+    public void Grant_requires_a_confirmed_member()
     {
         var member = NewMember();
+
+        Should.Throw<EntityValidationException>(() => member.Grant(CommunityRole.Issuer, null, Now));
+
         member.Confirm();
+        member.Grant(CommunityRole.Issuer, null, Now);
+        member.HasRole(CommunityRole.Issuer).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Grant_records_who_granted_the_role_and_when()
+    {
+        var grantedBy = Guid.NewGuid();
+        var member = ConfirmedMember();
+
+        member.Grant(CommunityRole.Issuer, grantedBy, Now);
+
+        var role = member.Roles.Single();
+        role.Role.ShouldBe(CommunityRole.Issuer);
+        role.GrantedByMembershipId.ShouldBe(grantedBy);
+        role.GrantedAt.ShouldBe(Now);
+    }
+
+    [Fact]
+    public void Grant_is_rejected_when_the_role_is_already_held()
+    {
+        var member = ConfirmedMember();
+        member.Grant(CommunityRole.Manager, null, Now);
+
+        Should.Throw<EntityValidationException>(() => member.Grant(CommunityRole.Manager, null, Now));
+    }
+
+    [Fact]
+    public void Revoke_is_rejected_when_the_role_is_not_held()
+    {
+        var member = ConfirmedMember();
+
+        Should.Throw<EntityValidationException>(() => member.Revoke(CommunityRole.Manager));
+    }
+
+    [Fact]
+    public void Leave_preserves_confirmation_and_stars_but_drops_all_roles()
+    {
+        var member = ConfirmedMember();
+        member.Grant(CommunityRole.Manager, null, Now);
         member.AddStars(50);
 
-        member.Leave();
+        member.Leave(Now);
 
-        member.IsActive.ShouldBeFalse();
-        member.Status.ShouldBe(MembershipStatus.Confirmed); // confirmation is kept on leaving
+        member.State.ShouldBe(MembershipState.Left);
+        member.LeftAt.ShouldBe(Now);
+        member.Roles.ShouldBeEmpty();
+        member.CertificationStatus.ShouldBe(CertificationStatus.Confirmed);
         member.Stars.ShouldBe(50);
+    }
+
+    [Fact]
+    public void Ban_drops_all_roles()
+    {
+        var member = ConfirmedMember();
+        member.Grant(CommunityRole.Manager, null, Now);
+
+        member.Ban(Now);
+
+        member.State.ShouldBe(MembershipState.Banned);
+        member.Roles.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Rejoin_restores_an_active_membership_without_its_former_roles()
+    {
+        var member = ConfirmedMember();
+        member.Grant(CommunityRole.Issuer, null, Now);
+        member.Leave(Now);
+
+        member.Rejoin();
+
+        member.IsActive().ShouldBeTrue();
+        member.LeftAt.ShouldBeNull();
+        member.Roles.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Rejoin_is_rejected_for_a_banned_membership()
+    {
+        var member = ConfirmedMember();
+        member.Ban(Now);
+
+        Should.Throw<EntityValidationException>(() => member.Rejoin());
+    }
+
+    [Fact]
+    public void Grant_is_rejected_for_an_inactive_membership()
+    {
+        var member = ConfirmedMember();
+        member.Leave(Now);
+
+        Should.Throw<EntityValidationException>(() => member.Grant(CommunityRole.Issuer, null, Now));
     }
 
     [Fact]

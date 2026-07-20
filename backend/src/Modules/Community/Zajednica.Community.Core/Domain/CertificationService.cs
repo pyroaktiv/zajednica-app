@@ -6,9 +6,9 @@ public class CertificationService
 {
     public Certificate Certify(Membership issuer, Membership candidate, DateTime now)
     {
-        if (!issuer.CertificateIssuer)
+        if (!issuer.HasRole(CommunityRole.Issuer))
             throw new EntityValidationException("Issuer does not have the right to certify members.");
-        if (!issuer.IsActive)
+        if (!issuer.IsActive())
             throw new EntityValidationException("An inactive member cannot certify.");
         if (issuer.CommunityId != candidate.CommunityId)
             throw new EntityValidationException("Issuer and candidate belong to different communities.");
