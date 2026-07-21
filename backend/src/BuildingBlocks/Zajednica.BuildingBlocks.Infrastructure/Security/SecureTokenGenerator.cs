@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
-using Zajednica.Identity.Core.UseCases;
+using Zajednica.BuildingBlocks.Core.Security;
 
-namespace Zajednica.Identity.Infrastructure.Authentication;
+namespace Zajednica.BuildingBlocks.Infrastructure.Security;
 
 public sealed class SecureTokenGenerator : ISecureTokenGenerator
 {

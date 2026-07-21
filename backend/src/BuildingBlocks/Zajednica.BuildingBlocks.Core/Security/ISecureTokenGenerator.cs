@@ -1,4 +1,4 @@
-namespace Zajednica.Identity.Core.UseCases;
+namespace Zajednica.BuildingBlocks.Core.Security;
 
 public interface ISecureTokenGenerator
 {

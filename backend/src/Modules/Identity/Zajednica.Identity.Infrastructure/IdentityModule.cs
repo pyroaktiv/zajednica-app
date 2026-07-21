@@ -52,7 +52,6 @@ public static class IdentityModule
     private static void AddAuthentication(IServiceCollection services)
     {
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
-        services.AddSingleton<ISecureTokenGenerator, SecureTokenGenerator>();
         services.AddSingleton<IAccessTokenGenerator, JwtAccessTokenGenerator>();
     }
 

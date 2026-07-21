@@ -1,6 +1,7 @@
 using Moq;
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
+using Zajednica.BuildingBlocks.Core.Security;
 using Zajednica.Identity.Api.Dto;
 using Zajednica.Identity.Core.Domain;
 using Zajednica.Identity.Core.Domain.RepositoryInterfaces;

@@ -1,7 +1,7 @@
 using Shouldly;
-using Zajednica.Identity.Infrastructure.Authentication;
+using Zajednica.BuildingBlocks.Infrastructure.Security;
 
-namespace Zajednica.Identity.Tests.Unit;
+namespace Zajednica.BuildingBlocks.Tests.Unit;
 
 public class SecureTokenGeneratorTests
 {

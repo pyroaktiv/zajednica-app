@@ -1,5 +1,6 @@
 using Zajednica.BuildingBlocks.Infrastructure.Notifications;
 using Zajednica.BuildingBlocks.Infrastructure.Realtime;
+using Zajednica.BuildingBlocks.Infrastructure.Security;
 using Zajednica.Chat.Infrastructure;
 using Zajednica.Community.Infrastructure;
 using Zajednica.Feed.Infrastructure;
@@ -17,6 +18,7 @@ public static class ModulesConfiguration
         // Cross-cutting infrastructure shared by every module.
         services.AddNotifications();
         services.AddRealtime();
+        services.AddSecurity();
 
         // One line per module. New module = one more call here.
         services.AddIdentityModule(connectionString, configuration);

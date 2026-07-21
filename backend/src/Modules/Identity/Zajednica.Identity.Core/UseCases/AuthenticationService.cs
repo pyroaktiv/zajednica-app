@@ -1,4 +1,5 @@
 using Zajednica.BuildingBlocks.Core.Exceptions;
+using Zajednica.BuildingBlocks.Core.Security;
 using Zajednica.Identity.Api.Dto;
 using Zajednica.Identity.Api.Public;
 using Zajednica.Identity.Core.Domain;
