@@ -6,9 +6,17 @@ namespace Zajednica.Identity.Infrastructure.Database.Repositories;
 
 internal sealed class EmailVerificationTokenEfRepository(IdentityDbContext db) : IEmailVerificationTokenRepository
 {
-    public void Add(EmailVerificationToken token) => db.EmailVerificationTokens.Add(token);
+    public Task AddAsync(EmailVerificationToken token, CancellationToken ct = default)
+    {
+        db.EmailVerificationTokens.Add(token);
+        return db.SaveChangesAsync(ct);
+    }
 
-    public void Remove(EmailVerificationToken token) => db.EmailVerificationTokens.Remove(token);
+    public Task RemoveAsync(EmailVerificationToken token, CancellationToken ct = default)
+    {
+        db.EmailVerificationTokens.Remove(token);
+        return db.SaveChangesAsync(ct);
+    }
 
     public Task<EmailVerificationToken?> GetByTokenAsync(string token, CancellationToken ct = default) =>
         db.EmailVerificationTokens.FirstOrDefaultAsync(t => t.Token == token, ct);

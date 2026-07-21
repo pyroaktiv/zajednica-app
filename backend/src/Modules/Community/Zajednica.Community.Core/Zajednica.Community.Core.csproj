@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Zajednica.Community.Api\Zajednica.Community.Api.csproj" />
+    <ProjectReference Include="..\..\Identity\Zajednica.Identity.Api\Zajednica.Identity.Api.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

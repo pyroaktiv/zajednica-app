@@ -6,7 +6,13 @@ namespace Zajednica.Identity.Infrastructure.Database.Repositories;
 
 internal sealed class AccountEfRepository(IdentityDbContext db) : IAccountRepository
 {
-    public void Add(Account account) => db.Accounts.Add(account);
+    public Task AddAsync(Account account, CancellationToken ct = default)
+    {
+        db.Accounts.Add(account);
+        return db.SaveChangesAsync(ct);
+    }
+
+    public Task UpdateAsync(Account account, CancellationToken ct = default) => db.SaveChangesAsync(ct);
 
     public Task<Account?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         db.Accounts.FirstOrDefaultAsync(a => a.Id == id, ct);

@@ -1,4 +1,6 @@
+using ArchUnitNET.Domain;
 using ArchUnitNET.xUnit;
+using Shouldly;
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
 namespace Zajednica.Architecture.Tests;
@@ -82,6 +84,24 @@ public class ModulesTests : BaseArchitecturalTests
         var rule = Types().That().Are(apiTypes).Should().NotDependOnAny(internalApiTypes).WithoutRequiringPositiveResults();
 
         rule.Check(Architecture);
+    }
+
+    // The cross-module seam is meant to be enumerable: every type another module may touch is an
+    // IInternal*Service interface, so a caller's constructor shows at a glance what crosses a boundary.
+    [Theory]
+    [MemberData(nameof(GetModules))]
+    public void Internal_Api_services_should_be_interfaces_named_IInternalXService(string moduleName)
+    {
+        var internalApiTypes = GetExaminedTypes($"Zajednica.{moduleName}.Api")
+            .Where(x => x.FullName.Contains(".Api.Internal.") && !x.FullName.Contains(".Api.Internal.Dto."))
+            .ToList();
+
+        var offenders = internalApiTypes
+            .Where(x => x is not Interface || !x.Name.StartsWith("IInternal") || !x.Name.EndsWith("Service"))
+            .Select(x => x.FullName)
+            .ToList();
+
+        offenders.ShouldBeEmpty($"{moduleName}: Api/Internal must expose only IInternal*Service interfaces.");
     }
 
     public static IEnumerable<object[]> GetModules() => new List<object[]>

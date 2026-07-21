@@ -10,12 +10,10 @@ namespace Zajednica.Identity.Core.UseCases;
 public sealed class ProfileService : IProfileService
 {
     private readonly IAccountRepository _accounts;
-    private readonly IIdentityUnitOfWork _uow;
 
-    public ProfileService(IAccountRepository accounts, IIdentityUnitOfWork uow)
+    public ProfileService(IAccountRepository accounts)
     {
         _accounts = accounts;
-        _uow = uow;
     }
 
     public async Task<ProfileDto> GetAsync(Guid accountId, CancellationToken ct = default)
@@ -31,7 +29,7 @@ public sealed class ProfileService : IProfileService
             ?? throw new NotFoundException("Account not found.");
 
         account.UpdateProfile(request.FirstName, request.LastName, request.Phone, request.ContactEmail, request.ImageUrl);
-        await _uow.SaveChangesAsync(ct);
+        await _accounts.UpdateAsync(account, ct);
 
         return account.ToProfileDto();
     }

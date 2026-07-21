@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Zajednica.BuildingBlocks.Infrastructure.DomainEvents;
 using Zajednica.Identity.Api.Internal;
 using Zajednica.Identity.Api.Public;
 using Zajednica.Identity.Core.Domain.RepositoryInterfaces;
@@ -25,9 +24,8 @@ public static class IdentityModule
         // Expose the bound options as the Core-facing settings port.
         services.AddSingleton<IAuthTokenSettings>(sp => sp.GetRequiredService<IOptions<AuthOptions>>().Value);
 
-        services.AddDbContext<IdentityDbContext>((sp, o) =>
-            o.UseNpgsql(connectionString, npg => npg.MigrationsHistoryTable("__EFMigrationsHistory", "identity"))
-             .UseDomainEvents(sp));
+        services.AddDbContext<IdentityDbContext>(o =>
+            o.UseNpgsql(connectionString, npg => npg.MigrationsHistoryTable("__EFMigrationsHistory", "identity")));
 
         AddPersistence(services, configuration);
         AddAuthentication(services);
@@ -41,7 +39,7 @@ public static class IdentityModule
     {
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IProfileService, ProfileService>();
-        services.AddScoped<IAccountDirectory, AccountDirectory>();
+        services.AddScoped<IInternalAccountService, InternalAccountService>();
     }
     
     private static void AddPersistence(IServiceCollection services, IConfiguration configuration)
@@ -49,13 +47,11 @@ public static class IdentityModule
         services.AddScoped<IAccountRepository, AccountEfRepository>();
         services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenEfRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenEfRepository>();
-        services.AddScoped<IIdentityUnitOfWork>(sp => sp.GetRequiredService<IdentityDbContext>());
     }
 
     private static void AddAuthentication(IServiceCollection services)
     {
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
-        services.AddSingleton<ISecureTokenGenerator, SecureTokenGenerator>();
         services.AddSingleton<IAccessTokenGenerator, JwtAccessTokenGenerator>();
     }
 

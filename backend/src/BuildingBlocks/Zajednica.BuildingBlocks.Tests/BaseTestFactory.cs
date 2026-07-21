@@ -21,12 +21,20 @@ public abstract class BaseTestFactory<TDbContext> : WebApplicationFactory<Progra
             var db = scopedServices.GetRequiredService<TDbContext>();
             var logger = scopedServices.GetRequiredService<ILogger<BaseTestFactory<TDbContext>>>();
 
+            CreateTables(db);
+            // A module under test also reads through the Api/Internal seams of the modules it calls,
+            // so their schemas have to exist in the same test database.
+            foreach (var contextType in CollaboratingDbContexts)
+                CreateTables((DbContext)scopedServices.GetRequiredService(contextType));
+
             var path = Path.Combine(".", "..", "..", "..", "TestData");
-            InitializeDatabase(db, path, logger);
+            SeedTestData(db, path, logger);
         });
     }
 
-    private static void InitializeDatabase(DbContext context, string scriptFolder, ILogger logger)
+    protected virtual IEnumerable<Type> CollaboratingDbContexts => [];
+
+    private static void CreateTables(DbContext context)
     {
         try
         {
@@ -39,7 +47,10 @@ public abstract class BaseTestFactory<TDbContext> : WebApplicationFactory<Progra
             // CreateTables throws if the schema already exists. Expected when several
             // module DbContexts share one physical test database.
         }
+    }
 
+    private static void SeedTestData(DbContext context, string scriptFolder, ILogger logger)
+    {
         try
         {
             if (!Directory.Exists(scriptFolder)) return;
