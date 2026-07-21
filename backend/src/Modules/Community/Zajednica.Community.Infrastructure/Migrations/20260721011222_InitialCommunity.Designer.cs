@@ -12,7 +12,7 @@ using Zajednica.Community.Infrastructure.Database;
 namespace Zajednica.Community.Infrastructure.Migrations
 {
     [DbContext(typeof(CommunityDbContext))]
-    [Migration("20260721004524_InitialCommunity")]
+    [Migration("20260721011222_InitialCommunity")]
     partial class InitialCommunity
     {
         /// <inheritdoc />
@@ -311,7 +311,6 @@ namespace Zajednica.Community.Infrastructure.Migrations
                     b.OwnsMany("Zajednica.Community.Core.Domain.MembershipRole", "Roles", b1 =>
                         {
                             b1.Property<Guid>("Id")
-                                .ValueGeneratedOnAdd()
                                 .HasColumnType("uuid");
 
                             b1.Property<DateTime>("GrantedAt")

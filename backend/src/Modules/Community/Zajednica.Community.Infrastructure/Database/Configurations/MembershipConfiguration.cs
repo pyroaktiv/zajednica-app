@@ -22,6 +22,7 @@ public class MembershipConfiguration : IEntityTypeConfiguration<Membership>
             role.ToTable("MembershipRoles");
             role.WithOwner().HasForeignKey("MembershipId");
             role.HasKey(r => r.Id);
+            role.Property(r => r.Id).ValueGeneratedNever();
             role.Property(r => r.Role).HasConversion<string>().IsRequired();
             role.HasIndex("MembershipId", "Role").IsUnique();
         });

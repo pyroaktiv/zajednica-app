@@ -308,7 +308,6 @@ namespace Zajednica.Community.Infrastructure.Migrations
                     b.OwnsMany("Zajednica.Community.Core.Domain.MembershipRole", "Roles", b1 =>
                         {
                             b1.Property<Guid>("Id")
-                                .ValueGeneratedOnAdd()
                                 .HasColumnType("uuid");
 
                             b1.Property<DateTime>("GrantedAt")
