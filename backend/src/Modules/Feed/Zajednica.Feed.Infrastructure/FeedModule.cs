@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Zajednica.Feed.Api.Public;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
+using Zajednica.Feed.Core.UseCases;
 using Zajednica.Feed.Infrastructure.Database;
 using Zajednica.Feed.Infrastructure.Database.Repositories;
 
@@ -14,6 +16,7 @@ public static class FeedModule
             o.UseNpgsql(connectionString, npg => npg.MigrationsHistoryTable("__EFMigrationsHistory", "feed")));
 
         AddPersistence(services);
+        AddApplicationServices(services);
 
         return services;
     }
@@ -22,5 +25,14 @@ public static class FeedModule
     {
         services.AddScoped<IPostRepository, PostEfRepository>();
         services.AddScoped<IIntentRepository, EventSourcedIntentRepository>();
+    }
+
+    private static void AddApplicationServices(IServiceCollection services)
+    {
+        services.AddScoped<CommunityAccess>();
+        services.AddScoped<AuthorDirectory>();
+        services.AddScoped<IPostService, PostService>();
+        services.AddScoped<ICommentService, CommentService>();
+        services.AddScoped<IIntentService, IntentService>();
     }
 }

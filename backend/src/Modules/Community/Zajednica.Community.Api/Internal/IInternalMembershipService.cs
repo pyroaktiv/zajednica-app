@@ -6,6 +6,7 @@ public interface IInternalMembershipService
 {
     Task<MembershipContextDto?> GetContextAsync(Guid accountId, Guid communityId, CancellationToken ct = default);
     Task<IReadOnlyList<MembershipContextDto>> GetContextsAsync(IReadOnlyCollection<Guid> membershipIds, CancellationToken ct = default);
+    Task<IReadOnlyList<MembershipContextDto>> GetConfirmedAsync(Guid communityId, CancellationToken ct = default);
     Task<int> GetConfirmedCountAsync(Guid communityId, CancellationToken ct = default);
     Task<bool> AreEligibleAsync(IReadOnlyCollection<Guid> membershipIds, CancellationToken ct = default);
 

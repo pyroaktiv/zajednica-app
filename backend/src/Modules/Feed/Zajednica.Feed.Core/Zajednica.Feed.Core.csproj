@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Zajednica.Feed.Api\Zajednica.Feed.Api.csproj" />
+    <ProjectReference Include="..\..\Community\Zajednica.Community.Api\Zajednica.Community.Api.csproj" />
+    <ProjectReference Include="..\..\Identity\Zajednica.Identity.Api\Zajednica.Identity.Api.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

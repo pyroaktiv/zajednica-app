@@ -27,6 +27,12 @@ public sealed class InternalMembershipService(
         return found.Select(m => m.ToContextDto()).ToList();
     }
 
+    public async Task<IReadOnlyList<MembershipContextDto>> GetConfirmedAsync(Guid communityId, CancellationToken ct = default) =>
+        (await memberships.GetByCommunityAsync(communityId, ct))
+        .Where(m => m.IsActive() && m.IsConfirmed())
+        .Select(m => m.ToContextDto())
+        .ToList();
+
     public Task<int> GetConfirmedCountAsync(Guid communityId, CancellationToken ct = default) =>
         memberships.CountConfirmedAsync(communityId, ct);
 
