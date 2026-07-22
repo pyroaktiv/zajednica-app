@@ -1,4 +1,4 @@
-namespace Zajednica.Community.Api.Dto;
+namespace Zajednica.Community.Api.Dto.Documents;
 
 public record DocumentDto(
     Guid Id,

@@ -1,7 +1,7 @@
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.BuildingBlocks.Core.Realtime;
 using Zajednica.BuildingBlocks.Core.UseCases;
-using Zajednica.Community.Api.Dto;
+using Zajednica.Community.Api.Dto.Documents;
 using Zajednica.Community.Api.Public;
 using Zajednica.Community.Core.Domain;
 using Zajednica.Community.Core.Domain.RepositoryInterfaces;

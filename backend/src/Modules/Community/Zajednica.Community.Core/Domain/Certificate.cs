@@ -10,7 +10,6 @@ public class Certificate : AggregateRoot
     public Guid CandidateMembershipId { get; private set; }
     public DateTime Date { get; private set; }
 
-    // EF
     private Certificate() { }
 
     public Certificate(Guid communityId, Guid issuerMembershipId, Guid candidateMembershipId, DateTime date)

@@ -9,7 +9,6 @@ public interface IInternalMembershipService
     Task<int> GetConfirmedCountAsync(Guid communityId, CancellationToken ct = default);
     Task<bool> AreEligibleAsync(IReadOnlyCollection<Guid> membershipIds, CancellationToken ct = default);
 
-    Task MuteAsync(Guid membershipId, int days, CancellationToken ct = default);
     Task BanAsync(Guid membershipId, Guid intentId, CancellationToken ct = default);
     Task ElectManagerAsync(Guid membershipId, CancellationToken ct = default);
     Task AddStarsAsync(Guid membershipId, int stars, CancellationToken ct = default);

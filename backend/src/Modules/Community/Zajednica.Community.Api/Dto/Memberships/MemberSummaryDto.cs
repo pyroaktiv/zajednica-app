@@ -1,6 +1,6 @@
-namespace Zajednica.Community.Api.Dto;
+namespace Zajednica.Community.Api.Dto.Memberships;
 
-public record CommunityMemberDto(
+public record MemberSummaryDto(
     Guid MembershipId,
     Guid AccountId,
     string Username,

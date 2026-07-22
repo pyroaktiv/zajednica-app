@@ -8,7 +8,6 @@ public class Coordinates : ValueObject
     public decimal Latitude { get; private set; }
     public decimal Longitude { get; private set; }
 
-    // EF
     private Coordinates() { }
 
     public Coordinates(decimal latitude, decimal longitude)

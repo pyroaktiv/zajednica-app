@@ -24,12 +24,6 @@ public sealed class ProfileController : ControllerBase
         return Ok(await _profiles.GetAsync(User.AccountId(), ct));
     }
 
-    [HttpGet("{accountId:guid}")]
-    public async Task<ActionResult<ProfileDto>> Get(Guid accountId, CancellationToken ct)
-    {
-        return Ok(await _profiles.GetAsync(accountId, ct));
-    }
-
     [HttpPut]
     public async Task<ActionResult<ProfileDto>> Update([FromBody] UpdateProfileRequest request, CancellationToken ct)
     {

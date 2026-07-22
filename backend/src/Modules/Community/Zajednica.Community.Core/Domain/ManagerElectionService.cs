@@ -2,8 +2,6 @@ using Zajednica.BuildingBlocks.Core.Exceptions;
 
 namespace Zajednica.Community.Core.Domain;
 
-// At most one manager per community: an invariant that spans two memberships, so neither of
-// them can own it. The current manager is null when the community has none.
 public class ManagerElectionService
 {
     public void Elect(Membership? currentManager, Membership newManager, DateTime now)

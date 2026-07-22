@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
-using Zajednica.Community.Api.Dto;
+using Zajednica.Community.Api.Dto.Certification;
 using Zajednica.Community.Core.Domain;
 
 namespace Zajednica.Community.Tests.Integration;
@@ -23,12 +23,12 @@ public class CertificationTests : BaseCommunityIntegrationTest
 
         var confirmed = await CertifyAsync(scope, issuerId, candidateId, community.Id);
 
-        confirmed.Member.IsConfirmed.ShouldBeTrue();
+        confirmed.CertifiedAt.ShouldNotBe(default);
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
         var issuerMembership = db.Memberships.Single(m => m.AccountId == issuerId && m.CommunityId == community.Id);
-        var certificate = db.Certificates.Single(c => c.CandidateMembershipId == confirmed.Member.MembershipId);
+        var certificate = db.Certificates.Single(c => c.CandidateMembershipId == confirmed.MembershipId);
         certificate.IssuerMembershipId.ShouldBe(issuerMembership.Id);
         certificate.CommunityId.ShouldBe(community.Id);
 
@@ -73,25 +73,5 @@ public class CertificationTests : BaseCommunityIntegrationTest
 
         await Should.ThrowAsync<ForbiddenException>(() =>
             Certification(scope, memberId).CreateChallenge(community.Id, default));
-    }
-
-    [Fact]
-    public async Task The_trust_graph_exposes_who_certified_whom()
-    {
-        using var scope = Factory.Services.CreateScope();
-        var issuerId = NewAccount(scope);
-        var candidateId = NewAccount(scope);
-        var community = await CreateCommunityAsync(scope, issuerId);
-        var qrToken = await QrTokenAsync(scope, issuerId, community.Id);
-        await JoinAsync(scope, candidateId, qrToken);
-        var candidate = await CertifyAsync(scope, issuerId, candidateId, community.Id);
-
-        var graph = Value<TrustGraphDto>(
-            (await Certification(scope, issuerId).GetTrustGraph(community.Id, default)).Result!);
-
-        graph.Vertices.Count.ShouldBe(2);
-        graph.Vertices.ShouldAllBe(v => v.Username != "");
-        var edge = graph.Edges.Single(e => e.CandidateMembershipId == candidate.Member.MembershipId);
-        graph.Vertices.ShouldContain(v => v.MembershipId == edge.IssuerMembershipId);
     }
 }

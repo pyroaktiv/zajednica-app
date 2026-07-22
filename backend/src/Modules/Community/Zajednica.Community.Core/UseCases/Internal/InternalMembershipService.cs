@@ -16,16 +16,15 @@ public sealed class InternalMembershipService(
     MembershipBanService ban) : IInternalMembershipService
 {
     public async Task<MembershipContextDto?> GetContextAsync(Guid accountId, Guid communityId, CancellationToken ct = default) =>
-        (await memberships.GetAsync(accountId, communityId, ct))?.ToContextDto(DateTime.UtcNow);
+        (await memberships.GetAsync(accountId, communityId, ct))?.ToContextDto();
 
     public async Task<IReadOnlyList<MembershipContextDto>> GetContextsAsync(IReadOnlyCollection<Guid> membershipIds, CancellationToken ct = default)
     {
         if (membershipIds.Count == 0)
             return [];
 
-        var now = DateTime.UtcNow;
         var found = await memberships.GetManyByIdsAsync(membershipIds, ct);
-        return found.Select(m => m.ToContextDto(now)).ToList();
+        return found.Select(m => m.ToContextDto()).ToList();
     }
 
     public Task<int> GetConfirmedCountAsync(Guid communityId, CancellationToken ct = default) =>
@@ -39,16 +38,6 @@ public sealed class InternalMembershipService(
         var found = await memberships.GetManyByIdsAsync(membershipIds, ct);
         return found.Count == membershipIds.Distinct().Count()
                && found.All(m => m.IsActive() && m.IsConfirmed());
-    }
-
-    public async Task MuteAsync(Guid membershipId, int days, CancellationToken ct = default)
-    {
-        var membership = await Require(membershipId, ct);
-
-        membership.Mute(DateTime.UtcNow.AddDays(days));
-        await memberships.UpdateAsync(membership, ct);
-
-        await PushRolesChanged(membership, ct);
     }
 
     public async Task BanAsync(Guid membershipId, Guid intentId, CancellationToken ct = default)

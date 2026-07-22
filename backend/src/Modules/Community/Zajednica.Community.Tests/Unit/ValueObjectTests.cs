@@ -23,16 +23,16 @@ public class ValueObjectTests
     }
 
     [Theory]
-    [InlineData("1234567")]   // 7 digits
-    [InlineData("123456789")] // 9 digits
-    [InlineData("1234567a")]  // non-digit
+    [InlineData("1234567")]
+    [InlineData("123456789")]
+    [InlineData("1234567a")]
     public void RegistrationNumber_requires_exactly_8_digits(string value)
         => Should.Throw<EntityValidationException>(() => new RegistrationNumber(value));
 
     [Theory]
-    [InlineData("12345678")]   // 8 digits
-    [InlineData("1234567890")] // 10 digits
-    [InlineData("12345678b")]  // non-digit
+    [InlineData("12345678")]
+    [InlineData("1234567890")]
+    [InlineData("12345678b")]
     public void TaxId_requires_exactly_9_digits(string value)
         => Should.Throw<EntityValidationException>(() => new TaxId(value));
 

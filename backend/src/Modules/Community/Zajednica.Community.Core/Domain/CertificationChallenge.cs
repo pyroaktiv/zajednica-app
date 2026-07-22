@@ -10,7 +10,6 @@ public class CertificationChallenge : AggregateRoot
     public string Token { get; private set; } = null!;
     public DateTime ExpiresAt { get; private set; }
 
-    // EF
     private CertificationChallenge() { }
 
     public CertificationChallenge(Guid communityId, Guid issuerMembershipId, string token, DateTime expiresAt)

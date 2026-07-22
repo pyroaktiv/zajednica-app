@@ -2,13 +2,11 @@ using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.BuildingBlocks.Core.Notifications;
 using Zajednica.BuildingBlocks.Core.Realtime;
 using Zajednica.BuildingBlocks.Core.Security;
-using Zajednica.Community.Api.Dto;
+using Zajednica.Community.Api.Dto.Certification;
 using Zajednica.Community.Api.Public;
 using Zajednica.Community.Core.Domain;
 using Zajednica.Community.Core.Domain.RepositoryInterfaces;
 using Zajednica.Community.Core.Mappers;
-using Zajednica.Identity.Api.Internal;
-using Zajednica.Identity.Api.Internal.Dto;
 using DomainCertificationService = Zajednica.Community.Core.Domain.CertificationService;
 
 namespace Zajednica.Community.Core.UseCases;
@@ -17,7 +15,6 @@ public sealed class CertificationService(
     ICertificationChallengeRepository challenges,
     ICertificateRepository certificates,
     IMembershipRepository memberships,
-    IInternalAccountService accounts,
     ISecureTokenGenerator tokens,
     INotificationSender notifications,
     IRealtimePusher realtime,
@@ -50,7 +47,7 @@ public sealed class CertificationService(
         await challenges.RemoveAsync(challenge, ct);
     }
 
-    public async Task<MembershipDto> ConfirmAsync(Guid accountId, ConfirmCertificationRequest request, CancellationToken ct = default)
+    public async Task<CertificationResultDto> ConfirmAsync(Guid accountId, ConfirmCertificationRequest request, CancellationToken ct = default)
     {
         var now = DateTime.UtcNow;
         var challenge = await challenges.GetByTokenAsync(request.Token, ct)
@@ -80,23 +77,6 @@ public sealed class CertificationService(
         await notifications.SendAsync(new NotificationRequest(
             accountId, "Potvrda članstva", "Vaše članstvo u zajednici je potvrđeno.", NotificationPriority.Default), ct);
 
-        return candidate.ToDto(await accounts.GetProfileAsync(accountId, ct));
-    }
-
-    public async Task<TrustGraphDto> GetTrustGraphAsync(Guid accountId, Guid communityId, CancellationToken ct = default)
-    {
-        await access.RequireConfirmedAsync(accountId, communityId, ct);
-
-        var confirmed = (await memberships.GetByCommunityAsync(communityId, ct))
-            .Where(m => m.IsConfirmed())
-            .ToList();
-        var edges = await certificates.GetByCommunityAsync(communityId, ct);
-
-        var profiles = confirmed.Count == 0
-            ? new Dictionary<Guid, AccountProfileDto>()
-            : (await accounts.GetProfilesAsync(confirmed.Select(m => m.AccountId).Distinct().ToList(), ct))
-                .ToDictionary(p => p.AccountId);
-
-        return CertificationMappers.ToTrustGraph(confirmed, edges, profiles);
+        return candidate.ToCertificationResultDto(certificate.Date);
     }
 }

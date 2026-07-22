@@ -10,7 +10,6 @@ public class BlacklistEntry : AggregateRoot
     public Guid? IntentId { get; private set; }
     public DateTime Date { get; private set; }
 
-    // EF
     private BlacklistEntry() { }
 
     public BlacklistEntry(Guid communityId, Guid accountId, DateTime date, Guid? intentId = null)

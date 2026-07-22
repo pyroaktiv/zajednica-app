@@ -1,5 +1,5 @@
 using Zajednica.BuildingBlocks.Core.UseCases;
-using Zajednica.Community.Api.Dto;
+using Zajednica.Community.Api.Dto.Documents;
 
 namespace Zajednica.Community.Api.Public;
 

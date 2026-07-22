@@ -1,7 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
-using Zajednica.Community.Api.Dto;
+using Zajednica.Community.Api.Dto.Communities;
+using Zajednica.Community.Api.Dto.Memberships;
 using Zajednica.Community.Api.Internal;
 using Zajednica.Community.Core.Domain;
 
@@ -26,11 +27,11 @@ public class MembershipRoleTests : BaseCommunityIntegrationTest
         await JoinAsync(scope, memberId, qrToken);
         var member = await CertifyAsync(scope, issuerId, memberId, community.Id);
 
-        await Members(scope, issuerId).GrantIssuer(community.Id, member.Member.MembershipId, default);
+        await Members(scope, issuerId).GrantIssuer(community.Id, member.MembershipId, default);
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
-        db.Memberships.Single(m => m.Id == member.Member.MembershipId)
+        db.Memberships.Single(m => m.Id == member.MembershipId)
             .HasRole(CommunityRole.Issuer).ShouldBeTrue();
     }
 
@@ -46,7 +47,7 @@ public class MembershipRoleTests : BaseCommunityIntegrationTest
         var member = await CertifyAsync(scope, issuerId, memberId, community.Id);
 
         await Should.ThrowAsync<ForbiddenException>(() =>
-            Members(scope, memberId).GrantIssuer(community.Id, member.Member.MembershipId, default));
+            Members(scope, memberId).GrantIssuer(community.Id, member.MembershipId, default));
     }
 
     [Fact]
@@ -65,11 +66,11 @@ public class MembershipRoleTests : BaseCommunityIntegrationTest
         db.ChangeTracker.Clear();
 
         await Internal(scope).ElectManagerAsync(first.Id);
-        await Internal(scope).ElectManagerAsync(second.Member.MembershipId);
+        await Internal(scope).ElectManagerAsync(second.MembershipId);
 
         db.ChangeTracker.Clear();
         db.Memberships.Single(m => m.Id == first.Id).HasRole(CommunityRole.Manager).ShouldBeFalse();
-        db.Memberships.Single(m => m.Id == second.Member.MembershipId).HasRole(CommunityRole.Manager).ShouldBeTrue();
+        db.Memberships.Single(m => m.Id == second.MembershipId).HasRole(CommunityRole.Manager).ShouldBeTrue();
     }
 
     [Fact]
@@ -84,7 +85,7 @@ public class MembershipRoleTests : BaseCommunityIntegrationTest
         db.ChangeTracker.Clear();
         await Internal(scope).ElectManagerAsync(membership.Id);
 
-        var updated = Value<CommunityDto>((await Communities(scope, accountId)
+        var updated = Value<CommunityDetailsDto>((await Communities(scope, accountId)
             .Update(community.Id, new UpdateCommunityRequest("Zgrada 2", community.Address, "12345678", "123456789", "160-1"), default)).Result!);
 
         updated.Name.ShouldBe("Zgrada 2");
@@ -102,11 +103,11 @@ public class MembershipRoleTests : BaseCommunityIntegrationTest
         var qrToken = await QrTokenAsync(scope, issuerId, community.Id);
         await JoinAsync(scope, newcomerId, qrToken);
 
-        var unconfirmed = Value<IReadOnlyList<CommunityMemberDto>>(
+        var unconfirmed = Value<IReadOnlyList<MemberSummaryDto>>(
             (await Members(scope, issuerId).GetUnconfirmed(community.Id, default)).Result!);
         unconfirmed.Select(m => m.AccountId).ShouldContain(newcomerId);
 
-        var issuers = Value<IReadOnlyList<CommunityMemberDto>>(
+        var issuers = Value<IReadOnlyList<MemberSummaryDto>>(
             (await Members(scope, newcomerId).GetIssuers(community.Id, default)).Result!);
         issuers.Select(m => m.AccountId).ShouldBe(new[] { issuerId });
 

@@ -19,7 +19,7 @@ public class MembershipBanServiceTests
         var entry = _service.Ban(member, intentId, Now);
 
         member.State.ShouldBe(MembershipState.Banned);
-        member.Roles.ShouldBeEmpty();
+        member.HasRole(CommunityRole.Issuer).ShouldBeTrue();
         entry.AccountId.ShouldBe(member.AccountId);
         entry.CommunityId.ShouldBe(member.CommunityId);
         entry.IntentId.ShouldBe(intentId);

@@ -1,6 +1,6 @@
-namespace Zajednica.Community.Api.Dto;
+namespace Zajednica.Community.Api.Dto.Communities;
 
-public record CreateCommunityRequest(
+public record UpdateCommunityRequest(
     string Name,
     AddressDto Address,
     string? RegistrationNumber,

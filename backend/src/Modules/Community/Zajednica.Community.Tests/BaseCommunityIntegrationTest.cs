@@ -2,7 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Zajednica.Api.Controllers.Community;
 using Zajednica.BuildingBlocks.Tests;
-using Zajednica.Community.Api.Dto;
+using Zajednica.Community.Api.Dto.Certification;
+using Zajednica.Community.Api.Dto.Communities;
 using Zajednica.Community.Api.Public;
 using Zajednica.Community.Infrastructure.Database;
 using Zajednica.Identity.Core.Domain;
@@ -40,27 +41,27 @@ public class BaseCommunityIntegrationTest : BaseWebIntegrationTest<CommunityTest
         return account.Id;
     }
 
-    protected static async Task<CommunityDto> CreateCommunityAsync(IServiceScope scope, Guid accountId)
+    protected static async Task<CommunityDetailsDto> CreateCommunityAsync(IServiceScope scope, Guid accountId)
     {
         var request = new CreateCommunityRequest(
             $"Zgrada {Guid.NewGuid():N}", new AddressDto("Bulevar", "12", 45.25m, 19.83m), null, null, null);
-        return Value<CommunityDto>((await Communities(scope, accountId).Create(request, default)).Result!);
+        return Value<CommunityDetailsDto>((await Communities(scope, accountId).Create(request, default)).Result!);
     }
 
-    protected static async Task<MembershipDto> JoinAsync(IServiceScope scope, Guid accountId, string qrToken) =>
-        Value<MembershipDto>((await Communities(scope, accountId).Join(new JoinCommunityRequest(qrToken), default)).Result!);
+    protected static async Task<JoinedCommunityDto> JoinAsync(IServiceScope scope, Guid accountId, string qrToken) =>
+        Value<JoinedCommunityDto>((await Communities(scope, accountId).Join(new JoinCommunityRequest(qrToken), default)).Result!);
 
     protected static async Task<string> QrTokenAsync(IServiceScope scope, Guid ownerAccountId, Guid communityId) =>
         Value<CommunityQrDto>((await Communities(scope, ownerAccountId).GetQr(communityId, default)).Result!).QrToken;
 
-    protected static async Task<MembershipDto> CertifyAsync(
+    protected static async Task<CertificationResultDto> CertifyAsync(
         IServiceScope scope, Guid issuerAccountId, Guid candidateAccountId, Guid communityId)
     {
         var challenge = Value<CertificationChallengeDto>(
             (await Certification(scope, issuerAccountId).CreateChallenge(communityId, default)).Result!);
         var result = await Certification(scope, candidateAccountId)
             .Confirm(new ConfirmCertificationRequest(challenge.Token), default);
-        return Value<MembershipDto>(result.Result!);
+        return Value<CertificationResultDto>(result.Result!);
     }
 
     protected static T Value<T>(IActionResult result) => (T)((ObjectResult)result).Value!;

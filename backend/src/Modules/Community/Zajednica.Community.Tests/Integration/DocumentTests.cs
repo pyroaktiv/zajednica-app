@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.BuildingBlocks.Core.UseCases;
-using Zajednica.Community.Api.Dto;
+using Zajednica.Community.Api.Dto.Documents;
 using Zajednica.Community.Api.Internal;
 
 namespace Zajednica.Community.Tests.Integration;

@@ -9,7 +9,6 @@ public class Address : ValueObject
     public string StreetNumber { get; private set; } = null!;
     public Coordinates? Coordinates { get; private set; }
 
-    // EF
     private Address() { }
 
     public Address(string streetName, string streetNumber, Coordinates? coordinates = null)

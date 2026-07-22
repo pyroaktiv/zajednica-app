@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Zajednica.Community.Api.Dto;
+using Zajednica.Community.Api.Dto.Certification;
+using Zajednica.Community.Api.Dto.Memberships;
 using Zajednica.Community.Api.Public;
 using Zajednica.Identity.Infrastructure.Authentication;
 
@@ -32,14 +33,8 @@ public sealed class CertificationController : ControllerBase
     }
 
     [HttpPost("certification-challenges/confirm")]
-    public async Task<ActionResult<MembershipDto>> Confirm([FromBody] ConfirmCertificationRequest request, CancellationToken ct)
+    public async Task<ActionResult<MemberProfileDto>> Confirm([FromBody] ConfirmCertificationRequest request, CancellationToken ct)
     {
         return Ok(await _certification.ConfirmAsync(User.AccountId(), request, ct));
-    }
-
-    [HttpGet("{communityId:guid}/trust-graph")]
-    public async Task<ActionResult<TrustGraphDto>> GetTrustGraph(Guid communityId, CancellationToken ct)
-    {
-        return Ok(await _certification.GetTrustGraphAsync(User.AccountId(), communityId, ct));
     }
 }

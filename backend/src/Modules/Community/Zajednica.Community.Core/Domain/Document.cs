@@ -11,7 +11,6 @@ public class Document : AggregateRoot
     public string Url { get; private set; } = null!;
     public DateTime Date { get; private set; }
 
-    // EF
     private Document() { }
 
     public Document(Guid communityId, Guid postedByMembershipId, string name, string url, DateTime date)

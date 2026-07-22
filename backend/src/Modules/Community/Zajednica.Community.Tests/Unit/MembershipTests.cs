@@ -91,7 +91,7 @@ public class MembershipTests
     }
 
     [Fact]
-    public void Leave_preserves_confirmation_and_stars_but_drops_all_roles()
+    public void Leave_preserves_confirmation_stars_and_roles()
     {
         var member = ConfirmedMember();
         member.Grant(CommunityRole.Manager, null, Now);
@@ -101,13 +101,13 @@ public class MembershipTests
 
         member.State.ShouldBe(MembershipState.Left);
         member.LeftAt.ShouldBe(Now);
-        member.Roles.ShouldBeEmpty();
+        member.HasRole(CommunityRole.Manager).ShouldBeTrue();
         member.CertificationStatus.ShouldBe(CertificationStatus.Confirmed);
         member.Stars.ShouldBe(50);
     }
 
     [Fact]
-    public void Ban_drops_all_roles()
+    public void Ban_marks_the_membership_banned_and_keeps_its_roles()
     {
         var member = ConfirmedMember();
         member.Grant(CommunityRole.Manager, null, Now);
@@ -115,11 +115,11 @@ public class MembershipTests
         member.Ban(Now);
 
         member.State.ShouldBe(MembershipState.Banned);
-        member.Roles.ShouldBeEmpty();
+        member.HasRole(CommunityRole.Manager).ShouldBeTrue();
     }
 
     [Fact]
-    public void Rejoin_restores_an_active_membership_without_its_former_roles()
+    public void Rejoin_restores_an_active_membership_with_its_former_roles()
     {
         var member = ConfirmedMember();
         member.Grant(CommunityRole.Issuer, null, Now);
@@ -129,7 +129,7 @@ public class MembershipTests
 
         member.IsActive().ShouldBeTrue();
         member.LeftAt.ShouldBeNull();
-        member.Roles.ShouldBeEmpty();
+        member.HasRole(CommunityRole.Issuer).ShouldBeTrue();
     }
 
     [Fact]
@@ -159,15 +159,5 @@ public class MembershipTests
         member.Stars.ShouldBe(250);
 
         Should.Throw<EntityValidationException>(() => member.AddStars(-1));
-    }
-
-    [Fact]
-    public void IsMuted_is_true_only_before_the_deadline()
-    {
-        var member = NewMember();
-        member.Mute(Now.AddDays(7));
-
-        member.IsMuted(Now.AddDays(1)).ShouldBeTrue();
-        member.IsMuted(Now.AddDays(8)).ShouldBeFalse();
     }
 }

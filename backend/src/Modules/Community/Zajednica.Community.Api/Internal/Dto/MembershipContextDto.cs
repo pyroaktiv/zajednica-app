@@ -6,5 +6,4 @@ public record MembershipContextDto(
     Guid CommunityId,
     bool IsConfirmed,
     bool IsActive,
-    bool IsMuted,
     IReadOnlyList<string> Roles);

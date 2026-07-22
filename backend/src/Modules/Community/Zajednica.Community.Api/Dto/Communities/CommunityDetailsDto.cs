@@ -1,6 +1,6 @@
-namespace Zajednica.Community.Api.Dto;
+namespace Zajednica.Community.Api.Dto.Communities;
 
-public record CommunityDto(
+public record CommunityDetailsDto(
     Guid Id,
     string Name,
     AddressDto Address,

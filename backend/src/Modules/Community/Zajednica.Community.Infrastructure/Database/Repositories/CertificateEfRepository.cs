@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Zajednica.Community.Core.Domain;
 using Zajednica.Community.Core.Domain.RepositoryInterfaces;
 
@@ -11,7 +10,4 @@ internal sealed class CertificateEfRepository(CommunityDbContext db) : ICertific
         db.Certificates.Add(certificate);
         return db.SaveChangesAsync(ct);
     }
-
-    public async Task<IReadOnlyList<Certificate>> GetByCommunityAsync(Guid communityId, CancellationToken ct = default) =>
-        await db.Certificates.Where(c => c.CommunityId == communityId).ToListAsync(ct);
 }

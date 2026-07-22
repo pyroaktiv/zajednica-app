@@ -13,12 +13,10 @@ public class Membership : AggregateRoot
     public CertificationStatus CertificationStatus { get; private set; }
     public MembershipState State { get; private set; }
     public DateTime? LeftAt { get; private set; }
-    public DateTime? MutedUntil { get; private set; }
     public int Stars { get; private set; }
     public DateTime DateJoined { get; private set; }
     public IReadOnlyList<MembershipRole> Roles => _roles;
 
-    // EF
     private Membership() { }
 
     public Membership(Guid accountId, Guid communityId, DateTime now)
@@ -36,7 +34,6 @@ public class Membership : AggregateRoot
         DateJoined = now;
     }
 
-    // The community creator joins confirmed and holding the issuer role, nothing more.
     public static Membership Creator(Guid accountId, Guid communityId, DateTime now)
     {
         var membership = new Membership(accountId, communityId, now);
@@ -63,7 +60,6 @@ public class Membership : AggregateRoot
 
         State = MembershipState.Left;
         LeftAt = now;
-        _roles.Clear();
     }
 
     public void Rejoin()
@@ -82,10 +78,7 @@ public class Membership : AggregateRoot
 
         State = MembershipState.Banned;
         LeftAt = now;
-        _roles.Clear();
     }
-
-    public void Mute(DateTime until) => MutedUntil = until;
 
     public void AddStars(int amount)
     {
@@ -120,6 +113,4 @@ public class Membership : AggregateRoot
     public bool IsActive() => State == MembershipState.Active;
 
     public bool IsConfirmed() => CertificationStatus == CertificationStatus.Confirmed;
-
-    public bool IsMuted(DateTime now) => MutedUntil.HasValue && now < MutedUntil.Value;
 }

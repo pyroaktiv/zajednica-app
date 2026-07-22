@@ -1,7 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
-using Zajednica.Community.Api.Dto;
+using Zajednica.Community.Api.Dto.Communities;
+using Zajednica.Community.Api.Dto.Memberships;
 using Zajednica.Community.Core.Domain;
 
 namespace Zajednica.Community.Tests.Integration;
@@ -49,12 +50,20 @@ public class CommunityLifecycleTests : BaseCommunityIntegrationTest
         var community = await CreateCommunityAsync(scope, creatorId);
         var qrToken = await QrTokenAsync(scope, creatorId, community.Id);
 
-        var membership = await JoinAsync(scope, newcomerId, qrToken);
+        var joined = await JoinAsync(scope, newcomerId, qrToken);
 
-        membership.Member.IsConfirmed.ShouldBeFalse();
-        membership.Member.Stars.ShouldBeNull();
-        membership.Member.Roles.ShouldBeEmpty();
-        membership.State.ShouldBe(MembershipState.Active.ToString());
+        joined.CommunityId.ShouldBe(community.Id);
+        joined.CommunityName.ShouldBe(community.Name);
+        joined.IsConfirmed.ShouldBeFalse();
+
+        var mine = Value<MyMembershipDto>(
+            (await Members(scope, newcomerId).GetMine(community.Id, default)).Result!);
+        mine.Stars.ShouldBeNull();
+        mine.Roles.ShouldBeEmpty();
+
+        var db = Db(scope);
+        db.ChangeTracker.Clear();
+        db.Memberships.Single(m => m.Id == joined.MembershipId).State.ShouldBe(MembershipState.Active);
     }
 
     [Fact]
@@ -71,12 +80,15 @@ public class CommunityLifecycleTests : BaseCommunityIntegrationTest
         await Communities(scope, memberId).Leave(community.Id, default);
         var rejoined = await JoinAsync(scope, memberId, qrToken);
 
-        rejoined.Member.IsConfirmed.ShouldBeTrue();
-        rejoined.State.ShouldBe(MembershipState.Active.ToString());
+        rejoined.IsConfirmed.ShouldBeTrue();
+
+        var db = Db(scope);
+        db.ChangeTracker.Clear();
+        db.Memberships.Single(m => m.Id == rejoined.MembershipId).State.ShouldBe(MembershipState.Active);
     }
 
     [Fact]
-    public async Task Leaving_strips_every_role_the_member_held()
+    public async Task Leaving_keeps_every_role_the_member_held()
     {
         using var scope = Factory.Services.CreateScope();
         var creatorId = NewAccount(scope);
@@ -87,7 +99,7 @@ public class CommunityLifecycleTests : BaseCommunityIntegrationTest
         var db = Db(scope);
         db.ChangeTracker.Clear();
         var membership = db.Memberships.Single(m => m.AccountId == creatorId && m.CommunityId == community.Id);
-        membership.Roles.ShouldBeEmpty();
+        membership.HasRole(CommunityRole.Issuer).ShouldBeTrue();
         membership.State.ShouldBe(MembershipState.Left);
     }
 
