@@ -1,12 +1,21 @@
 using Microsoft.EntityFrameworkCore;
+using Zajednica.Feed.Core.Domain.Intents;
+using Zajednica.Feed.Core.Domain.Posts;
+using Zajednica.Feed.Infrastructure.Database.EventStore;
 
 namespace Zajednica.Feed.Infrastructure.Database;
 
 public class FeedDbContext(DbContextOptions<FeedDbContext> options) : DbContext(options)
 {
+    public DbSet<Post> Posts => Set<Post>();
+    public DbSet<Comment> Comments => Set<Comment>();
+    public DbSet<StoredEvent> IntentEvents => Set<StoredEvent>();
+    public DbSet<IntentView> IntentViews => Set<IntentView>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("feed");
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(FeedDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
     }
 }
