@@ -9,7 +9,6 @@ public class EmailVerificationToken : AggregateRoot
     public string Token { get; private set; } = null!;
     public DateTime ExpiresAt { get; private set; }
 
-    // EF
     private EmailVerificationToken() { }
 
     public EmailVerificationToken(Guid accountId, string token, DateTime expiresAt)

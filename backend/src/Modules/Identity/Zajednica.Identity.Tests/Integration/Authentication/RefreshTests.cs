@@ -46,7 +46,6 @@ public class RefreshTests : BaseIdentityIntegrationTest
         var issued = await LoginAsync(scope, email);
         await Controller(scope).Refresh(new RefreshRequest(issued.RefreshToken), default);
 
-        // Presenting the already-rotated token again must fail (single-use).
         await Should.ThrowAsync<EntityValidationException>(() =>
             Controller(scope).Refresh(new RefreshRequest(issued.RefreshToken), default));
     }
@@ -68,23 +67,5 @@ public class RefreshTests : BaseIdentityIntegrationTest
 
         db.ChangeTracker.Clear();
         db.RefreshTokens.Any(t => t.Token == tokenValue).ShouldBeFalse();
-    }
-
-    [Fact]
-    public async Task Rejects_refresh_for_a_deleted_account_and_consumes_the_token()
-    {
-        using var scope = Factory.Services.CreateScope();
-        var (email, accountId) = await RegisterVerifiedAsync(scope);
-        var issued = await LoginAsync(scope, email);
-        var db = Db(scope);
-        db.Accounts.Single(a => a.Id == accountId).Delete();
-        await db.SaveChangesAsync();
-        db.ChangeTracker.Clear();
-
-        await Should.ThrowAsync<EntityValidationException>(() =>
-            Controller(scope).Refresh(new RefreshRequest(issued.RefreshToken), default));
-
-        db.ChangeTracker.Clear();
-        db.RefreshTokens.Any(t => t.Token == issued.RefreshToken).ShouldBeFalse();
     }
 }

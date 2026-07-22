@@ -21,13 +21,12 @@ public static class IdentityModule
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
         services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.SectionName));
-        // Expose the bound options as the Core-facing settings port.
         services.AddSingleton<IAuthTokenSettings>(sp => sp.GetRequiredService<IOptions<AuthOptions>>().Value);
 
         services.AddDbContext<IdentityDbContext>(o =>
             o.UseNpgsql(connectionString, npg => npg.MigrationsHistoryTable("__EFMigrationsHistory", "identity")));
 
-        AddPersistence(services, configuration);
+        AddPersistence(services);
         AddAuthentication(services);
         AddEmail(services, configuration);
         AddApplicationServices(services);
@@ -42,7 +41,7 @@ public static class IdentityModule
         services.AddScoped<IInternalAccountService, InternalAccountService>();
     }
     
-    private static void AddPersistence(IServiceCollection services, IConfiguration configuration)
+    private static void AddPersistence(IServiceCollection services)
     {
         services.AddScoped<IAccountRepository, AccountEfRepository>();
         services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenEfRepository>();

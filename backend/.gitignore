@@ -481,5 +481,5 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
-# Migrations are committed on purpose: they ship inside each module's assembly, so a deployment
-# can apply them. The FTN/Explorer template ignores them because it is never deployed.
+#Migrations - not committed.
+src/Modules/*/Zajednica.*.Infrastructure/Migrations/

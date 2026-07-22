@@ -10,7 +10,6 @@ public class Profile : Entity
     public string? Email { get; private set; }
     public string? Phone { get; private set; }
 
-    // EF
     private Profile() { }
 
     internal Profile(string? firstName, string? lastName, string? phone, string? contactEmail, string? imageUrl)
@@ -24,8 +23,6 @@ public class Profile : Entity
         Email = Clean(contactEmail);
         ImageUrl = Clean(imageUrl);
     }
-    
-    public bool HasManagerData() => FirstName is not null && LastName is not null && Phone is not null;
 
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

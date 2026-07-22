@@ -8,9 +8,6 @@ using Zajednica.Identity.Core.UseCases;
 
 namespace Zajednica.Identity.Tests.Unit;
 
-// Interaction tests: the profile flow is driven with the ports mocked, so we assert on the side
-// effects that matter — a single persist on update, and none on a lookup miss — rather than
-// re-checking the domain cleaning rules (those live with the Profile/Account domain tests).
 public class ProfileServiceTests
 {
     private readonly Mock<IAccountRepository> _accounts = new();

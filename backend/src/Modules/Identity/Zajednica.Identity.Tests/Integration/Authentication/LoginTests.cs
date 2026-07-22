@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.Identity.Api.Dto;
-using Zajednica.Identity.Core.Domain;
 
 namespace Zajednica.Identity.Tests.Integration.Authentication;
 
@@ -27,7 +26,6 @@ public class LoginTests : BaseIdentityIntegrationTest
         jwt.Subject.ShouldBe(accountId.ToString());
         jwt.Claims.Single(c => c.Type == "username").Value.ShouldBe(email);
 
-        // The refresh token was persisted so it can later be rotated.
         var db = Db(scope);
         db.ChangeTracker.Clear();
         db.RefreshTokens.Count(t => t.Token == tokens.RefreshToken && t.AccountId == accountId).ShouldBe(1);
@@ -39,7 +37,6 @@ public class LoginTests : BaseIdentityIntegrationTest
         using var scope = Factory.Services.CreateScope();
         var username = $"user-{Guid.NewGuid():N}";
         var email = UniqueEmail();
-        // Register an account whose username differs from the email, then log in by username.
         await Controller(scope).Register(new RegisterAccountRequest(username, email, ValidPassword, null, null, null, null), default);
         var db = Db(scope);
         var accountId = db.Accounts.Single(a => a.Email == email).Id;
@@ -76,19 +73,5 @@ public class LoginTests : BaseIdentityIntegrationTest
         using var scope = Factory.Services.CreateScope();
 
         await Should.ThrowAsync<EntityValidationException>(() => LoginAsync(scope, "nobody@test.local"));
-    }
-
-    [Fact]
-    public async Task Rejects_login_for_a_deleted_account()
-    {
-        using var scope = Factory.Services.CreateScope();
-        var (email, accountId) = await RegisterVerifiedAsync(scope);
-        var db = Db(scope);
-        var account = db.Accounts.Single(a => a.Id == accountId);
-        account.Delete(); // soft delete
-        await db.SaveChangesAsync();
-        db.ChangeTracker.Clear();
-
-        await Should.ThrowAsync<EntityValidationException>(() => LoginAsync(scope, email));
     }
 }

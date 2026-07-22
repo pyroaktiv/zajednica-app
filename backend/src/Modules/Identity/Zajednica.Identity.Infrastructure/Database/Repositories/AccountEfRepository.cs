@@ -20,7 +20,7 @@ internal sealed class AccountEfRepository(IdentityDbContext db) : IAccountReposi
     public Task<Account?> GetByUsernameOrEmailAsync(string usernameOrEmail, CancellationToken ct = default)
     {
         var value = usernameOrEmail.Trim();
-        var email = value.ToLowerInvariant(); // email is stored normalized to lowercase
+        var email = value.ToLowerInvariant();
         return db.Accounts.FirstOrDefaultAsync(a => a.Username == value || a.Email == email, ct);
     }
 

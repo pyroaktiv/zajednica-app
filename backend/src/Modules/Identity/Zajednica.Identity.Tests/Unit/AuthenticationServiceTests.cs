@@ -9,9 +9,6 @@ using Zajednica.Identity.Core.UseCases;
 
 namespace Zajednica.Identity.Tests.Unit;
 
-// Interaction tests: the register flow is driven with every port mocked, so we assert on the
-// side effect that matters — whether the IEmailSender infrastructure port is actually invoked —
-// rather than re-checking domain validation rules (those live in the domain/integration tests).
 public class AuthenticationServiceTests
 {
     private readonly Mock<IAccountRepository> _accounts = new();
@@ -25,7 +22,6 @@ public class AuthenticationServiceTests
 
     public AuthenticationServiceTests()
     {
-        // Only the ports whose output the flow depends on need a return value; the rest are loose.
         _passwordHasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("salt.hash");
         _secureTokens.Setup(t => t.Generate()).Returns("verification-token");
         _accounts.Setup(r => r.ExistsByUsernameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);

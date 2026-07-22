@@ -75,7 +75,7 @@ public sealed class AuthenticationService : IAuthenticationService
         var account = await _accounts.GetByIdAsync(token.AccountId, ct)
             ?? throw new NotFoundException("Account not found.");
 
-        await _emailTokens.RemoveAsync(token, ct); // single-use: consumed even when expired
+        await _emailTokens.RemoveAsync(token, ct);
 
         if (!token.IsValid(now))
             throw new EntityValidationException("Verification token has expired.");
@@ -87,10 +87,8 @@ public sealed class AuthenticationService : IAuthenticationService
     public async Task<AuthTokens> LoginAsync(LoginRequest request, CancellationToken ct = default)
     {
         var account = await _accounts.GetByUsernameOrEmailAsync(request.UsernameOrEmail, ct);
-        
-        if (account is null
-            || account.Status == AccountStatus.Deleted
-            || !_passwordHasher.Verify(request.Password, account.PasswordHash))
+
+        if (account is null || !_passwordHasher.Verify(request.Password, account.PasswordHash))
             throw new EntityValidationException("Invalid username/email or password.");
 
         if (!account.IsEmailVerified)
@@ -106,14 +104,13 @@ public sealed class AuthenticationService : IAuthenticationService
         var current = await _refreshTokens.GetByTokenAsync(request.RefreshToken, ct)
             ?? throw new EntityValidationException("Invalid refresh token.");
 
-        await _refreshTokens.RemoveAsync(current, ct); // rotation: the presented token is single-use
+        await _refreshTokens.RemoveAsync(current, ct);
 
         if (!current.IsValid(now))
             throw new EntityValidationException("Refresh token has expired.");
 
-        var account = await _accounts.GetByIdAsync(current.AccountId, ct);
-        if (account is null || account.Status == AccountStatus.Deleted)
-            throw new EntityValidationException("Invalid refresh token.");
+        var account = await _accounts.GetByIdAsync(current.AccountId, ct)
+            ?? throw new EntityValidationException("Invalid refresh token.");
 
         return await IssueTokensAsync(account, now, ct);
     }
@@ -122,7 +119,7 @@ public sealed class AuthenticationService : IAuthenticationService
     {
         var token = await _refreshTokens.GetByTokenAsync(request.RefreshToken, ct);
         if (token is null)
-            return; // idempotent: an unknown / already-revoked token is a no-op
+            return;
 
         await _refreshTokens.RemoveAsync(token, ct);
     }

@@ -9,7 +9,6 @@ public class RefreshToken : AggregateRoot
     public string Token { get; private set; } = null!;
     public DateTime ExpiresAt { get; private set; }
 
-    // EF
     private RefreshToken() { }
 
     public RefreshToken(Guid accountId, string token, DateTime expiresAt)

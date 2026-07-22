@@ -2,7 +2,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.Identity.Api.Dto;
-using Zajednica.Identity.Core.Domain;
 
 namespace Zajednica.Identity.Tests.Integration.Authentication;
 
@@ -12,7 +11,7 @@ public class RegistrationTests : BaseIdentityIntegrationTest
     public RegistrationTests(IdentityTestFactory factory) : base(factory) { }
 
     [Fact]
-    public async Task Registers_an_active_unverified_account_with_a_verification_token()
+    public async Task Registers_an_unverified_account_with_a_verification_token()
     {
         using var scope = Factory.Services.CreateScope();
         var email = UniqueEmail();
@@ -22,10 +21,8 @@ public class RegistrationTests : BaseIdentityIntegrationTest
         var db = Db(scope);
         db.ChangeTracker.Clear();
         var account = db.Accounts.Single(a => a.Email == email);
-        account.Status.ShouldBe(AccountStatus.Active);
         account.IsEmailVerified.ShouldBeFalse();
         account.Profile.ShouldBeNull();
-        // Password is stored as a PBKDF2 "salt.hash", never the plaintext.
         account.PasswordHash.ShouldNotBe(ValidPassword);
         account.PasswordHash.ShouldContain(".");
         db.EmailVerificationTokens.Count(t => t.AccountId == account.Id).ShouldBe(1);
