@@ -11,12 +11,12 @@ public class RegistrationTests : BaseIdentityIntegrationTest
     public RegistrationTests(IdentityTestFactory factory) : base(factory) { }
 
     [Fact]
-    public async Task Registers_an_unverified_account_with_a_verification_token()
+    public void Registers_an_unverified_account_with_a_verification_token()
     {
         using var scope = Factory.Services.CreateScope();
         var email = UniqueEmail();
 
-        await Controller(scope).Register(new RegisterAccountRequest(email, email, ValidPassword, null, null, null, null), default);
+        Controller(scope).Register(new RegisterAccountRequest(email, email, ValidPassword, null, null, null, null));
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
@@ -29,14 +29,13 @@ public class RegistrationTests : BaseIdentityIntegrationTest
     }
 
     [Fact]
-    public async Task Persists_optional_profile_data_when_supplied()
+    public void Persists_optional_profile_data_when_supplied()
     {
         using var scope = Factory.Services.CreateScope();
         var email = UniqueEmail();
 
-        await Controller(scope).Register(
-            new RegisterAccountRequest(email, email, ValidPassword, "Petar", "Petrović", "0601234567", "petar@contact.local"),
-            default);
+        Controller(scope).Register(
+            new RegisterAccountRequest(email, email, ValidPassword, "Petar", "Petrović", "0601234567", "petar@contact.local"));
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
@@ -49,13 +48,13 @@ public class RegistrationTests : BaseIdentityIntegrationTest
     }
 
     [Fact]
-    public async Task Rejects_a_password_shorter_than_the_minimum_and_persists_nothing()
+    public void Rejects_a_password_shorter_than_the_minimum_and_persists_nothing()
     {
         using var scope = Factory.Services.CreateScope();
         var email = UniqueEmail();
 
-        await Should.ThrowAsync<EntityValidationException>(() =>
-            Controller(scope).Register(new RegisterAccountRequest(email, email, "short", null, null, null, null), default));
+        Should.Throw<EntityValidationException>(() =>
+            Controller(scope).Register(new RegisterAccountRequest(email, email, "short", null, null, null, null)));
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
@@ -63,24 +62,24 @@ public class RegistrationTests : BaseIdentityIntegrationTest
     }
 
     [Fact]
-    public async Task Rejects_a_duplicate_username()
+    public void Rejects_a_duplicate_username()
     {
         using var scope = Factory.Services.CreateScope();
         var username = $"user-{Guid.NewGuid():N}";
-        await Controller(scope).Register(new RegisterAccountRequest(username, UniqueEmail(), ValidPassword, null, null, null, null), default);
+        Controller(scope).Register(new RegisterAccountRequest(username, UniqueEmail(), ValidPassword, null, null, null, null));
 
-        await Should.ThrowAsync<EntityValidationException>(() =>
-            Controller(scope).Register(new RegisterAccountRequest(username, UniqueEmail(), ValidPassword, null, null, null, null), default));
+        Should.Throw<EntityValidationException>(() =>
+            Controller(scope).Register(new RegisterAccountRequest(username, UniqueEmail(), ValidPassword, null, null, null, null)));
     }
 
     [Fact]
-    public async Task Rejects_a_duplicate_email()
+    public void Rejects_a_duplicate_email()
     {
         using var scope = Factory.Services.CreateScope();
         var email = UniqueEmail();
-        await Controller(scope).Register(new RegisterAccountRequest($"user-{Guid.NewGuid():N}", email, ValidPassword, null, null, null, null), default);
+        Controller(scope).Register(new RegisterAccountRequest($"user-{Guid.NewGuid():N}", email, ValidPassword, null, null, null, null));
 
-        await Should.ThrowAsync<EntityValidationException>(() =>
-            Controller(scope).Register(new RegisterAccountRequest($"user-{Guid.NewGuid():N}", email, ValidPassword, null, null, null, null), default));
+        Should.Throw<EntityValidationException>(() =>
+            Controller(scope).Register(new RegisterAccountRequest($"user-{Guid.NewGuid():N}", email, ValidPassword, null, null, null, null)));
     }
 }

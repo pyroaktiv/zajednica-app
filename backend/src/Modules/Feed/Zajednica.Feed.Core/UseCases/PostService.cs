@@ -21,98 +21,95 @@ public sealed class PostService(
 {
     private const string ManagerRole = "Manager";
 
-    public async Task<PostDto> CreateGeneralAsync(Guid accountId, Guid communityId, CreateGeneralPostRequest request,
-        CancellationToken ct = default)
+    public PostDto CreateGeneral(Guid accountId, Guid communityId, CreateGeneralPostRequest request)
     {
-        var author = await access.RequireConfirmedAsync(accountId, communityId, ct);
+        var author = access.RequireConfirmed(accountId, communityId);
 
         var post = new GeneralTopicPost(communityId, author.MembershipId, request.Text,
             PostMappers.ToKind(request.Kind), request.ImageUrls, DateTime.UtcNow);
-        await posts.AddAsync(post, ct);
+        posts.Add(post);
 
-        await AnnounceAsync(post, ct);
+        Announce(post);
 
-        return await SingleAsync(post, ct);
+        return Single(post);
     }
 
-    public async Task<PostDto> CreateHelpRequestAsync(Guid accountId, Guid communityId, CreateHelpRequestRequest request,
-        CancellationToken ct = default)
+    public PostDto CreateHelpRequest(Guid accountId, Guid communityId, CreateHelpRequestRequest request)
     {
-        var author = await access.RequireConfirmedAsync(accountId, communityId, ct);
+        var author = access.RequireConfirmed(accountId, communityId);
 
         var post = new HelpRequest(communityId, author.MembershipId, request.Text, request.ImageUrls, DateTime.UtcNow);
-        await posts.AddAsync(post, ct);
+        posts.Add(post);
 
-        await AnnounceAsync(post, ct);
+        Announce(post);
 
-        return await SingleAsync(post, ct);
+        return Single(post);
     }
 
-    public async Task<PostDto> CloseHelpRequestAsync(Guid accountId, Guid communityId, Guid postId, CancellationToken ct = default)
+    public PostDto CloseHelpRequest(Guid accountId, Guid communityId, Guid postId)
     {
-        var actor = await access.RequireConfirmedAsync(accountId, communityId, ct);
+        var actor = access.RequireConfirmed(accountId, communityId);
 
-        if (await RequireAsync(postId, communityId, ct) is not HelpRequest help)
+        if (Require(postId, communityId) is not HelpRequest help)
             throw new EntityValidationException("Only a help request can be closed for further responses.");
 
         help.Close(actor.MembershipId);
-        await posts.UpdateAsync(help, ct);
+        posts.Update(help);
 
-        await PushChangedAsync(communityId, ct);
+        PushChanged(communityId);
 
-        return await SingleAsync(help, ct);
+        return Single(help);
     }
 
-    public async Task<PostDto> GetAsync(Guid accountId, Guid communityId, Guid postId, CancellationToken ct = default)
+    public PostDto Get(Guid accountId, Guid communityId, Guid postId)
     {
-        await access.RequireConfirmedAsync(accountId, communityId, ct);
+        access.RequireConfirmed(accountId, communityId);
 
-        return await SingleAsync(await RequireAsync(postId, communityId, ct), ct);
+        return Single(Require(postId, communityId));
     }
 
-    public async Task<PagedResult<PostDto>> GetPagedAsync(Guid accountId, Guid communityId, int page, int pageSize,
-        CancellationToken ct = default)
+    public Page<PostDto> GetPage(Guid accountId, Guid communityId, DateTime? before, int limit)
     {
-        await access.RequireConfirmedAsync(accountId, communityId, ct);
+        access.RequireConfirmed(accountId, communityId);
 
-        var paged = await posts.GetPagedAsync(communityId, page, pageSize, ct);
-        var profiles = await authors.ForAsync(paged.Results.Select(p => p.AuthorMembershipId).ToList(), ct);
+        var page = posts.GetPage(communityId, before, Paging.Clamp(limit));
+        var profiles = authors.For(page.Items.Select(p => p.AuthorMembershipId).ToList());
 
-        return new PagedResult<PostDto>(paged.Results.ToDtos(profiles).ToList(), paged.TotalCount);
+        return new Page<PostDto>(page.Items.ToDtos(profiles), page.NextCursor);
     }
 
-    private async Task<Post> RequireAsync(Guid postId, Guid communityId, CancellationToken ct)
+    private Post Require(Guid postId, Guid communityId)
     {
-        var post = await posts.GetAsync(postId, ct);
+        var post = posts.Get(postId);
         if (post is null || post.CommunityId != communityId)
             throw new NotFoundException("Post not found in this community.");
 
         return post;
     }
 
-    private async Task<PostDto> SingleAsync(Post post, CancellationToken ct)
+    private PostDto Single(Post post)
     {
-        var profiles = await authors.ForAsync([post.AuthorMembershipId], ct);
+        var profiles = authors.For([post.AuthorMembershipId]);
         return post.ToDto(profiles.GetValueOrDefault(post.AuthorMembershipId));
     }
 
-    private async Task AnnounceAsync(Post post, CancellationToken ct)
+    private void Announce(Post post)
     {
         var (title, body, priority) = Channel(post);
-        var confirmed = await memberships.GetConfirmedAsync(post.CommunityId, ct);
+        var confirmed = memberships.GetConfirmed(post.CommunityId);
 
         foreach (var member in confirmed.Where(m => m.MembershipId != post.AuthorMembershipId))
-            await notifications.SendAsync(new NotificationRequest(member.AccountId, title, body, priority), ct);
+            notifications.Send(new NotificationRequest(member.AccountId, title, body, priority));
 
         if (post is GeneralTopicPost { Kind: GeneralPostKind.Problem })
         {
             var manager = confirmed.SingleOrDefault(m => m.Roles.Contains(ManagerRole));
             if (manager is not null)
-                await notifications.SendAsync(new NotificationRequest(manager.AccountId, "Prijavljen problem",
-                    "U zgradi je prijavljen problem koji traži reakciju upravnika.", NotificationPriority.Default), ct);
+                notifications.Send(new NotificationRequest(manager.AccountId, "Prijavljen problem",
+                    "U zgradi je prijavljen problem koji traži reakciju upravnika.", NotificationPriority.Default));
         }
 
-        await PushChangedAsync(post.CommunityId, ct);
+        PushChanged(post.CommunityId);
     }
 
     private static (string Title, string Body, NotificationPriority Priority) Channel(Post post) => post switch
@@ -127,7 +124,7 @@ public sealed class PostService(
             ("Nova objava", "U zajednici je objavljena nova objava.", NotificationPriority.Default)
     };
 
-    private Task PushChangedAsync(Guid communityId, CancellationToken ct) =>
-        realtime.PushToChannelAsync(Channels.Community(communityId),
-            new RealtimeMessage("feed.changed", new { communityId }), ct);
+    private void PushChanged(Guid communityId) =>
+        realtime.PushToChannel(Channels.Community(communityId),
+            new RealtimeMessage("feed.changed", new { communityId }));
 }

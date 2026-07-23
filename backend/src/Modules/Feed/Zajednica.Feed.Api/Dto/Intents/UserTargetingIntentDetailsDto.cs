@@ -1,12 +1,12 @@
 namespace Zajednica.Feed.Api.Dto.Intents;
 
-public record IntentDetailsDto(
+public record UserTargetingIntentDetailsDto(
     Guid Id,
     string Type,
     string Status,
     Guid AuthorMembershipId,
     string AuthorUsername,
-    Guid TargetMembershipId,
+    Guid? TargetMembershipId,
     string TargetUsername,
     string Text,
     DateTime DateCreated,

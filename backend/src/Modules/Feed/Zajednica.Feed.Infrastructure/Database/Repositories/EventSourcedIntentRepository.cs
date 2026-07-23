@@ -1,73 +1,70 @@
 using Microsoft.EntityFrameworkCore;
 using Zajednica.BuildingBlocks.Core.UseCases;
-using Zajednica.BuildingBlocks.Infrastructure.Database;
 using Zajednica.Feed.Core.Domain.Intents;
-using Zajednica.Feed.Core.Domain.Intents.Events;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
-using Zajednica.Feed.Infrastructure.Database.EventStore;
 
 namespace Zajednica.Feed.Infrastructure.Database.Repositories;
 
 internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRepository
 {
-    public Task AddAsync(Intent intent, CancellationToken ct = default) => AppendAsync(intent, ct);
+    public void Add(Intent intent) => Append(intent);
 
-    public Task UpdateAsync(Intent intent, CancellationToken ct = default) => AppendAsync(intent, ct);
+    public void Update(Intent intent) => Append(intent);
 
-    public async Task<Intent?> GetAsync(Guid id, CancellationToken ct = default)
+    public Intent? Get(Guid id)
     {
-        var stream = await db.IntentEvents
+        var stream = db.IntentEvents
             .AsNoTracking()
             .Where(e => e.StreamId == id)
             .OrderBy(e => e.Sequence)
-            .ToListAsync(ct);
+            .ToList();
 
-        if (stream.Count == 0)
-            return null;
-
-        return Intent.Rehydrate(id, stream.Select(e => IntentEventSerializer.Deserialize(e.Payload)).ToList());
+        return stream.Count == 0 ? null : Intent.Load(id, stream);
     }
 
-    public Task<PagedResult<IntentView>> GetPagedViewsAsync(Guid communityId, int page, int pageSize, CancellationToken ct = default) =>
+    public Page<IntentView> GetPage(Guid communityId, DateTime? before, int limit)
+    {
+        var query = db.IntentViews.AsNoTracking().Where(v => v.CommunityId == communityId);
+
+        if (before is not null)
+            query = query.Where(v => v.DateCreated < before);
+
+        var items = query
+            .OrderByDescending(v => v.DateCreated)
+            .Take(limit)
+            .ToList();
+
+        return new Page<IntentView>(items, items.Count < limit ? null : items[^1].DateCreated);
+    }
+
+    public IReadOnlyList<IntentView> GetDueViews(Guid communityId, DateTime now) =>
         db.IntentViews
             .AsNoTracking()
-            .Where(v => v.CommunityId == communityId)
-            .OrderByDescending(v => v.DateCreated)
-            .GetPaged(page, pageSize);
-
-    public async Task<IReadOnlyList<IntentView>> GetDueViewsAsync(Guid communityId, DateTime now, CancellationToken ct = default) =>
-        await db.IntentViews
-            .AsNoTracking()
             .Where(v => v.CommunityId == communityId && v.Status == IntentStatus.Open && v.Deadline <= now)
-            .ToListAsync(ct);
+            .ToList();
 
-    public async Task<IReadOnlyList<IntentView>> GetOpenViewsByTargetAsync(Guid communityId, Guid targetMembershipId,
-        CancellationToken ct = default) =>
-        await db.IntentViews
+    public IReadOnlyList<IntentView> GetOpenViewsByTarget(Guid communityId, Guid targetMembershipId) =>
+        db.IntentViews
             .AsNoTracking()
             .Where(v => v.CommunityId == communityId
                         && v.TargetMembershipId == targetMembershipId
                         && v.Status == IntentStatus.Open)
-            .ToListAsync(ct);
+            .ToList();
 
-    private async Task AppendAsync(Intent intent, CancellationToken ct)
+    private void Append(Intent intent)
     {
-        var pending = intent.DequeuePendingEvents().Cast<IntentEvent>().ToList();
-        if (pending.Count == 0)
+        if (intent.NewEvents.Count == 0)
             return;
 
-        var baseSequence = intent.Version - pending.Count;
-        for (var i = 0; i < pending.Count; i++)
-            db.IntentEvents.Add(new StoredEvent
-            {
-                StreamId = intent.Id,
-                Sequence = baseSequence + i + 1,
-                EventType = pending[i].GetType().Name,
-                Payload = IntentEventSerializer.Serialize(pending[i]),
-                OccurredAt = pending[i].OccurredAt
-            });
+        db.IntentEvents.AddRange(intent.NewEvents);
 
-        await IntentViewProjector.ProjectAsync(db, intent, ct);
-        await db.SaveChangesAsync(ct);
+        var view = db.IntentViews.FirstOrDefault(v => v.Id == intent.Id);
+        if (view is null)
+            db.IntentViews.Add(new IntentView(intent));
+        else
+            view.Update(intent);
+
+        db.SaveChanges();
+        intent.ClearNewEvents();
     }
 }

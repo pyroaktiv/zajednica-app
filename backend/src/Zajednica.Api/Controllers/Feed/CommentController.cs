@@ -20,26 +20,26 @@ public sealed class CommentController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<CommentDto>> Add(Guid communityId, Guid postId, [FromBody] AddCommentRequest request, CancellationToken ct)
+    public ActionResult<CommentDto> Add(Guid communityId, Guid postId, [FromBody] AddCommentRequest request)
     {
-        return Ok(await _comments.AddAsync(User.AccountId(), communityId, postId, request, ct));
+        return Ok(_comments.Add(User.AccountId(), communityId, postId, request));
     }
 
     [HttpPost("{commentId:guid}/replies")]
-    public async Task<ActionResult<CommentDto>> Reply(Guid communityId, Guid postId, Guid commentId, [FromBody] AddCommentRequest request, CancellationToken ct)
+    public ActionResult<CommentDto> Reply(Guid communityId, Guid postId, Guid commentId, [FromBody] AddCommentRequest request)
     {
-        return Ok(await _comments.ReplyAsync(User.AccountId(), communityId, postId, commentId, request, ct));
+        return Ok(_comments.Reply(User.AccountId(), communityId, postId, commentId, request));
     }
 
     [HttpGet]
-    public async Task<ActionResult<CursorPage<CommentDto>>> GetRoots(Guid communityId, Guid postId, [FromQuery] string? cursor, [FromQuery] int limit, CancellationToken ct)
+    public ActionResult<Page<CommentDto>> GetRoots(Guid communityId, Guid postId, [FromQuery] DateTime? after, [FromQuery] int limit)
     {
-        return Ok(await _comments.GetRootsAsync(User.AccountId(), communityId, postId, cursor, limit, ct));
+        return Ok(_comments.GetRoots(User.AccountId(), communityId, postId, after, limit));
     }
 
     [HttpGet("{commentId:guid}/replies")]
-    public async Task<ActionResult<CursorPage<CommentDto>>> GetReplies(Guid communityId, Guid postId, Guid commentId, [FromQuery] string? cursor, [FromQuery] int limit, CancellationToken ct)
+    public ActionResult<Page<CommentDto>> GetReplies(Guid communityId, Guid postId, Guid commentId, [FromQuery] DateTime? after, [FromQuery] int limit)
     {
-        return Ok(await _comments.GetRepliesAsync(User.AccountId(), communityId, postId, commentId, cursor, limit, ct));
+        return Ok(_comments.GetReplies(User.AccountId(), communityId, postId, commentId, after, limit));
     }
 }

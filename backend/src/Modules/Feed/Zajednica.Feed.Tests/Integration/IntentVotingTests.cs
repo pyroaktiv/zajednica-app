@@ -15,25 +15,25 @@ public class IntentVotingTests : BaseFeedIntegrationTest
     public IntentVotingTests(FeedTestFactory factory) : base(factory) { }
 
     [Fact]
-    public async Task An_accepted_ban_intent_bans_the_member_and_closes_the_other_intents_about_them()
+    public void An_accepted_ban_intent_bans_the_member_and_closes_the_other_intents_about_them()
     {
         using var scope = Factory.Services.CreateScope();
-        var (community, owner) = await CreateCommunityAsync(scope);
-        var second = await AddConfirmedMemberAsync(scope, owner.AccountId, community.Id);
-        var third = await AddConfirmedMemberAsync(scope, owner.AccountId, community.Id);
-        var target = await AddConfirmedMemberAsync(scope, owner.AccountId, community.Id);
+        var (community, owner) = CreateCommunity(scope);
+        var second = AddConfirmedMember(scope, owner.AccountId, community.Id);
+        var third = AddConfirmedMember(scope, owner.AccountId, community.Id);
+        var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
 
-        var election = Value<IntentDetailsDto>((await Intents(scope, second.AccountId)
-            .OpenManagerElection(community.Id, new OpenIntentRequest(target.MembershipId, "Predlog za upravnika"), default)).Result!);
+        var election = Value<UserTargetingIntentDetailsDto>((Intents(scope, second.AccountId)
+            .OpenManagerElection(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Predlog za upravnika"))).Result!);
 
-        var ban = Value<IntentDetailsDto>((await Intents(scope, owner.AccountId)
-            .OpenBan(community.Id, new OpenIntentRequest(target.MembershipId, "Ne postuje kucni red"), default)).Result!);
+        var ban = Value<UserTargetingIntentDetailsDto>((Intents(scope, owner.AccountId)
+            .OpenBan(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Ne postuje kucni red"))).Result!);
         ban.EligibleVoterCount.ShouldBe(4);
 
-        await Intents(scope, owner.AccountId).Vote(community.Id, ban.Id, new CastVoteRequest(true), default);
-        await Intents(scope, second.AccountId).Vote(community.Id, ban.Id, new CastVoteRequest(true), default);
-        var closed = Value<IntentDetailsDto>((await Intents(scope, third.AccountId)
-            .Vote(community.Id, ban.Id, new CastVoteRequest(true), default)).Result!);
+        Intents(scope, owner.AccountId).Vote(community.Id, ban.Id, new CastVoteRequest(true));
+        Intents(scope, second.AccountId).Vote(community.Id, ban.Id, new CastVoteRequest(true));
+        var closed = Value<UserTargetingIntentDetailsDto>((Intents(scope, third.AccountId)
+            .Vote(community.Id, ban.Id, new CastVoteRequest(true))).Result!);
 
         closed.Status.ShouldBe(nameof(IntentStatus.Accepted));
         closed.VotesFor.ShouldBe(3);
@@ -50,64 +50,64 @@ public class IntentVotingTests : BaseFeedIntegrationTest
     }
 
     [Fact]
-    public async Task An_intent_cannot_be_opened_about_a_member_who_is_not_confirmed()
+    public void An_intent_cannot_be_opened_about_a_member_who_is_not_confirmed()
     {
         using var scope = Factory.Services.CreateScope();
-        var (community, owner) = await CreateCommunityAsync(scope);
-        var newcomer = await AddUnconfirmedMemberAsync(scope, owner.AccountId, community.Id);
+        var (community, owner) = CreateCommunity(scope);
+        var newcomer = AddUnconfirmedMember(scope, owner.AccountId, community.Id);
 
-        await Should.ThrowAsync<EntityValidationException>(() => Intents(scope, owner.AccountId)
-            .OpenBan(community.Id, new OpenIntentRequest(newcomer.MembershipId, "Ne poznajem ga"), default));
+        Should.Throw<EntityValidationException>(() => Intents(scope, owner.AccountId)
+            .OpenBan(community.Id, new OpenUserTargetingIntentRequest(newcomer.MembershipId, "Ne poznajem ga")));
     }
 
     [Fact]
-    public async Task An_unconfirmed_member_may_not_vote()
+    public void An_unconfirmed_member_may_not_vote()
     {
         using var scope = Factory.Services.CreateScope();
-        var (community, owner) = await CreateCommunityAsync(scope);
-        var target = await AddConfirmedMemberAsync(scope, owner.AccountId, community.Id);
-        var newcomer = await AddUnconfirmedMemberAsync(scope, owner.AccountId, community.Id);
+        var (community, owner) = CreateCommunity(scope);
+        var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
+        var newcomer = AddUnconfirmedMember(scope, owner.AccountId, community.Id);
 
-        var intent = Value<IntentDetailsDto>((await Intents(scope, owner.AccountId)
-            .OpenBan(community.Id, new OpenIntentRequest(target.MembershipId, "Razlog"), default)).Result!);
+        var intent = Value<UserTargetingIntentDetailsDto>((Intents(scope, owner.AccountId)
+            .OpenBan(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Razlog"))).Result!);
 
-        await Should.ThrowAsync<ForbiddenException>(() => Intents(scope, newcomer.AccountId)
-            .Vote(community.Id, intent.Id, new CastVoteRequest(true), default));
+        Should.Throw<ForbiddenException>(() => Intents(scope, newcomer.AccountId)
+            .Vote(community.Id, intent.Id, new CastVoteRequest(true)));
     }
 
     [Fact]
-    public async Task Two_votes_that_race_for_the_same_sequence_number_cannot_both_be_appended()
+    public void Two_votes_that_race_for_the_same_sequence_number_cannot_both_be_appended()
     {
         Guid intentId;
         Guid communityId;
         using (var scope = Factory.Services.CreateScope())
         {
-            var (community, owner) = await CreateCommunityAsync(scope);
+            var (community, owner) = CreateCommunity(scope);
             communityId = community.Id;
-            await AddConfirmedMemberAsync(scope, owner.AccountId, community.Id);
-            await AddConfirmedMemberAsync(scope, owner.AccountId, community.Id);
-            await AddConfirmedMemberAsync(scope, owner.AccountId, community.Id);
-            var target = await AddConfirmedMemberAsync(scope, owner.AccountId, community.Id);
+            AddConfirmedMember(scope, owner.AccountId, community.Id);
+            AddConfirmedMember(scope, owner.AccountId, community.Id);
+            AddConfirmedMember(scope, owner.AccountId, community.Id);
+            var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
 
-            intentId = Value<IntentDetailsDto>((await Intents(scope, owner.AccountId)
-                .OpenBan(community.Id, new OpenIntentRequest(target.MembershipId, "Razlog"), default)).Result!).Id;
+            intentId = Value<UserTargetingIntentDetailsDto>((Intents(scope, owner.AccountId)
+                .OpenBan(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Razlog"))).Result!).Id;
         }
 
         using var first = Factory.Services.CreateScope();
         using var second = Factory.Services.CreateScope();
 
-        var one = await Repository(first).GetAsync(intentId);
-        var other = await Repository(second).GetAsync(intentId);
+        var one = Repository(first).Get(intentId);
+        var other = Repository(second).Get(intentId);
 
         one!.CastVote(Guid.NewGuid(), true, DateTime.UtcNow);
         other!.CastVote(Guid.NewGuid(), true, DateTime.UtcNow);
 
-        await Repository(first).UpdateAsync(one);
-        await Should.ThrowAsync<DbUpdateException>(() => Repository(second).UpdateAsync(other));
+        Repository(first).Update(one);
+        Should.Throw<DbUpdateException>(() => Repository(second).Update(other));
 
         using var reader = Factory.Services.CreateScope();
-        var stored = await Repository(reader).GetAsync(intentId);
-        stored!.Votes.Count.ShouldBe(1);
+        var stored = Repository(reader).Get(intentId);
+        stored!.VotesFor.ShouldBe(1);
         stored.CommunityId.ShouldBe(communityId);
     }
 

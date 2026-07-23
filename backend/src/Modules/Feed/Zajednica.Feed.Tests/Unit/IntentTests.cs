@@ -1,7 +1,6 @@
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.Feed.Core.Domain.Intents;
-using Zajednica.Feed.Core.Domain.Intents.Events;
 
 namespace Zajednica.Feed.Tests.Unit;
 
@@ -15,8 +14,7 @@ public class IntentTests
     private static BanIntent Ban(int eligibleVoterCount = 10) =>
         BanIntent.Open(Community, Author, Target, "Ne postuje kucni red.", eligibleVoterCount, true, Now);
 
-    private static Intent Replay(Intent intent) =>
-        Intent.Rehydrate(intent.Id, intent.DequeuePendingEvents().Cast<IntentEvent>().ToList());
+    private static Intent Replay(Intent intent) => Intent.Load(intent.Id, intent.NewEvents);
 
     [Fact]
     public void An_intent_cannot_be_opened_about_its_own_author()
@@ -36,24 +34,23 @@ public class IntentTests
     public void Replaying_the_stream_reproduces_the_state_the_events_were_raised_on()
     {
         var intent = Ban();
-        var voters = Enumerable.Range(0, 5).Select(_ => Guid.NewGuid()).ToList();
-        foreach (var voter in voters)
-            intent.CastVote(voter, true, Now.AddMinutes(1));
-        var outcome = intent.Close(Now.AddHours(1));
+        foreach (var _ in Enumerable.Range(0, 5))
+            intent.CastVote(Guid.NewGuid(), true, Now.AddMinutes(1));
+        var status = intent.Close(Now.AddHours(1));
 
         var replayed = Replay(intent);
 
         replayed.Id.ShouldBe(intent.Id);
         replayed.ShouldBeOfType<BanIntent>();
+        replayed.Kind.ShouldBe(IntentKind.Ban);
         replayed.CommunityId.ShouldBe(Community);
         replayed.AuthorMembershipId.ShouldBe(Author);
-        replayed.TargetMembershipId.ShouldBe(Target);
+        ((BanIntent)replayed).TargetMembershipId.ShouldBe(Target);
         replayed.Text.ShouldBe(intent.Text);
         replayed.Deadline.ShouldBe(Now.Add(Intent.VotingWindow));
         replayed.EligibleVoterCount.ShouldBe(10);
-        replayed.Votes.Count.ShouldBe(5);
         replayed.VotesFor.ShouldBe(5);
-        replayed.Status.ShouldBe(outcome.Status);
+        replayed.Status.ShouldBe(status);
         replayed.DateOfClosure.ShouldBe(Now.AddHours(1));
         replayed.Version.ShouldBe(intent.Version);
     }
@@ -68,7 +65,7 @@ public class IntentTests
         var replayed = Replay(intent);
 
         Should.Throw<EntityValidationException>(() => replayed.CastVote(voter, false, Now.AddMinutes(1)));
-        replayed.Votes.Count.ShouldBe(1);
+        replayed.VotesFor.ShouldBe(1);
     }
 
     [Fact]
@@ -78,13 +75,12 @@ public class IntentTests
 
         intent.CastVote(Guid.NewGuid(), true, Now);
         intent.CastVote(Guid.NewGuid(), true, Now);
-        intent.ShouldAutoClose().ShouldBeFalse();
+        intent.HasDecisiveMajority().ShouldBeFalse();
 
         intent.CastVote(Guid.NewGuid(), true, Now);
 
         intent.ShouldClose(Now).ShouldBeTrue();
-        intent.Close(Now).Accepted.ShouldBeTrue();
-        intent.Status.ShouldBe(IntentStatus.Accepted);
+        intent.Close(Now).ShouldBe(IntentStatus.Accepted);
     }
 
     [Fact]
@@ -96,10 +92,7 @@ public class IntentTests
         intent.ShouldClose(Now.AddHours(1)).ShouldBeFalse();
         intent.ShouldClose(Now.Add(Intent.VotingWindow)).ShouldBeTrue();
 
-        var outcome = intent.Close(Now.Add(Intent.VotingWindow));
-
-        outcome.Accepted.ShouldBeFalse();
-        outcome.Status.ShouldBe(IntentStatus.Expired);
+        intent.Close(Now.Add(Intent.VotingWindow)).ShouldBe(IntentStatus.Expired);
     }
 
     [Fact]
@@ -110,14 +103,11 @@ public class IntentTests
         intent.CastVote(Guid.NewGuid(), false, Now);
         intent.CastVote(Guid.NewGuid(), false, Now);
 
-        var outcome = intent.Close(Now.Add(Intent.VotingWindow));
-
-        outcome.Accepted.ShouldBeFalse();
-        outcome.Status.ShouldBe(IntentStatus.Rejected);
+        intent.Close(Now.Add(Intent.VotingWindow)).ShouldBe(IntentStatus.Rejected);
     }
 
     [Fact]
-    public void A_cancelled_intent_is_projected_as_rejected()
+    public void A_cancelled_intent_is_rejected()
     {
         var intent = Ban();
         intent.CastVote(Guid.NewGuid(), true, Now);

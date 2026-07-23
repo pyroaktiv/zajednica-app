@@ -8,6 +8,7 @@ using Zajednica.Feed.Api.Public;
 using Zajednica.Feed.Core.Domain.Intents;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 using Zajednica.Feed.Core.Mappers;
+using Zajednica.Identity.Api.Internal.Dto;
 
 namespace Zajednica.Feed.Core.UseCases;
 
@@ -19,27 +20,21 @@ public sealed class IntentService(
     AuthorDirectory authors,
     CommunityAccess access) : IIntentService
 {
-    private delegate Intent OpenIntent(Guid communityId, Guid authorMembershipId, Guid targetMembershipId, string text,
-        int eligibleVoterCount, bool targetEligible, DateTime now);
+    public UserTargetingIntentDetailsDto OpenBan(Guid accountId, Guid communityId, OpenUserTargetingIntentRequest request) =>
+        Open(accountId, communityId, IntentKind.Ban, request);
 
-    public Task<IntentDetailsDto> OpenBanAsync(Guid accountId, Guid communityId, OpenIntentRequest request,
-        CancellationToken ct = default) =>
-        OpenAsync(accountId, communityId, request, BanIntent.Open, ct);
+    public UserTargetingIntentDetailsDto OpenManagerElection(Guid accountId, Guid communityId, OpenUserTargetingIntentRequest request) =>
+        Open(accountId, communityId, IntentKind.ManagerElection, request);
 
-    public Task<IntentDetailsDto> OpenManagerElectionAsync(Guid accountId, Guid communityId, OpenIntentRequest request,
-        CancellationToken ct = default) =>
-        OpenAsync(accountId, communityId, request, ManagerElectionIntent.Open, ct);
-
-    public async Task<IntentDetailsDto> VoteAsync(Guid accountId, Guid communityId, Guid intentId, CastVoteRequest request,
-        CancellationToken ct = default)
+    public UserTargetingIntentDetailsDto Vote(Guid accountId, Guid communityId, Guid intentId, CastVoteRequest request)
     {
-        var voter = await access.RequireConfirmedAsync(accountId, communityId, ct);
-        var intent = await RequireAsync(intentId, communityId, ct);
+        var voter = access.RequireConfirmed(accountId, communityId);
+        var intent = Require(intentId, communityId);
         var now = DateTime.UtcNow;
 
         if (intent.ShouldClose(now))
         {
-            await CloseAsync(intent, now, ct);
+            Close(intent, now);
             throw new EntityValidationException("Voting on this intent is closed.");
         }
 
@@ -47,158 +42,175 @@ public sealed class IntentService(
 
         if (intent.ShouldClose(now))
         {
-            await CloseAsync(intent, now, ct);
+            Close(intent, now);
         }
         else
         {
-            await intents.UpdateAsync(intent, ct);
-            await PushAsync(intent, ct);
+            intents.Update(intent);
+            Push(intent);
         }
 
-        return await DetailsAsync(intent, voter.MembershipId, ct);
+        return Details(intent, voter.MembershipId);
     }
 
-    public async Task<IntentDetailsDto> GetAsync(Guid accountId, Guid communityId, Guid intentId, CancellationToken ct = default)
+    public UserTargetingIntentDetailsDto Get(Guid accountId, Guid communityId, Guid intentId)
     {
-        var reader = await access.RequireConfirmedAsync(accountId, communityId, ct);
-        var intent = await RequireAsync(intentId, communityId, ct);
+        var reader = access.RequireConfirmed(accountId, communityId);
+        var intent = Require(intentId, communityId);
 
         var now = DateTime.UtcNow;
         if (intent.ShouldClose(now))
-            await CloseAsync(intent, now, ct);
+            Close(intent, now);
 
-        return await DetailsAsync(intent, reader.MembershipId, ct);
+        return Details(intent, reader.MembershipId);
     }
 
-    public async Task<PagedResult<IntentSummaryDto>> GetPagedAsync(Guid accountId, Guid communityId, int page, int pageSize,
-        CancellationToken ct = default)
+    public Page<UserTargetingIntentSummaryDto> GetPage(Guid accountId, Guid communityId, DateTime? before, int limit)
     {
-        await access.RequireConfirmedAsync(accountId, communityId, ct);
-        await CloseDueAsync(communityId, ct);
+        access.RequireConfirmed(accountId, communityId);
+        CloseDue(communityId);
 
-        var paged = await intents.GetPagedViewsAsync(communityId, page, pageSize, ct);
-        var profiles = await authors.ForAsync(paged.Results.Select(v => v.TargetMembershipId).ToList(), ct);
+        var page = intents.GetPage(communityId, before, Paging.Clamp(limit));
+        var profiles = authors.For(
+            page.Items.Where(v => v.TargetMembershipId is not null).Select(v => v.TargetMembershipId!.Value).ToList());
 
-        return new PagedResult<IntentSummaryDto>(
-            paged.Results.Select(v => v.ToSummaryDto(profiles.GetValueOrDefault(v.TargetMembershipId))).ToList(),
-            paged.TotalCount);
+        return new Page<UserTargetingIntentSummaryDto>(
+            page.Items.Select(v => v.ToSummaryDto(Profile(profiles, v.TargetMembershipId))).ToList(),
+            page.NextCursor);
     }
 
-    private async Task<IntentDetailsDto> OpenAsync(Guid accountId, Guid communityId, OpenIntentRequest request,
-        OpenIntent open, CancellationToken ct)
+    private UserTargetingIntentDetailsDto Open(Guid accountId, Guid communityId, IntentKind kind,
+        OpenUserTargetingIntentRequest request)
     {
-        var author = await access.RequireConfirmedAsync(accountId, communityId, ct);
+        var author = access.RequireConfirmed(accountId, communityId);
 
-        var target = (await memberships.GetContextsAsync([request.TargetMembershipId], ct)).SingleOrDefault()
+        var target = (memberships.GetContexts([request.TargetMembershipId])).SingleOrDefault()
             ?? throw new NotFoundException("Membership not found.");
-        var eligibleVoterCount = await memberships.GetConfirmedCountAsync(communityId, ct);
-        var targetEligible = target.CommunityId == communityId && target.IsActive && target.IsConfirmed;
+        var eligibleVoterCount = memberships.GetConfirmedCount(communityId);
+        var targetIsConfirmedMember = target.CommunityId == communityId && target.IsActive && target.IsConfirmed;
 
-        var intent = open(communityId, author.MembershipId, request.TargetMembershipId, request.Text,
-            eligibleVoterCount, targetEligible, DateTime.UtcNow);
-        await intents.AddAsync(intent, ct);
+        Intent intent = kind == IntentKind.Ban
+            ? BanIntent.Open(communityId, author.MembershipId, request.TargetMembershipId, request.Text,
+                eligibleVoterCount, targetIsConfirmedMember, DateTime.UtcNow)
+            : ManagerElectionIntent.Open(communityId, author.MembershipId, request.TargetMembershipId, request.Text,
+                eligibleVoterCount, targetIsConfirmedMember, DateTime.UtcNow);
+        intents.Add(intent);
 
-        await notifications.SendAsync(new NotificationRequest(target.AccountId, "Pokrenuta namera",
-            "U zajednici je pokrenuta namera koja se odnosi na vas.", NotificationPriority.Default), ct);
-        await realtime.PushToChannelAsync(Channels.Community(communityId),
-            new RealtimeMessage("intents.changed", new { communityId }), ct);
+        notifications.Send(new NotificationRequest(target.AccountId, "Pokrenuta namera",
+            "U zajednici je pokrenuta namera koja se odnosi na vas.", NotificationPriority.Default));
+        realtime.PushToChannel(Channels.Community(communityId),
+            new RealtimeMessage("intents.changed", new { communityId }));
 
-        return await DetailsAsync(intent, author.MembershipId, ct);
+        return Details(intent, author.MembershipId);
     }
 
-    private async Task CloseAsync(Intent intent, DateTime now, CancellationToken ct)
+    private void Close(Intent intent, DateTime now)
     {
-        var outcome = intent.Close(now);
-        await intents.UpdateAsync(intent, ct);
+        var status = intent.Close(now);
+        intents.Update(intent);
 
-        if (outcome.Accepted)
-            await ExecuteAsync(intent, ct);
+        if (status == IntentStatus.Accepted)
+            Execute(intent);
 
-        await NotifyClosedAsync(intent, outcome, ct);
-        await PushAsync(intent, ct);
+        NotifyClosed(intent, status);
+        Push(intent);
     }
 
-    private async Task ExecuteAsync(Intent intent, CancellationToken ct)
+    private void Execute(Intent intent)
     {
         switch (intent)
         {
             case BanIntent ban:
-                await memberships.BanAsync(ban.TargetMembershipId, ban.Id, ct);
-                await CancelOtherIntentsAsync(ban, ct);
+                memberships.Ban(ban.TargetMembershipId, ban.Id);
+                CancelOtherIntents(ban);
                 break;
+
             case ManagerElectionIntent election:
-                await memberships.ElectManagerAsync(election.TargetMembershipId, ct);
+                memberships.ElectManager(election.TargetMembershipId);
                 break;
         }
     }
 
-    private async Task CancelOtherIntentsAsync(BanIntent ban, CancellationToken ct)
+    private void CancelOtherIntents(BanIntent ban)
     {
         var now = DateTime.UtcNow;
-        var open = await intents.GetOpenViewsByTargetAsync(ban.CommunityId, ban.TargetMembershipId, ct);
+        var open = intents.GetOpenViewsByTarget(ban.CommunityId, ban.TargetMembershipId);
 
         foreach (var view in open.Where(v => v.Id != ban.Id))
         {
-            var other = await intents.GetAsync(view.Id, ct);
+            var other = intents.Get(view.Id);
             if (other is null)
                 continue;
 
             other.Cancel(now);
-            await intents.UpdateAsync(other, ct);
-            await PushAsync(other, ct);
+            intents.Update(other);
+            Push(other);
         }
     }
 
-    private async Task CloseDueAsync(Guid communityId, CancellationToken ct)
+    private void CloseDue(Guid communityId)
     {
         var now = DateTime.UtcNow;
 
-        foreach (var view in await intents.GetDueViewsAsync(communityId, now, ct))
+        foreach (var view in intents.GetDueViews(communityId, now))
         {
-            var intent = await intents.GetAsync(view.Id, ct);
+            var intent = intents.Get(view.Id);
             if (intent is null || !intent.ShouldClose(now))
                 continue;
 
-            await CloseAsync(intent, now, ct);
+            Close(intent, now);
         }
     }
 
-    private async Task<Intent> RequireAsync(Guid intentId, Guid communityId, CancellationToken ct)
+    private Intent Require(Guid intentId, Guid communityId)
     {
-        var intent = await intents.GetAsync(intentId, ct);
+        var intent = intents.Get(intentId);
         if (intent is null || intent.CommunityId != communityId)
             throw new NotFoundException("Intent not found in this community.");
 
         return intent;
     }
 
-    private async Task<IntentDetailsDto> DetailsAsync(Intent intent, Guid readerMembershipId, CancellationToken ct)
+    private UserTargetingIntentDetailsDto Details(Intent intent, Guid readerMembershipId)
     {
-        var profiles = await authors.ForAsync([intent.AuthorMembershipId, intent.TargetMembershipId], ct);
+        var targetMembershipId = TargetOf(intent);
+        var lookedUp = targetMembershipId is null
+            ? new List<Guid> { intent.AuthorMembershipId }
+            : [intent.AuthorMembershipId, targetMembershipId.Value];
+        var profiles = authors.For(lookedUp);
 
         return intent.ToDetailsDto(
             profiles.GetValueOrDefault(intent.AuthorMembershipId),
-            profiles.GetValueOrDefault(intent.TargetMembershipId),
+            targetMembershipId,
+            Profile(profiles, targetMembershipId),
             readerMembershipId);
     }
 
-    private async Task NotifyClosedAsync(Intent intent, IntentOutcome outcome, CancellationToken ct)
+    private void NotifyClosed(Intent intent, IntentStatus status)
     {
-        var target = (await memberships.GetContextsAsync([intent.TargetMembershipId], ct)).SingleOrDefault();
+        if (TargetOf(intent) is not { } targetMembershipId)
+            return;
+
+        var target = (memberships.GetContexts([targetMembershipId])).SingleOrDefault();
         if (target is null)
             return;
 
-        await notifications.SendAsync(new NotificationRequest(target.AccountId, "Namera je zaključena",
-            $"Namera koja se odnosi na vas je zaključena sa ishodom {outcome.Status}.",
-            outcome.Accepted ? NotificationPriority.High : NotificationPriority.Default), ct);
+        notifications.Send(new NotificationRequest(target.AccountId, "Namera je zaključena",
+            $"Namera koja se odnosi na vas je zaključena sa ishodom {status}.",
+            status == IntentStatus.Accepted ? NotificationPriority.High : NotificationPriority.Default));
     }
 
-    private Task PushAsync(Intent intent, CancellationToken ct) =>
-        realtime.PushToChannelAsync(Channels.Intent(intent.Id), new RealtimeMessage("intent.updated", new
+    private static Guid? TargetOf(Intent intent) => (intent as UserTargetingIntent)?.TargetMembershipId;
+
+    private static AccountProfileDto? Profile(IReadOnlyDictionary<Guid, AccountProfileDto> profiles, Guid? membershipId) =>
+        membershipId is null ? null : profiles.GetValueOrDefault(membershipId.Value);
+
+    private void Push(Intent intent) =>
+        realtime.PushToChannel(Channels.Intent(intent.Id), new RealtimeMessage("intent.updated", new
         {
             id = intent.Id,
             votesFor = intent.VotesFor,
             votesAgainst = intent.VotesAgainst,
             status = intent.Status.ToString()
-        }), ct);
+        }));
 }

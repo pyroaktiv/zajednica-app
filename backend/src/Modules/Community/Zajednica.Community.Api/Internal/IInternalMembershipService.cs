@@ -4,13 +4,13 @@ namespace Zajednica.Community.Api.Internal;
 
 public interface IInternalMembershipService
 {
-    Task<MembershipContextDto?> GetContextAsync(Guid accountId, Guid communityId, CancellationToken ct = default);
-    Task<IReadOnlyList<MembershipContextDto>> GetContextsAsync(IReadOnlyCollection<Guid> membershipIds, CancellationToken ct = default);
-    Task<IReadOnlyList<MembershipContextDto>> GetConfirmedAsync(Guid communityId, CancellationToken ct = default);
-    Task<int> GetConfirmedCountAsync(Guid communityId, CancellationToken ct = default);
-    Task<bool> AreEligibleAsync(IReadOnlyCollection<Guid> membershipIds, CancellationToken ct = default);
+    MembershipContextDto? GetContext(Guid accountId, Guid communityId);
+    IReadOnlyList<MembershipContextDto> GetContexts(IReadOnlyCollection<Guid> membershipIds);
+    IReadOnlyList<MembershipContextDto> GetConfirmed(Guid communityId);
+    int GetConfirmedCount(Guid communityId);
+    bool AreEligible(IReadOnlyCollection<Guid> membershipIds);
 
-    Task BanAsync(Guid membershipId, Guid intentId, CancellationToken ct = default);
-    Task ElectManagerAsync(Guid membershipId, CancellationToken ct = default);
-    Task AddStarsAsync(Guid membershipId, int stars, CancellationToken ct = default);
+    void Ban(Guid membershipId, Guid intentId);
+    void ElectManager(Guid membershipId);
+    void AddStars(Guid membershipId, int stars);
 }

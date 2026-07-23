@@ -5,20 +5,20 @@ namespace Zajednica.Community.Infrastructure.Database.Repositories;
 
 internal sealed class CommunityEfRepository(CommunityDbContext db) : ICommunityRepository
 {
-    public Task AddAsync(Core.Domain.Community community, CancellationToken ct = default)
+    public void Add(Core.Domain.Community community)
     {
         db.Communities.Add(community);
-        return db.SaveChangesAsync(ct);
+        db.SaveChanges();
     }
 
-    public Task UpdateAsync(Core.Domain.Community community, CancellationToken ct = default) => db.SaveChangesAsync(ct);
+    public void Update(Core.Domain.Community community) => db.SaveChanges();
 
-    public Task<Core.Domain.Community?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
-        db.Communities.FirstOrDefaultAsync(c => c.Id == id, ct);
+    public Core.Domain.Community? GetById(Guid id) =>
+        db.Communities.FirstOrDefault(c => c.Id == id);
 
-    public Task<Core.Domain.Community?> GetByQrTokenAsync(string qrToken, CancellationToken ct = default) =>
-        db.Communities.FirstOrDefaultAsync(c => c.QrToken == qrToken, ct);
+    public Core.Domain.Community? GetByQrToken(string qrToken) =>
+        db.Communities.FirstOrDefault(c => c.QrToken == qrToken);
 
-    public async Task<IReadOnlyList<Core.Domain.Community>> GetManyByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default) =>
-        await db.Communities.Where(c => ids.Contains(c.Id)).ToListAsync(ct);
+    public IReadOnlyList<Core.Domain.Community> GetManyByIds(IReadOnlyCollection<Guid> ids) =>
+        db.Communities.Where(c => ids.Contains(c.Id)).ToList();
 }

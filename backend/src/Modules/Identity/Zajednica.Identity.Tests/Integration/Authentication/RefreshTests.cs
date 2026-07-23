@@ -12,13 +12,13 @@ public class RefreshTests : BaseIdentityIntegrationTest
     public RefreshTests(IdentityTestFactory factory) : base(factory) { }
 
     [Fact]
-    public async Task Rotates_the_refresh_token_removing_the_old_and_persisting_the_new()
+    public void Rotates_the_refresh_token_removing_the_old_and_persisting_the_new()
     {
         using var scope = Factory.Services.CreateScope();
-        var (email, accountId) = await RegisterVerifiedAsync(scope);
-        var issued = await LoginAsync(scope, email);
+        var (email, accountId) = RegisterVerified(scope);
+        var issued = Login(scope, email);
 
-        var result = await Controller(scope).Refresh(new RefreshRequest(issued.RefreshToken), default);
+        var result = Controller(scope).Refresh(new RefreshRequest(issued.RefreshToken));
         var refreshed = Value<AuthTokens>(result.Result!);
 
         refreshed.RefreshToken.ShouldNotBe(issued.RefreshToken);
@@ -30,40 +30,40 @@ public class RefreshTests : BaseIdentityIntegrationTest
     }
 
     [Fact]
-    public async Task Rejects_an_unknown_refresh_token()
+    public void Rejects_an_unknown_refresh_token()
     {
         using var scope = Factory.Services.CreateScope();
 
-        await Should.ThrowAsync<EntityValidationException>(() =>
-            Controller(scope).Refresh(new RefreshRequest("no-such-token"), default));
+        Should.Throw<EntityValidationException>(() =>
+            Controller(scope).Refresh(new RefreshRequest("no-such-token")));
     }
 
     [Fact]
-    public async Task A_rotated_token_cannot_be_reused()
+    public void A_rotated_token_cannot_be_reused()
     {
         using var scope = Factory.Services.CreateScope();
-        var (email, _) = await RegisterVerifiedAsync(scope);
-        var issued = await LoginAsync(scope, email);
-        await Controller(scope).Refresh(new RefreshRequest(issued.RefreshToken), default);
+        var (email, _) = RegisterVerified(scope);
+        var issued = Login(scope, email);
+        Controller(scope).Refresh(new RefreshRequest(issued.RefreshToken));
 
-        await Should.ThrowAsync<EntityValidationException>(() =>
-            Controller(scope).Refresh(new RefreshRequest(issued.RefreshToken), default));
+        Should.Throw<EntityValidationException>(() =>
+            Controller(scope).Refresh(new RefreshRequest(issued.RefreshToken)));
     }
 
     [Fact]
-    public async Task Rejects_and_consumes_an_expired_refresh_token()
+    public void Rejects_and_consumes_an_expired_refresh_token()
     {
         using var scope = Factory.Services.CreateScope();
-        var (_, accountId) = await RegisterVerifiedAsync(scope);
+        var (_, accountId) = RegisterVerified(scope);
         var db = Db(scope);
         var tokenValue = $"expired-{Guid.NewGuid():N}";
         var expired = new RefreshToken(accountId, tokenValue, DateTime.UtcNow.AddDays(-1));
         db.RefreshTokens.Add(expired);
-        await db.SaveChangesAsync();
+        db.SaveChanges();
         db.ChangeTracker.Clear();
 
-        await Should.ThrowAsync<EntityValidationException>(() =>
-            Controller(scope).Refresh(new RefreshRequest(tokenValue), default));
+        Should.Throw<EntityValidationException>(() =>
+            Controller(scope).Refresh(new RefreshRequest(tokenValue)));
 
         db.ChangeTracker.Clear();
         db.RefreshTokens.Any(t => t.Token == tokenValue).ShouldBeFalse();

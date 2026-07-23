@@ -19,58 +19,58 @@ public sealed class MembershipController : ControllerBase
     }
 
     [HttpGet("me")]
-    public async Task<ActionResult<MemberProfileDto>> GetMine(Guid communityId, CancellationToken ct)
+    public ActionResult<MemberProfileDto> GetMine(Guid communityId)
     {
-        return Ok(await _memberships.GetMineAsync(User.AccountId(), communityId, ct));
+        return Ok(_memberships.GetMine(User.AccountId(), communityId));
     }
 
     [HttpPut("me/unit-number")]
-    public async Task<ActionResult<MemberProfileDto>> SetUnitNumber(Guid communityId, [FromBody] SetUnitNumberRequest request, CancellationToken ct)
+    public ActionResult<MemberProfileDto> SetUnitNumber(Guid communityId, [FromBody] SetUnitNumberRequest request)
     {
-        return Ok(await _memberships.SetUnitNumberAsync(User.AccountId(), communityId, request, ct));
+        return Ok(_memberships.SetUnitNumber(User.AccountId(), communityId, request));
     }
 
     [HttpGet("members")]
-    public async Task<ActionResult<IReadOnlyList<MemberSummaryDto>>> GetConfirmed(Guid communityId, CancellationToken ct)
+    public ActionResult<IReadOnlyList<MemberSummaryDto>> GetConfirmed(Guid communityId)
     {
-        return Ok(await _memberships.GetConfirmedAsync(User.AccountId(), communityId, ct));
+        return Ok(_memberships.GetConfirmed(User.AccountId(), communityId));
     }
 
     [HttpGet("members/issuers")]
-    public async Task<ActionResult<IReadOnlyList<MemberSummaryDto>>> GetIssuers(Guid communityId, CancellationToken ct)
+    public ActionResult<IReadOnlyList<MemberSummaryDto>> GetIssuers(Guid communityId)
     {
-        return Ok(await _memberships.GetIssuersAsync(User.AccountId(), communityId, ct));
+        return Ok(_memberships.GetIssuers(User.AccountId(), communityId));
     }
 
     [HttpGet("members/unconfirmed")]
-    public async Task<ActionResult<IReadOnlyList<MemberSummaryDto>>> GetUnconfirmed(Guid communityId, CancellationToken ct)
+    public ActionResult<IReadOnlyList<MemberSummaryDto>> GetUnconfirmed(Guid communityId)
     {
-        return Ok(await _memberships.GetUnconfirmedAsync(User.AccountId(), communityId, ct));
+        return Ok(_memberships.GetUnconfirmed(User.AccountId(), communityId));
     }
 
     [HttpGet("members/manager")]
-    public async Task<ActionResult<MemberSummaryDto>> GetManager(Guid communityId, CancellationToken ct)
+    public ActionResult<MemberSummaryDto> GetManager(Guid communityId)
     {
-        var manager = await _memberships.GetManagerAsync(User.AccountId(), communityId, ct);
+        var manager = _memberships.GetManager(User.AccountId(), communityId);
         return manager is null ? NoContent() : Ok(manager);
     }
 
     [HttpGet("members/{membershipId:guid}")]
-    public async Task<ActionResult<MemberProfileDto>> Get(Guid communityId, Guid membershipId, CancellationToken ct)
+    public ActionResult<MemberProfileDto> Get(Guid communityId, Guid membershipId)
     {
-        return Ok(await _memberships.GetAsync(User.AccountId(), communityId, membershipId, ct));
+        return Ok(_memberships.Get(User.AccountId(), communityId, membershipId));
     }
 
     [HttpPost("members/{membershipId:guid}/roles/issuer")]
-    public async Task<IActionResult> GrantIssuer(Guid communityId, Guid membershipId, CancellationToken ct)
+    public IActionResult GrantIssuer(Guid communityId, Guid membershipId)
     {
-        await _memberships.GrantIssuerAsync(User.AccountId(), communityId, membershipId, ct);
+        _memberships.GrantIssuer(User.AccountId(), communityId, membershipId);
         return NoContent();
     }
 
     [HttpGet("ranking")]
-    public async Task<ActionResult<IReadOnlyList<MemberSummaryDto>>> GetRanking(Guid communityId, CancellationToken ct)
+    public ActionResult<IReadOnlyList<MemberSummaryDto>> GetRanking(Guid communityId)
     {
-        return Ok(await _memberships.GetRankingAsync(User.AccountId(), communityId, ct));
+        return Ok(_memberships.GetRanking(User.AccountId(), communityId));
     }
 }

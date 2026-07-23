@@ -6,18 +6,18 @@ namespace Zajednica.Feed.Core.UseCases;
 
 public sealed class AuthorDirectory(IInternalMembershipService memberships, IInternalAccountService accounts)
 {
-    public async Task<IReadOnlyDictionary<Guid, AccountProfileDto>> ForAsync(
-        IReadOnlyCollection<Guid> membershipIds, CancellationToken ct = default)
+    public IReadOnlyDictionary<Guid, AccountProfileDto> For(
+        IReadOnlyCollection<Guid> membershipIds)
     {
         var empty = new Dictionary<Guid, AccountProfileDto>();
         if (membershipIds.Count == 0)
             return empty;
 
-        var contexts = await memberships.GetContextsAsync(membershipIds.Distinct().ToList(), ct);
+        var contexts = memberships.GetContexts(membershipIds.Distinct().ToList());
         if (contexts.Count == 0)
             return empty;
 
-        var profiles = (await accounts.GetProfilesAsync(contexts.Select(c => c.AccountId).Distinct().ToList(), ct))
+        var profiles = (accounts.GetProfiles(contexts.Select(c => c.AccountId).Distinct().ToList()))
             .ToDictionary(p => p.AccountId);
 
         return contexts

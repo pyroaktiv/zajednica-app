@@ -5,13 +5,12 @@ namespace Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 
 public interface IPostRepository
 {
-    Task AddAsync(Post post, CancellationToken ct = default);
-    Task UpdateAsync(Post post, CancellationToken ct = default);
+    void Add(Post post);
+    void Update(Post post);
 
-    Task<Post?> GetAsync(Guid id, CancellationToken ct = default);
-    Task<PagedResult<Post>> GetPagedAsync(Guid communityId, int page, int pageSize, CancellationToken ct = default);
+    Post? Get(Guid id);
+    Page<Post> GetPage(Guid communityId, DateTime? before, int limit);
 
-    Task<Comment?> GetCommentAsync(Guid postId, Guid commentId, CancellationToken ct = default);
-    Task<CursorPage<Comment>> GetCommentPageAsync(Guid postId, Guid? parentCommentId, Cursor? after, int limit,
-        CancellationToken ct = default);
+    Comment? GetComment(Guid postId, Guid commentId);
+    Page<Comment> GetCommentPage(Guid postId, Guid? parentCommentId, DateTime? after, int limit);
 }

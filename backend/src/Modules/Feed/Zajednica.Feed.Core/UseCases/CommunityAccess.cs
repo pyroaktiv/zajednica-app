@@ -6,9 +6,9 @@ namespace Zajednica.Feed.Core.UseCases;
 
 public sealed class CommunityAccess(IInternalMembershipService memberships)
 {
-    public async Task<MembershipContextDto> RequireConfirmedAsync(Guid accountId, Guid communityId, CancellationToken ct = default)
+    public MembershipContextDto RequireConfirmed(Guid accountId, Guid communityId)
     {
-        var context = await memberships.GetContextAsync(accountId, communityId, ct)
+        var context = memberships.GetContext(accountId, communityId)
             ?? throw new ForbiddenException("Not a member of this community.");
 
         if (!context.IsActive)

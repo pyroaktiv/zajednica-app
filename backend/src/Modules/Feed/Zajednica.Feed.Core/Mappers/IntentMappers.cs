@@ -6,9 +6,9 @@ namespace Zajednica.Feed.Core.Mappers;
 
 public static class IntentMappers
 {
-    public static IntentSummaryDto ToSummaryDto(this IntentView view, AccountProfileDto? target) =>
+    public static UserTargetingIntentSummaryDto ToSummaryDto(this IntentView view, AccountProfileDto? target) =>
         new(view.Id,
-            view.IntentType,
+            view.Kind.ToString(),
             view.Status.ToString(),
             view.AuthorMembershipId,
             view.TargetMembershipId,
@@ -20,14 +20,15 @@ public static class IntentMappers
             view.VotesFor,
             view.VotesAgainst);
 
-    public static IntentDetailsDto ToDetailsDto(
-        this Intent intent, AccountProfileDto? author, AccountProfileDto? target, Guid readerMembershipId) =>
+    public static UserTargetingIntentDetailsDto ToDetailsDto(
+        this Intent intent, AccountProfileDto? author, Guid? targetMembershipId, AccountProfileDto? target,
+        Guid readerMembershipId) =>
         new(intent.Id,
-            intent.IntentType,
+            intent.Kind.ToString(),
             intent.Status.ToString(),
             intent.AuthorMembershipId,
             author?.Username ?? string.Empty,
-            intent.TargetMembershipId,
+            targetMembershipId,
             target?.Username ?? string.Empty,
             intent.Text,
             intent.DateCreated,
@@ -37,5 +38,5 @@ public static class IntentMappers
             intent.VotesFor,
             intent.VotesAgainst,
             intent.QuorumReached(),
-            intent.Votes.FirstOrDefault(v => v.VoterMembershipId == readerMembershipId)?.Value);
+            intent.VoteOf(readerMembershipId));
 }

@@ -12,12 +12,12 @@ public class LoginTests : BaseIdentityIntegrationTest
     public LoginTests(IdentityTestFactory factory) : base(factory) { }
 
     [Fact]
-    public async Task Issues_a_token_pair_carrying_the_account_identity()
+    public void Issues_a_token_pair_carrying_the_account_identity()
     {
         using var scope = Factory.Services.CreateScope();
-        var (email, accountId) = await RegisterVerifiedAsync(scope);
+        var (email, accountId) = RegisterVerified(scope);
 
-        var tokens = await LoginAsync(scope, email);
+        var tokens = Login(scope, email);
 
         tokens.AccessToken.ShouldNotBeNullOrWhiteSpace();
         tokens.RefreshToken.ShouldNotBeNullOrWhiteSpace();
@@ -32,46 +32,46 @@ public class LoginTests : BaseIdentityIntegrationTest
     }
 
     [Fact]
-    public async Task Accepts_login_by_username_as_well_as_email()
+    public void Accepts_login_by_username_as_well_as_email()
     {
         using var scope = Factory.Services.CreateScope();
         var username = $"user-{Guid.NewGuid():N}";
         var email = UniqueEmail();
-        await Controller(scope).Register(new RegisterAccountRequest(username, email, ValidPassword, null, null, null, null), default);
+        Controller(scope).Register(new RegisterAccountRequest(username, email, ValidPassword, null, null, null, null));
         var db = Db(scope);
         var accountId = db.Accounts.Single(a => a.Email == email).Id;
         var token = db.EmailVerificationTokens.Single(t => t.AccountId == accountId).Token;
-        await Controller(scope).VerifyEmail(new VerifyEmailRequest(token), default);
+        Controller(scope).VerifyEmail(new VerifyEmailRequest(token));
 
-        var tokens = await LoginAsync(scope, username);
+        var tokens = Login(scope, username);
 
         tokens.AccessToken.ShouldNotBeNullOrWhiteSpace();
     }
 
     [Fact]
-    public async Task Rejects_login_before_the_email_is_verified()
+    public void Rejects_login_before_the_email_is_verified()
     {
         using var scope = Factory.Services.CreateScope();
-        var (email, _) = await RegisterAsync(scope);
+        var (email, _) = Register(scope);
 
-        await Should.ThrowAsync<EntityValidationException>(() => LoginAsync(scope, email));
+        Should.Throw<EntityValidationException>(() => Login(scope, email));
     }
 
     [Fact]
-    public async Task Rejects_a_wrong_password()
+    public void Rejects_a_wrong_password()
     {
         using var scope = Factory.Services.CreateScope();
-        var (email, _) = await RegisterVerifiedAsync(scope);
+        var (email, _) = RegisterVerified(scope);
 
-        await Should.ThrowAsync<EntityValidationException>(() =>
-            Controller(scope).Login(new LoginRequest(email, "wrong-password"), default));
+        Should.Throw<EntityValidationException>(() =>
+            Controller(scope).Login(new LoginRequest(email, "wrong-password")));
     }
 
     [Fact]
-    public async Task Rejects_an_unknown_user()
+    public void Rejects_an_unknown_user()
     {
         using var scope = Factory.Services.CreateScope();
 
-        await Should.ThrowAsync<EntityValidationException>(() => LoginAsync(scope, "nobody@test.local"));
+        Should.Throw<EntityValidationException>(() => Login(scope, "nobody@test.local"));
     }
 }

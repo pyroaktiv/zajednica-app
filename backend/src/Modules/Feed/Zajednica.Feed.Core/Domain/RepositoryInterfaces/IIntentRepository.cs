@@ -5,12 +5,12 @@ namespace Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 
 public interface IIntentRepository
 {
-    Task AddAsync(Intent intent, CancellationToken ct = default);
-    Task UpdateAsync(Intent intent, CancellationToken ct = default);
+    void Add(Intent intent);
+    void Update(Intent intent);
 
-    Task<Intent?> GetAsync(Guid id, CancellationToken ct = default);
+    Intent? Get(Guid id);
 
-    Task<PagedResult<IntentView>> GetPagedViewsAsync(Guid communityId, int page, int pageSize, CancellationToken ct = default);
-    Task<IReadOnlyList<IntentView>> GetDueViewsAsync(Guid communityId, DateTime now, CancellationToken ct = default);
-    Task<IReadOnlyList<IntentView>> GetOpenViewsByTargetAsync(Guid communityId, Guid targetMembershipId, CancellationToken ct = default);
+    Page<IntentView> GetPage(Guid communityId, DateTime? before, int limit);
+    IReadOnlyList<IntentView> GetDueViews(Guid communityId, DateTime now);
+    IReadOnlyList<IntentView> GetOpenViewsByTarget(Guid communityId, Guid targetMembershipId);
 }

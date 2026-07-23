@@ -20,34 +20,34 @@ public sealed class PostController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<PostDto>> CreateGeneral(Guid communityId, [FromBody] CreateGeneralPostRequest request, CancellationToken ct)
+    public ActionResult<PostDto> CreateGeneral(Guid communityId, [FromBody] CreateGeneralPostRequest request)
     {
-        var created = await _posts.CreateGeneralAsync(User.AccountId(), communityId, request, ct);
+        var created = _posts.CreateGeneral(User.AccountId(), communityId, request);
         return CreatedAtAction(nameof(Get), new { communityId, postId = created.Id }, created);
     }
 
     [HttpPost("help-requests")]
-    public async Task<ActionResult<PostDto>> CreateHelpRequest(Guid communityId, [FromBody] CreateHelpRequestRequest request, CancellationToken ct)
+    public ActionResult<PostDto> CreateHelpRequest(Guid communityId, [FromBody] CreateHelpRequestRequest request)
     {
-        var created = await _posts.CreateHelpRequestAsync(User.AccountId(), communityId, request, ct);
+        var created = _posts.CreateHelpRequest(User.AccountId(), communityId, request);
         return CreatedAtAction(nameof(Get), new { communityId, postId = created.Id }, created);
     }
 
     [HttpPost("{postId:guid}/close")]
-    public async Task<ActionResult<PostDto>> CloseHelpRequest(Guid communityId, Guid postId, CancellationToken ct)
+    public ActionResult<PostDto> CloseHelpRequest(Guid communityId, Guid postId)
     {
-        return Ok(await _posts.CloseHelpRequestAsync(User.AccountId(), communityId, postId, ct));
+        return Ok(_posts.CloseHelpRequest(User.AccountId(), communityId, postId));
     }
 
     [HttpGet("{postId:guid}")]
-    public async Task<ActionResult<PostDto>> Get(Guid communityId, Guid postId, CancellationToken ct)
+    public ActionResult<PostDto> Get(Guid communityId, Guid postId)
     {
-        return Ok(await _posts.GetAsync(User.AccountId(), communityId, postId, ct));
+        return Ok(_posts.Get(User.AccountId(), communityId, postId));
     }
 
     [HttpGet]
-    public async Task<ActionResult<PagedResult<PostDto>>> GetPaged(Guid communityId, [FromQuery] int page, [FromQuery] int pageSize, CancellationToken ct)
+    public ActionResult<Page<PostDto>> GetPage(Guid communityId, [FromQuery] DateTime? before, [FromQuery] int limit)
     {
-        return Ok(await _posts.GetPagedAsync(User.AccountId(), communityId, page, pageSize, ct));
+        return Ok(_posts.GetPage(User.AccountId(), communityId, before, limit));
     }
 }

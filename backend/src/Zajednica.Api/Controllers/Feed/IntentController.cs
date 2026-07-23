@@ -20,34 +20,34 @@ public sealed class IntentController : ControllerBase
     }
 
     [HttpPost("ban")]
-    public async Task<ActionResult<IntentDetailsDto>> OpenBan(Guid communityId, [FromBody] OpenIntentRequest request, CancellationToken ct)
+    public ActionResult<UserTargetingIntentDetailsDto> OpenBan(Guid communityId, [FromBody] OpenUserTargetingIntentRequest request)
     {
-        var opened = await _intents.OpenBanAsync(User.AccountId(), communityId, request, ct);
+        var opened = _intents.OpenBan(User.AccountId(), communityId, request);
         return CreatedAtAction(nameof(Get), new { communityId, intentId = opened.Id }, opened);
     }
 
     [HttpPost("manager-election")]
-    public async Task<ActionResult<IntentDetailsDto>> OpenManagerElection(Guid communityId, [FromBody] OpenIntentRequest request, CancellationToken ct)
+    public ActionResult<UserTargetingIntentDetailsDto> OpenManagerElection(Guid communityId, [FromBody] OpenUserTargetingIntentRequest request)
     {
-        var opened = await _intents.OpenManagerElectionAsync(User.AccountId(), communityId, request, ct);
+        var opened = _intents.OpenManagerElection(User.AccountId(), communityId, request);
         return CreatedAtAction(nameof(Get), new { communityId, intentId = opened.Id }, opened);
     }
 
     [HttpPost("{intentId:guid}/votes")]
-    public async Task<ActionResult<IntentDetailsDto>> Vote(Guid communityId, Guid intentId, [FromBody] CastVoteRequest request, CancellationToken ct)
+    public ActionResult<UserTargetingIntentDetailsDto> Vote(Guid communityId, Guid intentId, [FromBody] CastVoteRequest request)
     {
-        return Ok(await _intents.VoteAsync(User.AccountId(), communityId, intentId, request, ct));
+        return Ok(_intents.Vote(User.AccountId(), communityId, intentId, request));
     }
 
     [HttpGet("{intentId:guid}")]
-    public async Task<ActionResult<IntentDetailsDto>> Get(Guid communityId, Guid intentId, CancellationToken ct)
+    public ActionResult<UserTargetingIntentDetailsDto> Get(Guid communityId, Guid intentId)
     {
-        return Ok(await _intents.GetAsync(User.AccountId(), communityId, intentId, ct));
+        return Ok(_intents.Get(User.AccountId(), communityId, intentId));
     }
 
     [HttpGet]
-    public async Task<ActionResult<PagedResult<IntentSummaryDto>>> GetPaged(Guid communityId, [FromQuery] int page, [FromQuery] int pageSize, CancellationToken ct)
+    public ActionResult<Page<UserTargetingIntentSummaryDto>> GetPage(Guid communityId, [FromQuery] DateTime? before, [FromQuery] int limit)
     {
-        return Ok(await _intents.GetPagedAsync(User.AccountId(), communityId, page, pageSize, ct));
+        return Ok(_intents.GetPage(User.AccountId(), communityId, before, limit));
     }
 }

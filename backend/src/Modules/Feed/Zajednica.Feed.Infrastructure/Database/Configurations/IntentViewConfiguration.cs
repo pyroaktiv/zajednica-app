@@ -12,11 +12,10 @@ public class IntentViewConfiguration : IEntityTypeConfiguration<IntentView>
         builder.HasKey(v => v.Id);
         builder.Property(v => v.Id).ValueGeneratedNever();
 
-        builder.Property(v => v.IntentType).IsRequired();
-        builder.Property(v => v.Text).IsRequired();
+        builder.Property(v => v.Kind).HasConversion<string>().IsRequired();
         builder.Property(v => v.Status).HasConversion<string>().IsRequired();
+        builder.Property(v => v.Text).IsRequired();
 
-        builder.HasIndex(v => new { v.CommunityId, v.Status });
-        builder.HasIndex(v => new { v.CommunityId, v.TargetMembershipId });
+        builder.HasIndex(v => new { v.CommunityId, v.DateCreated });
     }
 }

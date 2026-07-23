@@ -18,35 +18,35 @@ public sealed class AuthenticationController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterAccountRequest request, CancellationToken ct)
+    public IActionResult Register([FromBody] RegisterAccountRequest request)
     {
-        await _auth.RegisterAsync(request, ct);
+        _auth.Register(request);
         return Ok();
     }
 
     [HttpPost("verify-email")]
-    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request, CancellationToken ct)
+    public IActionResult VerifyEmail([FromBody] VerifyEmailRequest request)
     {
-        await _auth.VerifyEmailAsync(request, ct);
+        _auth.VerifyEmail(request);
         return Ok();
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<AuthTokens>> Login([FromBody] LoginRequest request, CancellationToken ct)
+    public ActionResult<AuthTokens> Login([FromBody] LoginRequest request)
     {
-        return Ok(await _auth.LoginAsync(request, ct));
+        return Ok(_auth.Login(request));
     }
 
     [HttpPost("refresh")]
-    public async Task<ActionResult<AuthTokens>> Refresh([FromBody] RefreshRequest request, CancellationToken ct)
+    public ActionResult<AuthTokens> Refresh([FromBody] RefreshRequest request)
     {
-        return Ok(await _auth.RefreshAsync(request, ct));
+        return Ok(_auth.Refresh(request));
     }
 
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout([FromBody] LogoutRequest request, CancellationToken ct)
+    public IActionResult Logout([FromBody] LogoutRequest request)
     {
-        await _auth.LogoutAsync(request, ct);
+        _auth.Logout(request);
         return Ok();
     }
 }

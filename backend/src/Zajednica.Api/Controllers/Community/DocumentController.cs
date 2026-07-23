@@ -20,21 +20,21 @@ public sealed class DocumentController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<DocumentDto>> Add(Guid communityId, [FromBody] AddDocumentRequest request, CancellationToken ct)
+    public ActionResult<DocumentDto> Add(Guid communityId, [FromBody] AddDocumentRequest request)
     {
-        return Ok(await _documents.AddAsync(User.AccountId(), communityId, request, ct));
+        return Ok(_documents.Add(User.AccountId(), communityId, request));
     }
 
     [HttpGet]
-    public async Task<ActionResult<PagedResult<DocumentDto>>> GetPaged(Guid communityId, [FromQuery] int page, [FromQuery] int pageSize, CancellationToken ct)
+    public ActionResult<PagedResult<DocumentDto>> GetPaged(Guid communityId, [FromQuery] int page, [FromQuery] int pageSize)
     {
-        return Ok(await _documents.GetPagedAsync(User.AccountId(), communityId, page, pageSize, ct));
+        return Ok(_documents.GetPaged(User.AccountId(), communityId, page, pageSize));
     }
 
     [HttpDelete("{documentId:guid}")]
-    public async Task<IActionResult> Remove(Guid communityId, Guid documentId, CancellationToken ct)
+    public IActionResult Remove(Guid communityId, Guid documentId)
     {
-        await _documents.RemoveAsync(User.AccountId(), communityId, documentId, ct);
+        _documents.Remove(User.AccountId(), communityId, documentId);
         return NoContent();
     }
 }

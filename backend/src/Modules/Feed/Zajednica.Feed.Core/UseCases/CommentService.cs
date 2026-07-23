@@ -19,102 +19,95 @@ public sealed class CommentService(
     AuthorDirectory authors,
     CommunityAccess access) : ICommentService
 {
-    private const int MaxPageSize = 50;
-
-    public async Task<CommentDto> AddAsync(Guid accountId, Guid communityId, Guid postId, AddCommentRequest request,
-        CancellationToken ct = default)
+    public CommentDto Add(Guid accountId, Guid communityId, Guid postId, AddCommentRequest request)
     {
-        var author = await access.RequireConfirmedAsync(accountId, communityId, ct);
-        var post = await RequireAsync(postId, communityId, ct);
+        var author = access.RequireConfirmed(accountId, communityId);
+        var post = Require(postId, communityId);
 
         var comment = post.AddComment(author.MembershipId, request.Text, DateTime.UtcNow);
-        await posts.UpdateAsync(post, ct);
+        posts.Update(post);
 
-        await NotifyAsync(post.AuthorMembershipId, author.MembershipId, "Novi komentar",
-            "Neko je komentarisao vašu objavu.", ct);
-        await PushChangedAsync(post, ct);
+        Notify(post.AuthorMembershipId, author.MembershipId, "Novi komentar",
+            "Neko je komentarisao vašu objavu.");
+        PushChanged(post);
 
-        return await SingleAsync(comment, ct);
+        return Single(comment);
     }
 
-    public async Task<CommentDto> ReplyAsync(Guid accountId, Guid communityId, Guid postId, Guid commentId,
-        AddCommentRequest request, CancellationToken ct = default)
+    public CommentDto Reply(Guid accountId, Guid communityId, Guid postId, Guid commentId,
+        AddCommentRequest request)
     {
-        var author = await access.RequireConfirmedAsync(accountId, communityId, ct);
-        var post = await RequireAsync(postId, communityId, ct);
+        var author = access.RequireConfirmed(accountId, communityId);
+        var post = Require(postId, communityId);
 
-        var parent = await posts.GetCommentAsync(postId, commentId, ct)
+        var parent = posts.GetComment(postId, commentId)
             ?? throw new NotFoundException("Comment not found on this post.");
 
         var reply = post.AddReply(parent, author.MembershipId, request.Text, DateTime.UtcNow);
-        await posts.UpdateAsync(post, ct);
+        posts.Update(post);
 
-        await NotifyAsync(parent.AuthorMembershipId, author.MembershipId, "Novi odgovor",
-            "Neko je odgovorio na vaš komentar.", ct);
-        await PushChangedAsync(post, ct);
+        Notify(parent.AuthorMembershipId, author.MembershipId, "Novi odgovor",
+            "Neko je odgovorio na vaš komentar.");
+        PushChanged(post);
 
-        return await SingleAsync(reply, ct);
+        return Single(reply);
     }
 
-    public async Task<CursorPage<CommentDto>> GetRootsAsync(Guid accountId, Guid communityId, Guid postId, string? cursor,
-        int limit, CancellationToken ct = default)
+    public Page<CommentDto> GetRoots(Guid accountId, Guid communityId, Guid postId, DateTime? after,
+        int limit)
     {
-        await access.RequireConfirmedAsync(accountId, communityId, ct);
-        await RequireAsync(postId, communityId, ct);
+        access.RequireConfirmed(accountId, communityId);
+        Require(postId, communityId);
 
-        return await PageAsync(postId, null, cursor, limit, ct);
+        return Page(postId, null, after, limit);
     }
 
-    public async Task<CursorPage<CommentDto>> GetRepliesAsync(Guid accountId, Guid communityId, Guid postId, Guid commentId,
-        string? cursor, int limit, CancellationToken ct = default)
+    public Page<CommentDto> GetReplies(Guid accountId, Guid communityId, Guid postId, Guid commentId,
+        DateTime? after, int limit)
     {
-        await access.RequireConfirmedAsync(accountId, communityId, ct);
-        await RequireAsync(postId, communityId, ct);
+        access.RequireConfirmed(accountId, communityId);
+        Require(postId, communityId);
 
-        return await PageAsync(postId, commentId, cursor, limit, ct);
+        return Page(postId, commentId, after, limit);
     }
 
-    private async Task<CursorPage<CommentDto>> PageAsync(Guid postId, Guid? parentCommentId, string? cursor, int limit,
-        CancellationToken ct)
+    private Page<CommentDto> Page(Guid postId, Guid? parentCommentId, DateTime? after, int limit)
     {
-        var page = await posts.GetCommentPageAsync(postId, parentCommentId, Cursor.Decode(cursor), Clamp(limit), ct);
-        var profiles = await authors.ForAsync(page.Items.Select(c => c.AuthorMembershipId).ToList(), ct);
+        var page = posts.GetCommentPage(postId, parentCommentId, after, Paging.Clamp(limit));
+        var profiles = authors.For(page.Items.Select(c => c.AuthorMembershipId).ToList());
 
         return page.ToDtoPage(profiles);
     }
 
-    private async Task<Post> RequireAsync(Guid postId, Guid communityId, CancellationToken ct)
+    private Post Require(Guid postId, Guid communityId)
     {
-        var post = await posts.GetAsync(postId, ct);
+        var post = posts.Get(postId);
         if (post is null || post.CommunityId != communityId)
             throw new NotFoundException("Post not found in this community.");
 
         return post;
     }
 
-    private async Task<CommentDto> SingleAsync(Comment comment, CancellationToken ct)
+    private CommentDto Single(Comment comment)
     {
-        var profiles = await authors.ForAsync([comment.AuthorMembershipId], ct);
+        var profiles = authors.For([comment.AuthorMembershipId]);
         return comment.ToDto(profiles.GetValueOrDefault(comment.AuthorMembershipId));
     }
 
-    private async Task NotifyAsync(Guid recipientMembershipId, Guid actorMembershipId, string title, string body,
-        CancellationToken ct)
+    private void Notify(Guid recipientMembershipId, Guid actorMembershipId, string title, string body)
     {
         if (recipientMembershipId == actorMembershipId)
             return;
 
-        var recipient = (await memberships.GetContextsAsync([recipientMembershipId], ct)).SingleOrDefault();
+        var recipient = (memberships.GetContexts([recipientMembershipId])).SingleOrDefault();
         if (recipient is null)
             return;
 
-        await notifications.SendAsync(
-            new NotificationRequest(recipient.AccountId, title, body, NotificationPriority.Default), ct);
+        notifications.Send(
+            new NotificationRequest(recipient.AccountId, title, body, NotificationPriority.Default));
     }
 
-    private Task PushChangedAsync(Post post, CancellationToken ct) =>
-        realtime.PushToChannelAsync(Channels.Community(post.CommunityId),
-            new RealtimeMessage("post.comments.changed", new { postId = post.Id }), ct);
-
-    private static int Clamp(int limit) => limit < 1 ? 20 : Math.Min(limit, MaxPageSize);
+    private void PushChanged(Post post) =>
+        realtime.PushToChannel(Channels.Community(post.CommunityId),
+            new RealtimeMessage("post.comments.changed", new { postId = post.Id }));
 }

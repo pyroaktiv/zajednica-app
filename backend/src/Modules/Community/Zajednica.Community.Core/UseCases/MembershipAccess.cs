@@ -7,13 +7,13 @@ namespace Zajednica.Community.Core.UseCases;
 
 public sealed class MembershipAccess(ICommunityRepository communities, IMembershipRepository memberships)
 {
-    public async Task<(CommunityAggregate Community, Membership Membership)> RequireMemberAsync(
-        Guid accountId, Guid communityId, CancellationToken ct = default)
+    public (CommunityAggregate Community, Membership Membership) RequireMember(
+        Guid accountId, Guid communityId)
     {
-        var community = await communities.GetByIdAsync(communityId, ct)
+        var community = communities.GetById(communityId)
             ?? throw new NotFoundException("Community not found.");
 
-        var membership = await memberships.GetAsync(accountId, communityId, ct)
+        var membership = memberships.Get(accountId, communityId)
             ?? throw new ForbiddenException("Not a member of this community.");
 
         if (!membership.IsActive())
@@ -22,10 +22,10 @@ public sealed class MembershipAccess(ICommunityRepository communities, IMembersh
         return (community, membership);
     }
 
-    public async Task<(CommunityAggregate Community, Membership Membership)> RequireConfirmedAsync(
-        Guid accountId, Guid communityId, CancellationToken ct = default)
+    public (CommunityAggregate Community, Membership Membership) RequireConfirmed(
+        Guid accountId, Guid communityId)
     {
-        var access = await RequireMemberAsync(accountId, communityId, ct);
+        var access = RequireMember(accountId, communityId);
 
         if (!access.Membership.IsConfirmed())
             throw new ForbiddenException("Only a confirmed member can do this.");
@@ -33,14 +33,14 @@ public sealed class MembershipAccess(ICommunityRepository communities, IMembersh
         return access;
     }
 
-    public Task<(CommunityAggregate Community, Membership Membership)> RequireRoleAsync(
-        Guid accountId, Guid communityId, CommunityRole role, CancellationToken ct = default) =>
-        RequireAnyRoleAsync(accountId, communityId, ct, role);
+    public (CommunityAggregate Community, Membership Membership) RequireRole(
+        Guid accountId, Guid communityId, CommunityRole role) =>
+        RequireAnyRole(accountId, communityId, role);
 
-    public async Task<(CommunityAggregate Community, Membership Membership)> RequireAnyRoleAsync(
-        Guid accountId, Guid communityId, CancellationToken ct = default, params CommunityRole[] roles)
+    public (CommunityAggregate Community, Membership Membership) RequireAnyRole(
+        Guid accountId, Guid communityId, params CommunityRole[] roles)
     {
-        var access = await RequireConfirmedAsync(accountId, communityId, ct);
+        var access = RequireConfirmed(accountId, communityId);
 
         if (!roles.Any(access.Membership.HasRole))
             throw new ForbiddenException($"Requires one of the roles: {string.Join(", ", roles)}.");

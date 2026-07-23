@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Zajednica.Feed.Core.Domain.Intents;
 using Zajednica.Feed.Core.Domain.Posts;
-using Zajednica.Feed.Infrastructure.Database.EventStore;
 
 namespace Zajednica.Feed.Infrastructure.Database;
 
@@ -9,7 +8,7 @@ public class FeedDbContext(DbContextOptions<FeedDbContext> options) : DbContext(
 {
     public DbSet<Post> Posts => Set<Post>();
     public DbSet<Comment> Comments => Set<Comment>();
-    public DbSet<StoredEvent> IntentEvents => Set<StoredEvent>();
+    public DbSet<IntentEvent> IntentEvents => Set<IntentEvent>();
     public DbSet<IntentView> IntentViews => Set<IntentView>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

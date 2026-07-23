@@ -5,10 +5,10 @@ namespace Zajednica.Feed.Api.Public;
 
 public interface IPostService
 {
-    Task<PostDto> CreateGeneralAsync(Guid accountId, Guid communityId, CreateGeneralPostRequest request, CancellationToken ct = default);
-    Task<PostDto> CreateHelpRequestAsync(Guid accountId, Guid communityId, CreateHelpRequestRequest request, CancellationToken ct = default);
-    Task<PostDto> CloseHelpRequestAsync(Guid accountId, Guid communityId, Guid postId, CancellationToken ct = default);
+    PostDto CreateGeneral(Guid accountId, Guid communityId, CreateGeneralPostRequest request);
+    PostDto CreateHelpRequest(Guid accountId, Guid communityId, CreateHelpRequestRequest request);
+    PostDto CloseHelpRequest(Guid accountId, Guid communityId, Guid postId);
 
-    Task<PostDto> GetAsync(Guid accountId, Guid communityId, Guid postId, CancellationToken ct = default);
-    Task<PagedResult<PostDto>> GetPagedAsync(Guid accountId, Guid communityId, int page, int pageSize, CancellationToken ct = default);
+    PostDto Get(Guid accountId, Guid communityId, Guid postId);
+    Page<PostDto> GetPage(Guid accountId, Guid communityId, DateTime? before, int limit);
 }

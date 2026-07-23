@@ -1,21 +1,19 @@
-using Zajednica.Feed.Core.Domain.Intents.Events;
-
 namespace Zajednica.Feed.Core.Domain.Intents;
 
-public sealed class BanIntent : Intent
+public sealed class BanIntent : UserTargetingIntent
 {
     internal BanIntent() { }
 
-    public override string IntentType => "BAN";
+    public override IntentKind Kind => IntentKind.Ban;
 
     public static BanIntent Open(Guid communityId, Guid authorMembershipId, Guid targetMembershipId, string text,
-        int eligibleVoterCount, bool targetEligible, DateTime now)
+        int eligibleVoterCount, bool targetIsConfirmedMember, DateTime now)
     {
         var intent = new BanIntent();
-        intent.Raise(Validated(
-            new BanIntentOpened(now, communityId, authorMembershipId, targetMembershipId, text?.Trim() ?? string.Empty,
-                now.Add(VotingWindow), eligibleVoterCount),
-            targetEligible));
+        intent.RaiseOpenedAbout(
+            UserTargetingIntentEvent.Opened(intent.Kind, communityId, authorMembershipId, targetMembershipId, text,
+                eligibleVoterCount, now),
+            targetIsConfirmedMember);
 
         return intent;
     }

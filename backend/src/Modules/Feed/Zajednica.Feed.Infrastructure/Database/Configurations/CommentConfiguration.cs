@@ -13,7 +13,7 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.Property(c => c.Id).ValueGeneratedNever();
 
         builder.Property(c => c.Text).IsRequired();
-        builder.HasIndex(c => new { c.PostId, c.ParentCommentId, c.Date, c.Id });
+        builder.HasIndex(c => new { c.PostId, c.ParentCommentId, c.Date });
 
         builder.HasOne<Comment>()
             .WithMany()

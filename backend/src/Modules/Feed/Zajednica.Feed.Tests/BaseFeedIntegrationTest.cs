@@ -34,35 +34,35 @@ public class BaseFeedIntegrationTest : BaseWebIntegrationTest<FeedTestFactory>
     protected static IntentController Intents(IServiceScope scope, Guid accountId) =>
         As(new IntentController(scope.ServiceProvider.GetRequiredService<IIntentService>()), accountId);
 
-    protected static async Task<(CommunityDetailsDto Community, Member Owner)> CreateCommunityAsync(IServiceScope scope)
+    protected static (CommunityDetailsDto Community, Member Owner) CreateCommunity(IServiceScope scope)
     {
         var accountId = NewAccount(scope);
         var request = new CreateCommunityRequest(
             $"Zgrada {Guid.NewGuid():N}", new AddressDto("Bulevar", "12", 45.25m, 19.83m), null, null, null);
 
-        var community = await Communities(scope).CreateAsync(accountId, request);
-        return (community, new Member(accountId, await MembershipIdAsync(scope, accountId, community.Id)));
+        var community = Communities(scope).Create(accountId, request);
+        return (community, new Member(accountId, MembershipId(scope, accountId, community.Id)));
     }
 
-    protected static async Task<Member> AddConfirmedMemberAsync(IServiceScope scope, Guid issuerAccountId, Guid communityId)
+    protected static Member AddConfirmedMember(IServiceScope scope, Guid issuerAccountId, Guid communityId)
     {
-        var member = await AddUnconfirmedMemberAsync(scope, issuerAccountId, communityId);
+        var member = AddUnconfirmedMember(scope, issuerAccountId, communityId);
         var certification = scope.ServiceProvider.GetRequiredService<ICertificationService>();
 
-        var challenge = await certification.CreateChallengeAsync(issuerAccountId, communityId);
-        await certification.ConfirmAsync(member.AccountId, new ConfirmCertificationRequest(challenge.Token));
+        var challenge = certification.CreateChallenge(issuerAccountId, communityId);
+        certification.Confirm(member.AccountId, new ConfirmCertificationRequest(challenge.Token));
 
         return member;
     }
 
-    protected static async Task<Member> AddUnconfirmedMemberAsync(IServiceScope scope, Guid issuerAccountId, Guid communityId)
+    protected static Member AddUnconfirmedMember(IServiceScope scope, Guid issuerAccountId, Guid communityId)
     {
         var accountId = NewAccount(scope);
-        var qr = await Communities(scope).GetQrAsync(issuerAccountId, communityId);
+        var qr = Communities(scope).GetQr(issuerAccountId, communityId);
 
-        await Communities(scope).JoinAsync(accountId, new JoinCommunityRequest(qr.QrToken));
+        Communities(scope).Join(accountId, new JoinCommunityRequest(qr.QrToken));
 
-        return new Member(accountId, await MembershipIdAsync(scope, accountId, communityId));
+        return new Member(accountId, MembershipId(scope, accountId, communityId));
     }
 
     protected static Guid NewAccount(IServiceScope scope)
@@ -81,8 +81,8 @@ public class BaseFeedIntegrationTest : BaseWebIntegrationTest<FeedTestFactory>
     private static ICommunityService Communities(IServiceScope scope) =>
         scope.ServiceProvider.GetRequiredService<ICommunityService>();
 
-    private static async Task<Guid> MembershipIdAsync(IServiceScope scope, Guid accountId, Guid communityId) =>
-        (await scope.ServiceProvider.GetRequiredService<IMembershipService>().GetMineAsync(accountId, communityId)).MembershipId;
+    private static Guid MembershipId(IServiceScope scope, Guid accountId, Guid communityId) =>
+        (scope.ServiceProvider.GetRequiredService<IMembershipService>().GetMine(accountId, communityId)).MembershipId;
 
     private static TController As<TController>(TController controller, Guid accountId)
         where TController : ControllerBase

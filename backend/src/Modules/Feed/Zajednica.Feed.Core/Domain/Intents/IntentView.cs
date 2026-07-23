@@ -6,13 +6,13 @@ public class IntentView : Entity
 {
     public Guid CommunityId { get; private set; }
     public Guid AuthorMembershipId { get; private set; }
-    public Guid TargetMembershipId { get; private set; }
-    public string IntentType { get; private set; } = null!;
+    public Guid? TargetMembershipId { get; private set; }
+    public IntentKind Kind { get; private set; }
     public string Text { get; private set; } = null!;
     public DateTime DateCreated { get; private set; }
-    public IntentStatus Status { get; private set; }
     public DateTime Deadline { get; private set; }
     public DateTime? DateOfClosure { get; private set; }
+    public IntentStatus Status { get; private set; }
     public int EligibleVoterCount { get; private set; }
     public int VotesFor { get; private set; }
     public int VotesAgainst { get; private set; }
@@ -24,17 +24,17 @@ public class IntentView : Entity
         Id = intent.Id;
         CommunityId = intent.CommunityId;
         AuthorMembershipId = intent.AuthorMembershipId;
-        TargetMembershipId = intent.TargetMembershipId;
-        IntentType = intent.IntentType;
+        TargetMembershipId = (intent as UserTargetingIntent)?.TargetMembershipId;
+        Kind = intent.Kind;
         Text = intent.Text;
         DateCreated = intent.DateCreated;
         Deadline = intent.Deadline;
         EligibleVoterCount = intent.EligibleVoterCount;
 
-        Refresh(intent);
+        Update(intent);
     }
 
-    public void Refresh(Intent intent)
+    public void Update(Intent intent)
     {
         Status = intent.Status;
         DateOfClosure = intent.DateOfClosure;

@@ -23,59 +23,59 @@ public sealed class CertificationService(
 {
     private static readonly TimeSpan ChallengeLifetime = TimeSpan.FromMinutes(2);
 
-    public async Task<CertificationChallengeDto> CreateChallengeAsync(Guid accountId, Guid communityId, CancellationToken ct = default)
+    public CertificationChallengeDto CreateChallenge(Guid accountId, Guid communityId)
     {
-        var (_, issuer) = await access.RequireRoleAsync(accountId, communityId, CommunityRole.Issuer, ct);
+        var (_, issuer) = access.RequireRole(accountId, communityId, CommunityRole.Issuer);
 
         var challenge = new CertificationChallenge(
             communityId, issuer.Id, tokens.Generate(), DateTime.UtcNow.Add(ChallengeLifetime));
-        await challenges.AddAsync(challenge, ct);
+        challenges.Add(challenge);
 
         return challenge.ToDto();
     }
 
-    public async Task CancelChallengeAsync(Guid accountId, Guid communityId, Guid challengeId, CancellationToken ct = default)
+    public void CancelChallenge(Guid accountId, Guid communityId, Guid challengeId)
     {
-        var (_, issuer) = await access.RequireRoleAsync(accountId, communityId, CommunityRole.Issuer, ct);
+        var (_, issuer) = access.RequireRole(accountId, communityId, CommunityRole.Issuer);
 
-        var challenge = await challenges.GetByIdAsync(challengeId, ct);
+        var challenge = challenges.GetById(challengeId);
         if (challenge is null || challenge.CommunityId != communityId)
             throw new NotFoundException("Challenge not found in this community.");
         if (challenge.IssuerMembershipId != issuer.Id)
             throw new ForbiddenException("Only the issuer who created the challenge can cancel it.");
 
-        await challenges.RemoveAsync(challenge, ct);
+        challenges.Remove(challenge);
     }
 
-    public async Task<CertificationResultDto> ConfirmAsync(Guid accountId, ConfirmCertificationRequest request, CancellationToken ct = default)
+    public CertificationResultDto Confirm(Guid accountId, ConfirmCertificationRequest request)
     {
         var now = DateTime.UtcNow;
-        var challenge = await challenges.GetByTokenAsync(request.Token, ct)
+        var challenge = challenges.GetByToken(request.Token)
             ?? throw new NotFoundException("Certification challenge not found.");
 
         if (!challenge.IsValid(now))
         {
-            await challenges.RemoveAsync(challenge, ct);
+            challenges.Remove(challenge);
             throw new EntityValidationException("Certification challenge has expired.");
         }
 
-        var candidate = await memberships.GetAsync(accountId, challenge.CommunityId, ct)
+        var candidate = memberships.Get(accountId, challenge.CommunityId)
             ?? throw new ForbiddenException("Not a member of this community.");
-        var issuer = await memberships.GetByIdAsync(challenge.IssuerMembershipId, ct)
+        var issuer = memberships.GetById(challenge.IssuerMembershipId)
             ?? throw new NotFoundException("Issuer membership not found.");
 
         var certificate = certification.Certify(issuer, candidate, now);
 
-        await memberships.UpdateAsync(candidate, ct);
-        await certificates.AddAsync(certificate, ct);
-        await challenges.RemoveAsync(challenge, ct);
+        memberships.Update(candidate);
+        certificates.Add(certificate);
+        challenges.Remove(challenge);
 
-        await realtime.PushToUserAsync(issuer.AccountId,
-            new RealtimeMessage("certification.confirmed", new { challengeId = challenge.Id, membershipId = candidate.Id }), ct);
-        await realtime.PushToUserAsync(accountId,
-            new RealtimeMessage("membership.roles.changed", new { communityId = challenge.CommunityId }), ct);
-        await notifications.SendAsync(new NotificationRequest(
-            accountId, "Potvrda članstva", "Vaše članstvo u zajednici je potvrđeno.", NotificationPriority.Default), ct);
+        realtime.PushToUser(issuer.AccountId,
+            new RealtimeMessage("certification.confirmed", new { challengeId = challenge.Id, membershipId = candidate.Id }));
+        realtime.PushToUser(accountId,
+            new RealtimeMessage("membership.roles.changed", new { communityId = challenge.CommunityId }));
+        notifications.Send(new NotificationRequest(
+            accountId, "Potvrda članstva", "Vaše članstvo u zajednici je potvrđeno.", NotificationPriority.Default));
 
         return candidate.ToCertificationResultDto(certificate.Date);
     }
