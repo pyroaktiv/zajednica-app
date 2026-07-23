@@ -9,23 +9,23 @@ public abstract class EventSourcedAggregateRoot<TEvent> : AggregateRoot where TE
 
     public void ClearNewEvents() => _newEvents.Clear();
 
-    protected void LoadFromHistory(Guid id, IReadOnlyList<TEvent> history)
+    protected void ReplayFromHistory(Guid id, IReadOnlyList<TEvent> history)
     {
         Id = id;
 
         foreach (var sourceEvent in history)
-            Apply(sourceEvent);
+            ApplyToSelf(sourceEvent);
 
         Version = history.Count;
     }
 
-    protected void Raise(TEvent sourceEvent)
+    protected void RegisterEvent(TEvent sourceEvent)
     {
         sourceEvent.PlaceInStream(Id, Version + 1);
-        Apply(sourceEvent);
+        ApplyToSelf(sourceEvent);
         Version++;
         _newEvents.Add(sourceEvent);
     }
 
-    protected abstract void Apply(TEvent sourceEvent);
+    protected abstract void ApplyToSelf(TEvent sourceEvent);
 }

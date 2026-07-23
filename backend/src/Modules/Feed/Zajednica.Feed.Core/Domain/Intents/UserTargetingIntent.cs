@@ -24,9 +24,9 @@ public abstract class UserTargetingIntent : Intent
     protected override IntentEvent NewClosed(IntentStatus status, DateTime at) =>
         UserTargetingIntentEvent.Closed(status, at);
 
-    protected override void Apply(IntentEvent intentEvent)
+    protected override void ApplyToSelf(IntentEvent intentEvent)
     {
-        base.Apply(intentEvent);
+        base.ApplyToSelf(intentEvent);
 
         if (intentEvent is UserTargetingIntentEvent { Type: IntentEventType.Opened } opened)
             TargetMembershipId = opened.TargetMembershipId;

@@ -5,7 +5,7 @@ namespace Zajednica.Feed.Core.Domain.Intents;
 
 public abstract class Intent : EventSourcedAggregateRoot<IntentEvent>
 {
-    public static readonly TimeSpan VotingWindow = TimeSpan.FromHours(48);
+    public static TimeSpan VotingWindow { get; protected set; } = TimeSpan.FromHours(48);
 
     private readonly Dictionary<Guid, bool> _votes = [];
 
@@ -37,7 +37,7 @@ public abstract class Intent : EventSourcedAggregateRoot<IntentEvent>
             _ => throw new EntityValidationException("Unknown intent kind.")
         };
 
-        intent.LoadFromHistory(id, history);
+        intent.ReplayFromHistory(id, history);
 
         return intent;
     }
@@ -49,7 +49,7 @@ public abstract class Intent : EventSourcedAggregateRoot<IntentEvent>
         if (_votes.ContainsKey(voterMembershipId))
             throw new EntityValidationException("This member has already voted on this intent.");
 
-        Raise(NewVote(voterMembershipId, inFavor, now));
+        RegisterEvent(NewVote(voterMembershipId, inFavor, now));
     }
 
     public IntentStatus Close(DateTime now)
@@ -58,7 +58,7 @@ public abstract class Intent : EventSourcedAggregateRoot<IntentEvent>
             throw new EntityValidationException("Intent is already closed.");
 
         var status = Decide();
-        Raise(NewClosed(status, now));
+        RegisterEvent(NewClosed(status, now));
 
         return status;
     }
@@ -68,7 +68,7 @@ public abstract class Intent : EventSourcedAggregateRoot<IntentEvent>
         if (Status != IntentStatus.Open)
             throw new EntityValidationException("Only an open intent can be cancelled.");
 
-        Raise(NewClosed(IntentStatus.Rejected, now));
+        RegisterEvent(NewClosed(IntentStatus.Rejected, now));
     }
 
     public bool? VoteOf(Guid membershipId) => _votes.TryGetValue(membershipId, out var vote) ? vote : null;
@@ -90,10 +90,10 @@ public abstract class Intent : EventSourcedAggregateRoot<IntentEvent>
         if (opened.EligibleVoterCount < 1)
             throw new EntityValidationException("An intent needs at least one eligible voter.");
 
-        Raise(opened);
+        RegisterEvent(opened);
     }
 
-    protected override void Apply(IntentEvent intentEvent)
+    protected override void ApplyToSelf(IntentEvent intentEvent)
     {
         switch (intentEvent.Type)
         {
