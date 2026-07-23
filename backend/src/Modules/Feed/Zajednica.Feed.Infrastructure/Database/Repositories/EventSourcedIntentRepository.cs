@@ -2,10 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Feed.Core.Domain.Intents;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
+using Zajednica.Feed.Core.UseCases.Queries;
 
 namespace Zajednica.Feed.Infrastructure.Database.Repositories;
 
-internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRepository
+internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRepository, IIntentQueryStore
 {
     public void Add(Intent intent) => Append(intent);
 

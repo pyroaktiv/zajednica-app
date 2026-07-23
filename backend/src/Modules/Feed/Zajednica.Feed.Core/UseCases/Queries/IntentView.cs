@@ -1,9 +1,10 @@
-using Zajednica.BuildingBlocks.Core.Domain;
+using Zajednica.Feed.Core.Domain.Intents;
 
-namespace Zajednica.Feed.Core.Domain.Intents;
+namespace Zajednica.Feed.Core.UseCases.Queries;
 
-public class IntentView : Entity
+public class IntentView
 {
+    public Guid Id { get; private set; }
     public Guid CommunityId { get; private set; }
     public Guid AuthorMembershipId { get; private set; }
     public Guid? TargetMembershipId { get; private set; }

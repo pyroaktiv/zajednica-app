@@ -8,12 +8,14 @@ using Zajednica.Feed.Api.Public;
 using Zajednica.Feed.Core.Domain.Intents;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 using Zajednica.Feed.Core.Mappers;
+using Zajednica.Feed.Core.UseCases.Queries;
 using Zajednica.Identity.Api.Internal.Dto;
 
 namespace Zajednica.Feed.Core.UseCases;
 
 public sealed class IntentService(
     IIntentRepository intents,
+    IIntentQueryStore intentQueries,
     IInternalMembershipService memberships,
     INotificationSender notifications,
     IRealtimePusher realtime,
@@ -70,7 +72,7 @@ public sealed class IntentService(
         access.RequireConfirmed(accountId, communityId);
         CloseDue(communityId);
 
-        var page = intents.GetPage(communityId, before, Paging.Clamp(limit));
+        var page = intentQueries.GetPage(communityId, before, Paging.Clamp(limit));
         var profiles = authors.For(
             page.Items.Where(v => v.TargetMembershipId is not null).Select(v => v.TargetMembershipId!.Value).ToList());
 
@@ -134,7 +136,7 @@ public sealed class IntentService(
     private void CancelOtherIntents(BanIntent ban)
     {
         var now = DateTime.UtcNow;
-        var open = intents.GetOpenViewsByTarget(ban.CommunityId, ban.TargetMembershipId);
+        var open = intentQueries.GetOpenViewsByTarget(ban.CommunityId, ban.TargetMembershipId);
 
         foreach (var view in open.Where(v => v.Id != ban.Id))
         {
@@ -152,7 +154,7 @@ public sealed class IntentService(
     {
         var now = DateTime.UtcNow;
 
-        foreach (var view in intents.GetDueViews(communityId, now))
+        foreach (var view in intentQueries.GetDueViews(communityId, now))
         {
             var intent = intents.Get(view.Id);
             if (intent is null || !intent.ShouldClose(now))

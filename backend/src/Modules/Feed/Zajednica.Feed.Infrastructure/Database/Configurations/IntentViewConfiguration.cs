@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Zajednica.Feed.Core.Domain.Intents;
+using Zajednica.Feed.Core.UseCases.Queries;
 
 namespace Zajednica.Feed.Infrastructure.Database.Configurations;
 

@@ -1,5 +1,6 @@
 using Zajednica.Feed.Api.Dto.Intents;
 using Zajednica.Feed.Core.Domain.Intents;
+using Zajednica.Feed.Core.UseCases.Queries;
 using Zajednica.Identity.Api.Internal.Dto;
 
 namespace Zajednica.Feed.Core.Mappers;
