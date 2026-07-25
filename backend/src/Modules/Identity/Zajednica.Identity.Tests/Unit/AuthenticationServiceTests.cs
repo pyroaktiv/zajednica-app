@@ -24,8 +24,8 @@ public class AuthenticationServiceTests
     {
         _passwordHasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("salt.hash");
         _secureTokens.Setup(t => t.Generate()).Returns("verification-token");
-        _accounts.Setup(r => r.ExistsByUsernameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        _accounts.Setup(r => r.ExistsByEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        _accounts.Setup(r => r.ExistsByUsername(It.IsAny<string>())).Returns(false);
+        _accounts.Setup(r => r.ExistsByEmail(It.IsAny<string>())).Returns(false);
     }
 
     private AuthenticationService Sut() => new(
@@ -37,29 +37,29 @@ public class AuthenticationServiceTests
         new("pera", "pera@example.com", password, null, null, null, null);
 
     [Fact]
-    public async Task Successful_registration_persists_the_account_and_sends_one_activation_email()
+    public void Successful_registration_persists_the_account_and_sends_one_activation_email()
     {
-        await Sut().RegisterAsync(Registration());
+        Sut().Register(Registration());
 
-        _accounts.Verify(r => r.AddAsync(It.IsAny<Account>(), It.IsAny<CancellationToken>()), Times.Once);
-        _email.Verify(e => e.SendAsync("pera@example.com", It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        _accounts.Verify(r => r.Add(It.IsAny<Account>()), Times.Once);
+        _email.Verify(e => e.Send("pera@example.com", It.IsAny<string>(), It.IsAny<string>()), Times.Once);
     }
 
     [Fact]
-    public async Task A_too_short_password_sends_no_email()
+    public void A_too_short_password_sends_no_email()
     {
-        await Should.ThrowAsync<EntityValidationException>(() => Sut().RegisterAsync(Registration("short")));
+        Should.Throw<EntityValidationException>(() => Sut().Register(Registration("short")));
 
-        _email.Verify(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _email.Verify(e => e.Send(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
-    public async Task A_taken_username_sends_no_email()
+    public void A_taken_username_sends_no_email()
     {
-        _accounts.Setup(r => r.ExistsByUsernameAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _accounts.Setup(r => r.ExistsByUsername(It.IsAny<string>())).Returns(true);
 
-        await Should.ThrowAsync<EntityValidationException>(() => Sut().RegisterAsync(Registration()));
+        Should.Throw<EntityValidationException>(() => Sut().Register(Registration()));
 
-        _email.Verify(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _email.Verify(e => e.Send(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 }

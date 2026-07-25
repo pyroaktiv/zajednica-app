@@ -12,30 +12,30 @@ public sealed class InternalAccountService : IInternalAccountService
 
     public InternalAccountService(IAccountRepository accounts) => _accounts = accounts;
 
-    public async Task<string?> GetUsernameAsync(Guid accountId, CancellationToken ct = default) =>
-        (await _accounts.GetByIdAsync(accountId, ct))?.Username;
+    public string? GetUsername(Guid accountId) =>
+        (_accounts.GetById(accountId))?.Username;
 
-    public async Task<IReadOnlyList<AccountUsernameDto>> GetUsernamesAsync(
-        IReadOnlyCollection<Guid> accountIds, CancellationToken ct = default)
+    public IReadOnlyList<AccountUsernameDto> GetUsernames(
+        IReadOnlyCollection<Guid> accountIds)
     {
         if (accountIds.Count == 0)
             return [];
-        var accounts = await _accounts.GetManyByIdsAsync(accountIds, ct);
+        var accounts = _accounts.GetManyByIds(accountIds);
         return accounts.Select(a => a.ToUsernameDto()).ToList();
     }
 
-    public async Task<AccountProfileDto?> GetProfileAsync(Guid accountId, CancellationToken ct = default)
+    public AccountProfileDto? GetProfile(Guid accountId)
     {
-        var account = await _accounts.GetByIdAsync(accountId, ct);
+        var account = _accounts.GetById(accountId);
         return account?.ToAccountProfileDto();
     }
 
-    public async Task<IReadOnlyList<AccountProfileDto>> GetProfilesAsync(
-        IReadOnlyCollection<Guid> accountIds, CancellationToken ct = default)
+    public IReadOnlyList<AccountProfileDto> GetProfiles(
+        IReadOnlyCollection<Guid> accountIds)
     {
         if (accountIds.Count == 0)
             return [];
-        var accounts = await _accounts.GetManyByIdsAsync(accountIds, ct);
+        var accounts = _accounts.GetManyByIds(accountIds);
         return accounts.Select(a => a.ToAccountProfileDto()).ToList();
     }
 }

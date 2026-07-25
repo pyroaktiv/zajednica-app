@@ -20,46 +20,46 @@ public sealed class CommunityController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<CommunityDetailsDto>> Create([FromBody] CreateCommunityRequest request, CancellationToken ct)
+    public ActionResult<CommunityDetailsDto> Create([FromBody] CreateCommunityRequest request)
     {
-        var created = await _communities.CreateAsync(User.AccountId(), request, ct);
+        var created = _communities.Create(User.AccountId(), request);
         return CreatedAtAction(nameof(Get), new { communityId = created.Id }, created);
     }
 
     [HttpGet("mine")]
-    public async Task<ActionResult<IReadOnlyList<MyCommunityDto>>> GetMine(CancellationToken ct)
+    public ActionResult<IReadOnlyList<MyCommunityDto>> GetMine()
     {
-        return Ok(await _communities.GetMineAsync(User.AccountId(), ct));
+        return Ok(_communities.GetMine(User.AccountId()));
     }
 
     [HttpGet("{communityId:guid}")]
-    public async Task<ActionResult<CommunityDetailsDto>> Get(Guid communityId, CancellationToken ct)
+    public ActionResult<CommunityDetailsDto> Get(Guid communityId)
     {
-        return Ok(await _communities.GetAsync(User.AccountId(), communityId, ct));
+        return Ok(_communities.Get(User.AccountId(), communityId));
     }
 
     [HttpPut("{communityId:guid}")]
-    public async Task<ActionResult<CommunityDetailsDto>> Update(Guid communityId, [FromBody] UpdateCommunityRequest request, CancellationToken ct)
+    public ActionResult<CommunityDetailsDto> Update(Guid communityId, [FromBody] UpdateCommunityRequest request)
     {
-        return Ok(await _communities.UpdateAsync(User.AccountId(), communityId, request, ct));
+        return Ok(_communities.Update(User.AccountId(), communityId, request));
     }
 
     [HttpGet("{communityId:guid}/qr")]
-    public async Task<ActionResult<CommunityQrDto>> GetQr(Guid communityId, CancellationToken ct)
+    public ActionResult<CommunityQrDto> GetQr(Guid communityId)
     {
-        return Ok(await _communities.GetQrAsync(User.AccountId(), communityId, ct));
+        return Ok(_communities.GetQr(User.AccountId(), communityId));
     }
 
     [HttpPost("join")]
-    public async Task<ActionResult<MemberProfileDto>> Join([FromBody] JoinCommunityRequest request, CancellationToken ct)
+    public ActionResult<MemberProfileDto> Join([FromBody] JoinCommunityRequest request)
     {
-        return Ok(await _communities.JoinAsync(User.AccountId(), request, ct));
+        return Ok(_communities.Join(User.AccountId(), request));
     }
 
     [HttpPost("{communityId:guid}/leave")]
-    public async Task<IActionResult> Leave(Guid communityId, CancellationToken ct)
+    public IActionResult Leave(Guid communityId)
     {
-        await _communities.LeaveAsync(User.AccountId(), communityId, ct);
+        _communities.Leave(User.AccountId(), communityId);
         return NoContent();
     }
 }

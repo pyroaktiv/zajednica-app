@@ -2,14 +2,14 @@ namespace Zajednica.Community.Core.Domain.RepositoryInterfaces;
 
 public interface IMembershipRepository
 {
-    Task AddAsync(Membership membership, CancellationToken ct = default);
-    Task UpdateAsync(Membership membership, CancellationToken ct = default);
+    void Add(Membership membership);
+    void Update(Membership membership);
 
-    Task<Membership?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    Task<Membership?> GetAsync(Guid accountId, Guid communityId, CancellationToken ct = default);
-    Task<IReadOnlyList<Membership>> GetManyByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default);
-    Task<IReadOnlyList<Membership>> GetByAccountAsync(Guid accountId, CancellationToken ct = default);
-    Task<IReadOnlyList<Membership>> GetByCommunityAsync(Guid communityId, CancellationToken ct = default);
+    Membership? GetById(Guid id);
+    Membership? Get(Guid accountId, Guid communityId);
+    IReadOnlyList<Membership> GetManyByIds(IReadOnlyCollection<Guid> ids);
+    IReadOnlyList<Membership> GetByAccount(Guid accountId);
+    IReadOnlyList<Membership> GetByCommunity(Guid communityId);
 
-    Task<int> CountConfirmedAsync(Guid communityId, CancellationToken ct = default);
+    int CountConfirmed(Guid communityId);
 }

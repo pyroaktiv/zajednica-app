@@ -16,20 +16,20 @@ public sealed class ProfileService : IProfileService
         _accounts = accounts;
     }
 
-    public async Task<ProfileDto> GetAsync(Guid accountId, CancellationToken ct = default)
+    public ProfileDto Get(Guid accountId)
     {
-        var account = await _accounts.GetByIdAsync(accountId, ct)
+        var account = _accounts.GetById(accountId)
             ?? throw new NotFoundException("Account not found.");
         return account.ToProfileDto();
     }
 
-    public async Task<ProfileDto> UpdateAsync(Guid accountId, UpdateProfileRequest request, CancellationToken ct = default)
+    public ProfileDto Update(Guid accountId, UpdateProfileRequest request)
     {
-        var account = await _accounts.GetByIdAsync(accountId, ct)
+        var account = _accounts.GetById(accountId)
             ?? throw new NotFoundException("Account not found.");
 
         account.UpdateProfile(request.FirstName, request.LastName, request.Phone, request.ContactEmail, request.ImageUrl);
-        await _accounts.UpdateAsync(account, ct);
+        _accounts.Update(account);
 
         return account.ToProfileDto();
     }

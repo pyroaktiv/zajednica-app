@@ -41,7 +41,7 @@ public sealed class AuthenticationService : IAuthenticationService
         _settings = settings;
     }
 
-    public async Task RegisterAsync(RegisterAccountRequest request, CancellationToken ct = default)
+    public void Register(RegisterAccountRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < MinPasswordLength)
             throw new EntityValidationException($"Password must be at least {MinPasswordLength} characters.");
@@ -49,44 +49,44 @@ public sealed class AuthenticationService : IAuthenticationService
         var now = DateTime.UtcNow;
         var account = new Account(request.Username, request.Email, _passwordHasher.Hash(request.Password), now);
 
-        if (await _accounts.ExistsByUsernameAsync(account.Username, ct))
+        if (_accounts.ExistsByUsername(account.Username))
             throw new EntityValidationException("Username is already taken.");
-        if (await _accounts.ExistsByEmailAsync(account.Email, ct))
+        if (_accounts.ExistsByEmail(account.Email))
             throw new EntityValidationException("Email is already registered.");
 
         if (HasProfileData(request))
             account.UpdateProfile(request.FirstName, request.LastName, request.Phone, request.ContactEmail, imageUrl: null);
 
-        await _accounts.AddAsync(account, ct);
+        _accounts.Add(account);
 
         var verificationToken = new EmailVerificationToken(
             account.Id, _secureTokens.Generate(), now.AddHours(_settings.EmailVerificationTokenHours));
-        await _emailTokens.AddAsync(verificationToken, ct);
+        _emailTokens.Add(verificationToken);
 
-        await SendActivationEmailAsync(account.Email, verificationToken.Token, ct);
+        SendActivationEmail(account.Email, verificationToken.Token);
     }
 
-    public async Task VerifyEmailAsync(VerifyEmailRequest request, CancellationToken ct = default)
+    public void VerifyEmail(VerifyEmailRequest request)
     {
         var now = DateTime.UtcNow;
 
-        var token = await _emailTokens.GetByTokenAsync(request.Token, ct)
+        var token = _emailTokens.GetByToken(request.Token)
             ?? throw new EntityValidationException("Invalid verification token.");
-        var account = await _accounts.GetByIdAsync(token.AccountId, ct)
+        var account = _accounts.GetById(token.AccountId)
             ?? throw new NotFoundException("Account not found.");
 
-        await _emailTokens.RemoveAsync(token, ct);
+        _emailTokens.Remove(token);
 
         if (!token.IsValid(now))
             throw new EntityValidationException("Verification token has expired.");
 
         account.VerifyEmail();
-        await _accounts.UpdateAsync(account, ct);
+        _accounts.Update(account);
     }
 
-    public async Task<AuthTokens> LoginAsync(LoginRequest request, CancellationToken ct = default)
+    public AuthTokens Login(LoginRequest request)
     {
-        var account = await _accounts.GetByUsernameOrEmailAsync(request.UsernameOrEmail, ct);
+        var account = _accounts.GetByUsernameOrEmail(request.UsernameOrEmail);
 
         if (account is null || !_passwordHasher.Verify(request.Password, account.PasswordHash))
             throw new EntityValidationException("Invalid username/email or password.");
@@ -94,51 +94,51 @@ public sealed class AuthenticationService : IAuthenticationService
         if (!account.IsEmailVerified)
             throw new EntityValidationException("Email is not verified.");
 
-        return await IssueTokensAsync(account, DateTime.UtcNow, ct);
+        return IssueTokens(account, DateTime.UtcNow);
     }
 
-    public async Task<AuthTokens> RefreshAsync(RefreshRequest request, CancellationToken ct = default)
+    public AuthTokens Refresh(RefreshRequest request)
     {
         var now = DateTime.UtcNow;
 
-        var current = await _refreshTokens.GetByTokenAsync(request.RefreshToken, ct)
+        var current = _refreshTokens.GetByToken(request.RefreshToken)
             ?? throw new EntityValidationException("Invalid refresh token.");
 
-        await _refreshTokens.RemoveAsync(current, ct);
+        _refreshTokens.Remove(current);
 
         if (!current.IsValid(now))
             throw new EntityValidationException("Refresh token has expired.");
 
-        var account = await _accounts.GetByIdAsync(current.AccountId, ct)
+        var account = _accounts.GetById(current.AccountId)
             ?? throw new EntityValidationException("Invalid refresh token.");
 
-        return await IssueTokensAsync(account, now, ct);
+        return IssueTokens(account, now);
     }
 
-    public async Task LogoutAsync(LogoutRequest request, CancellationToken ct = default)
+    public void Logout(LogoutRequest request)
     {
-        var token = await _refreshTokens.GetByTokenAsync(request.RefreshToken, ct);
+        var token = _refreshTokens.GetByToken(request.RefreshToken);
         if (token is null)
             return;
 
-        await _refreshTokens.RemoveAsync(token, ct);
+        _refreshTokens.Remove(token);
     }
 
-    private async Task<AuthTokens> IssueTokensAsync(Account account, DateTime now, CancellationToken ct)
+    private AuthTokens IssueTokens(Account account, DateTime now)
     {
         var accessToken = _accessTokens.Generate(account.Id, account.Username);
         var refreshToken = new RefreshToken(account.Id, _secureTokens.Generate(), now.AddDays(_settings.RefreshTokenDays));
-        await _refreshTokens.AddAsync(refreshToken, ct);
+        _refreshTokens.Add(refreshToken);
         return new AuthTokens(accessToken, refreshToken.Token);
     }
 
-    private Task SendActivationEmailAsync(string email, string token, CancellationToken ct)
+    private void SendActivationEmail(string email, string token)
     {
         var link = string.IsNullOrWhiteSpace(_settings.EmailActivationUrl)
             ? token
             : $"{_settings.EmailActivationUrl}?token={Uri.EscapeDataString(token)}";
         var body = $"Welcome to zajednica.app! Activate your account: {link}";
-        return _email.SendAsync(email, "Activate your zajednica.app account", body, ct);
+        _email.Send(email, "Activate your zajednica.app account", body);
     }
 
     private static bool HasProfileData(RegisterAccountRequest r) =>

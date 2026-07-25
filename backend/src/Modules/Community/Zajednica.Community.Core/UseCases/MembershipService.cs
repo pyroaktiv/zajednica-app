@@ -16,99 +16,99 @@ public sealed class MembershipService(
     IRealtimePusher realtime,
     MembershipAccess access) : IMembershipService
 {
-    public async Task<MyMembershipDto> GetMineAsync(Guid accountId, Guid communityId, CancellationToken ct = default)
+    public MyMembershipDto GetMine(Guid accountId, Guid communityId)
     {
-        var (_, membership) = await access.RequireMemberAsync(accountId, communityId, ct);
+        var (_, membership) = access.RequireMember(accountId, communityId);
         return membership.ToMyMembershipDto();
     }
 
-    public async Task<UnitNumberDto> SetUnitNumberAsync(Guid accountId, Guid communityId, SetUnitNumberRequest request, CancellationToken ct = default)
+    public UnitNumberDto SetUnitNumber(Guid accountId, Guid communityId, SetUnitNumberRequest request)
     {
-        var (_, membership) = await access.RequireMemberAsync(accountId, communityId, ct);
+        var (_, membership) = access.RequireMember(accountId, communityId);
 
         membership.SetUnitNumber(request.UnitNumber);
-        await memberships.UpdateAsync(membership, ct);
+        memberships.Update(membership);
 
         return membership.ToUnitNumberDto();
     }
 
-    public async Task<MemberProfileDto> GetAsync(Guid accountId, Guid communityId, Guid membershipId, CancellationToken ct = default)
+    public MemberProfileDto Get(Guid accountId, Guid communityId, Guid membershipId)
     {
-        await access.RequireConfirmedAsync(accountId, communityId, ct);
+        access.RequireConfirmed(accountId, communityId);
 
-        var target = await memberships.GetByIdAsync(membershipId, ct);
+        var target = memberships.GetById(membershipId);
         if (target is null || target.CommunityId != communityId)
             throw new NotFoundException("Membership not found in this community.");
 
-        return target.ToProfileDto(await accounts.GetProfileAsync(target.AccountId, ct));
+        return target.ToProfileDto(accounts.GetProfile(target.AccountId));
     }
 
-    public async Task<IReadOnlyList<MemberSummaryDto>> GetConfirmedAsync(Guid accountId, Guid communityId, CancellationToken ct = default)
+    public IReadOnlyList<MemberSummaryDto> GetConfirmed(Guid accountId, Guid communityId)
     {
-        await access.RequireConfirmedAsync(accountId, communityId, ct);
-        return await CardsAsync(communityId, m => m.IsActive() && m.IsConfirmed(), ct);
+        access.RequireConfirmed(accountId, communityId);
+        return Cards(communityId, m => m.IsActive() && m.IsConfirmed());
     }
 
-    public async Task<IReadOnlyList<MemberSummaryDto>> GetIssuersAsync(Guid accountId, Guid communityId, CancellationToken ct = default)
+    public IReadOnlyList<MemberSummaryDto> GetIssuers(Guid accountId, Guid communityId)
     {
-        await access.RequireMemberAsync(accountId, communityId, ct);
-        return await CardsAsync(communityId, m => m.IsActive() && m.HasRole(CommunityRole.Issuer), ct);
+        access.RequireMember(accountId, communityId);
+        return Cards(communityId, m => m.IsActive() && m.HasRole(CommunityRole.Issuer));
     }
 
-    public async Task<IReadOnlyList<MemberSummaryDto>> GetUnconfirmedAsync(Guid accountId, Guid communityId, CancellationToken ct = default)
+    public IReadOnlyList<MemberSummaryDto> GetUnconfirmed(Guid accountId, Guid communityId)
     {
-        await access.RequireAnyRoleAsync(accountId, communityId, ct, CommunityRole.Issuer, CommunityRole.Manager);
-        return await CardsAsync(communityId, m => m.IsActive() && !m.IsConfirmed(), ct);
+        access.RequireAnyRole(accountId, communityId, CommunityRole.Issuer, CommunityRole.Manager);
+        return Cards(communityId, m => m.IsActive() && !m.IsConfirmed());
     }
 
-    public async Task<MemberSummaryDto?> GetManagerAsync(Guid accountId, Guid communityId, CancellationToken ct = default)
+    public MemberSummaryDto? GetManager(Guid accountId, Guid communityId)
     {
-        await access.RequireConfirmedAsync(accountId, communityId, ct);
-        var cards = await CardsAsync(communityId, m => m.IsActive() && m.HasRole(CommunityRole.Manager), ct);
+        access.RequireConfirmed(accountId, communityId);
+        var cards = Cards(communityId, m => m.IsActive() && m.HasRole(CommunityRole.Manager));
         return cards.SingleOrDefault();
     }
 
-    public async Task<IReadOnlyList<MemberSummaryDto>> GetRankingAsync(Guid accountId, Guid communityId, CancellationToken ct = default)
+    public IReadOnlyList<MemberSummaryDto> GetRanking(Guid accountId, Guid communityId)
     {
-        await access.RequireConfirmedAsync(accountId, communityId, ct);
+        access.RequireConfirmed(accountId, communityId);
 
-        var roster = (await memberships.GetByCommunityAsync(communityId, ct))
+        var roster = (memberships.GetByCommunity(communityId))
             .Where(m => m.IsActive() && m.IsConfirmed() && m.Stars > 0)
             .OrderByDescending(m => m.Stars)
             .ToList();
 
-        return roster.ToSummaryDtos(await ProfilesAsync(roster, ct));
+        return roster.ToSummaryDtos(Profiles(roster));
     }
 
-    public async Task GrantIssuerAsync(Guid accountId, Guid communityId, Guid membershipId, CancellationToken ct = default)
+    public void GrantIssuer(Guid accountId, Guid communityId, Guid membershipId)
     {
-        var (_, actor) = await access.RequireRoleAsync(accountId, communityId, CommunityRole.Issuer, ct);
+        var (_, actor) = access.RequireRole(accountId, communityId, CommunityRole.Issuer);
 
-        var target = await memberships.GetByIdAsync(membershipId, ct);
+        var target = memberships.GetById(membershipId);
         if (target is null || target.CommunityId != communityId)
             throw new NotFoundException("Membership not found in this community.");
 
         target.Grant(CommunityRole.Issuer, actor.Id, DateTime.UtcNow);
-        await memberships.UpdateAsync(target, ct);
+        memberships.Update(target);
 
-        await realtime.PushToUserAsync(target.AccountId,
-            new RealtimeMessage("membership.roles.changed", new { communityId }), ct);
+        realtime.PushToUser(target.AccountId,
+            new RealtimeMessage("membership.roles.changed", new { communityId }));
     }
 
-    private async Task<IReadOnlyList<MemberSummaryDto>> CardsAsync(
-        Guid communityId, Func<Membership, bool> predicate, CancellationToken ct)
+    private IReadOnlyList<MemberSummaryDto> Cards(
+        Guid communityId, Func<Membership, bool> predicate)
     {
-        var roster = (await memberships.GetByCommunityAsync(communityId, ct)).Where(predicate).ToList();
-        return roster.ToSummaryDtos(await ProfilesAsync(roster, ct));
+        var roster = (memberships.GetByCommunity(communityId)).Where(predicate).ToList();
+        return roster.ToSummaryDtos(Profiles(roster));
     }
 
-    private async Task<IReadOnlyDictionary<Guid, AccountProfileDto>> ProfilesAsync(
-        IReadOnlyCollection<Membership> roster, CancellationToken ct)
+    private IReadOnlyDictionary<Guid, AccountProfileDto> Profiles(
+        IReadOnlyCollection<Membership> roster)
     {
         if (roster.Count == 0)
             return new Dictionary<Guid, AccountProfileDto>();
 
-        var profiles = await accounts.GetProfilesAsync(roster.Select(m => m.AccountId).Distinct().ToList(), ct);
+        var profiles = accounts.GetProfiles(roster.Select(m => m.AccountId).Distinct().ToList());
         return profiles.ToDictionary(p => p.AccountId);
     }
 }

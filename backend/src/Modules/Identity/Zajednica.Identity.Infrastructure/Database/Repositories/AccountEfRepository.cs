@@ -6,30 +6,30 @@ namespace Zajednica.Identity.Infrastructure.Database.Repositories;
 
 internal sealed class AccountEfRepository(IdentityDbContext db) : IAccountRepository
 {
-    public Task AddAsync(Account account, CancellationToken ct = default)
+    public void Add(Account account)
     {
         db.Accounts.Add(account);
-        return db.SaveChangesAsync(ct);
+        db.SaveChanges();
     }
 
-    public Task UpdateAsync(Account account, CancellationToken ct = default) => db.SaveChangesAsync(ct);
+    public void Update(Account account) => db.SaveChanges();
 
-    public Task<Account?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
-        db.Accounts.FirstOrDefaultAsync(a => a.Id == id, ct);
+    public Account? GetById(Guid id) =>
+        db.Accounts.FirstOrDefault(a => a.Id == id);
 
-    public Task<Account?> GetByUsernameOrEmailAsync(string usernameOrEmail, CancellationToken ct = default)
+    public Account? GetByUsernameOrEmail(string usernameOrEmail)
     {
         var value = usernameOrEmail.Trim();
         var email = value.ToLowerInvariant();
-        return db.Accounts.FirstOrDefaultAsync(a => a.Username == value || a.Email == email, ct);
+        return db.Accounts.FirstOrDefault(a => a.Username == value || a.Email == email);
     }
 
-    public async Task<IReadOnlyList<Account>> GetManyByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default) =>
-        await db.Accounts.Where(a => ids.Contains(a.Id)).ToListAsync(ct);
+    public IReadOnlyList<Account> GetManyByIds(IReadOnlyCollection<Guid> ids) =>
+        db.Accounts.Where(a => ids.Contains(a.Id)).ToList();
 
-    public Task<bool> ExistsByUsernameAsync(string username, CancellationToken ct = default) =>
-        db.Accounts.AnyAsync(a => a.Username == username.Trim(), ct);
+    public bool ExistsByUsername(string username) =>
+        db.Accounts.Any(a => a.Username == username.Trim());
 
-    public Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default) =>
-        db.Accounts.AnyAsync(a => a.Email == email.Trim().ToLower(), ct);
+    public bool ExistsByEmail(string email) =>
+        db.Accounts.Any(a => a.Email == email.Trim().ToLower());
 }

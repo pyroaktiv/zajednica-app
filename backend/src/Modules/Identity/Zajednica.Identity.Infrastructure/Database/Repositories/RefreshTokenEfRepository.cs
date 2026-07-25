@@ -6,18 +6,18 @@ namespace Zajednica.Identity.Infrastructure.Database.Repositories;
 
 internal sealed class RefreshTokenEfRepository(IdentityDbContext db) : IRefreshTokenRepository
 {
-    public Task AddAsync(RefreshToken token, CancellationToken ct = default)
+    public void Add(RefreshToken token)
     {
         db.RefreshTokens.Add(token);
-        return db.SaveChangesAsync(ct);
+        db.SaveChanges();
     }
 
-    public Task RemoveAsync(RefreshToken token, CancellationToken ct = default)
+    public void Remove(RefreshToken token)
     {
         db.RefreshTokens.Remove(token);
-        return db.SaveChangesAsync(ct);
+        db.SaveChanges();
     }
 
-    public Task<RefreshToken?> GetByTokenAsync(string token, CancellationToken ct = default) =>
-        db.RefreshTokens.FirstOrDefaultAsync(t => t.Token == token, ct);
+    public RefreshToken? GetByToken(string token) =>
+        db.RefreshTokens.FirstOrDefault(t => t.Token == token);
 }

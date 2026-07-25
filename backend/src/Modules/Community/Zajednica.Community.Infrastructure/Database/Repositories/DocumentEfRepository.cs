@@ -8,24 +8,25 @@ namespace Zajednica.Community.Infrastructure.Database.Repositories;
 
 internal sealed class DocumentEfRepository(CommunityDbContext db) : IDocumentRepository
 {
-    public Task AddAsync(Document document, CancellationToken ct = default)
+    public void Add(Document document)
     {
         db.Documents.Add(document);
-        return db.SaveChangesAsync(ct);
+        db.SaveChanges();
     }
 
-    public Task RemoveAsync(Document document, CancellationToken ct = default)
+    public void Remove(Document document)
     {
         db.Documents.Remove(document);
-        return db.SaveChangesAsync(ct);
+        db.SaveChanges();
     }
 
-    public Task<Document?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
-        db.Documents.FirstOrDefaultAsync(d => d.Id == id, ct);
+    public Document? GetById(Guid id) =>
+        db.Documents.FirstOrDefault(d => d.Id == id);
 
-    public Task<PagedResult<Document>> GetPagedAsync(Guid communityId, int page, int pageSize, CancellationToken ct = default) =>
+    public PagedResult<Document> GetPaged(Guid communityId, int page, int pageSize) =>
         db.Documents
             .Where(d => d.CommunityId == communityId)
             .OrderByDescending(d => d.Date)
-            .GetPaged(page, pageSize);
+            .GetPaged(page, pageSize)
+            .Result;
 }

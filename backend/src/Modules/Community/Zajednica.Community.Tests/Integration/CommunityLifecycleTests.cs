@@ -13,12 +13,12 @@ public class CommunityLifecycleTests : BaseCommunityIntegrationTest
     public CommunityLifecycleTests(CommunityTestFactory factory) : base(factory) { }
 
     [Fact]
-    public async Task Creating_a_community_makes_the_creator_a_confirmed_issuer()
+    public void Creating_a_community_makes_the_creator_a_confirmed_issuer()
     {
         using var scope = Factory.Services.CreateScope();
         var accountId = NewAccount(scope);
 
-        var community = await CreateCommunityAsync(scope, accountId);
+        var community = CreateCommunity(scope, accountId);
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
@@ -29,35 +29,35 @@ public class CommunityLifecycleTests : BaseCommunityIntegrationTest
     }
 
     [Fact]
-    public async Task The_creator_cannot_change_community_details_without_being_the_manager()
+    public void The_creator_cannot_change_community_details_without_being_the_manager()
     {
         using var scope = Factory.Services.CreateScope();
         var accountId = NewAccount(scope);
-        var community = await CreateCommunityAsync(scope, accountId);
+        var community = CreateCommunity(scope, accountId);
 
         var request = new UpdateCommunityRequest("Zgrada 2", community.Address, null, null, null);
 
-        await Should.ThrowAsync<ForbiddenException>(() =>
-            Communities(scope, accountId).Update(community.Id, request, default));
+        Should.Throw<ForbiddenException>(() =>
+            Communities(scope, accountId).Update(community.Id, request));
     }
 
     [Fact]
-    public async Task Joining_by_qr_code_leaves_the_newcomer_unconfirmed()
+    public void Joining_by_qr_code_leaves_the_newcomer_unconfirmed()
     {
         using var scope = Factory.Services.CreateScope();
         var creatorId = NewAccount(scope);
         var newcomerId = NewAccount(scope);
-        var community = await CreateCommunityAsync(scope, creatorId);
-        var qrToken = await QrTokenAsync(scope, creatorId, community.Id);
+        var community = CreateCommunity(scope, creatorId);
+        var qrToken = QrToken(scope, creatorId, community.Id);
 
-        var joined = await JoinAsync(scope, newcomerId, qrToken);
+        var joined = Join(scope, newcomerId, qrToken);
 
         joined.CommunityId.ShouldBe(community.Id);
         joined.CommunityName.ShouldBe(community.Name);
         joined.IsConfirmed.ShouldBeFalse();
 
         var mine = Value<MyMembershipDto>(
-            (await Members(scope, newcomerId).GetMine(community.Id, default)).Result!);
+            (Members(scope, newcomerId).GetMine(community.Id)).Result!);
         mine.Stars.ShouldBeNull();
         mine.Roles.ShouldBeEmpty();
 
@@ -67,18 +67,18 @@ public class CommunityLifecycleTests : BaseCommunityIntegrationTest
     }
 
     [Fact]
-    public async Task Rejoining_keeps_the_confirmation_earned_before_leaving()
+    public void Rejoining_keeps_the_confirmation_earned_before_leaving()
     {
         using var scope = Factory.Services.CreateScope();
         var creatorId = NewAccount(scope);
         var memberId = NewAccount(scope);
-        var community = await CreateCommunityAsync(scope, creatorId);
-        var qrToken = await QrTokenAsync(scope, creatorId, community.Id);
-        await JoinAsync(scope, memberId, qrToken);
-        await CertifyAsync(scope, creatorId, memberId, community.Id);
+        var community = CreateCommunity(scope, creatorId);
+        var qrToken = QrToken(scope, creatorId, community.Id);
+        Join(scope, memberId, qrToken);
+        Certify(scope, creatorId, memberId, community.Id);
 
-        await Communities(scope, memberId).Leave(community.Id, default);
-        var rejoined = await JoinAsync(scope, memberId, qrToken);
+        Communities(scope, memberId).Leave(community.Id);
+        var rejoined = Join(scope, memberId, qrToken);
 
         rejoined.IsConfirmed.ShouldBeTrue();
 
@@ -88,13 +88,13 @@ public class CommunityLifecycleTests : BaseCommunityIntegrationTest
     }
 
     [Fact]
-    public async Task Leaving_keeps_every_role_the_member_held()
+    public void Leaving_keeps_every_role_the_member_held()
     {
         using var scope = Factory.Services.CreateScope();
         var creatorId = NewAccount(scope);
-        var community = await CreateCommunityAsync(scope, creatorId);
+        var community = CreateCommunity(scope, creatorId);
 
-        await Communities(scope, creatorId).Leave(community.Id, default);
+        Communities(scope, creatorId).Leave(community.Id);
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
@@ -104,20 +104,20 @@ public class CommunityLifecycleTests : BaseCommunityIntegrationTest
     }
 
     [Fact]
-    public async Task A_blacklisted_account_cannot_join_again()
+    public void A_blacklisted_account_cannot_join_again()
     {
         using var scope = Factory.Services.CreateScope();
         var creatorId = NewAccount(scope);
         var bannedId = NewAccount(scope);
-        var community = await CreateCommunityAsync(scope, creatorId);
-        var qrToken = await QrTokenAsync(scope, creatorId, community.Id);
-        await JoinAsync(scope, bannedId, qrToken);
+        var community = CreateCommunity(scope, creatorId);
+        var qrToken = QrToken(scope, creatorId, community.Id);
+        Join(scope, bannedId, qrToken);
 
         var db = Db(scope);
         db.BlacklistEntries.Add(new BlacklistEntry(community.Id, bannedId, DateTime.UtcNow));
-        await db.SaveChangesAsync();
+        db.SaveChanges();
         db.ChangeTracker.Clear();
 
-        await Should.ThrowAsync<ForbiddenException>(() => JoinAsync(scope, bannedId, qrToken));
+        Should.Throw<ForbiddenException>(() => Join(scope, bannedId, qrToken));
     }
 }

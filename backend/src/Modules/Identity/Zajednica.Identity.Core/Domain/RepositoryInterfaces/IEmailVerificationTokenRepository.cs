@@ -2,8 +2,8 @@ namespace Zajednica.Identity.Core.Domain.RepositoryInterfaces;
 
 public interface IEmailVerificationTokenRepository
 {
-    Task AddAsync(EmailVerificationToken token, CancellationToken ct = default);
-    Task RemoveAsync(EmailVerificationToken token, CancellationToken ct = default);
+    void Add(EmailVerificationToken token);
+    void Remove(EmailVerificationToken token);
 
-    Task<EmailVerificationToken?> GetByTokenAsync(string token, CancellationToken ct = default);
+    EmailVerificationToken? GetByToken(string token);
 }

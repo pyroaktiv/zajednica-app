@@ -2,10 +2,10 @@ namespace Zajednica.Community.Core.Domain.RepositoryInterfaces;
 
 public interface ICommunityRepository
 {
-    Task AddAsync(Community community, CancellationToken ct = default);
-    Task UpdateAsync(Community community, CancellationToken ct = default);
+    void Add(Community community);
+    void Update(Community community);
 
-    Task<Community?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    Task<Community?> GetByQrTokenAsync(string qrToken, CancellationToken ct = default);
-    Task<IReadOnlyList<Community>> GetManyByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default);
+    Community? GetById(Guid id);
+    Community? GetByQrToken(string qrToken);
+    IReadOnlyList<Community> GetManyByIds(IReadOnlyCollection<Guid> ids);
 }

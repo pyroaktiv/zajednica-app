@@ -6,32 +6,32 @@ namespace Zajednica.Community.Infrastructure.Database.Repositories;
 
 internal sealed class MembershipEfRepository(CommunityDbContext db) : IMembershipRepository
 {
-    public Task AddAsync(Membership membership, CancellationToken ct = default)
+    public void Add(Membership membership)
     {
         db.Memberships.Add(membership);
-        return db.SaveChangesAsync(ct);
+        db.SaveChanges();
     }
 
-    public Task UpdateAsync(Membership membership, CancellationToken ct = default) => db.SaveChangesAsync(ct);
+    public void Update(Membership membership) => db.SaveChanges();
 
-    public Task<Membership?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
-        db.Memberships.FirstOrDefaultAsync(m => m.Id == id, ct);
+    public Membership? GetById(Guid id) =>
+        db.Memberships.FirstOrDefault(m => m.Id == id);
 
-    public Task<Membership?> GetAsync(Guid accountId, Guid communityId, CancellationToken ct = default) =>
-        db.Memberships.FirstOrDefaultAsync(m => m.AccountId == accountId && m.CommunityId == communityId, ct);
+    public Membership? Get(Guid accountId, Guid communityId) =>
+        db.Memberships.FirstOrDefault(m => m.AccountId == accountId && m.CommunityId == communityId);
 
-    public async Task<IReadOnlyList<Membership>> GetManyByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default) =>
-        await db.Memberships.Where(m => ids.Contains(m.Id)).ToListAsync(ct);
+    public IReadOnlyList<Membership> GetManyByIds(IReadOnlyCollection<Guid> ids) =>
+        db.Memberships.Where(m => ids.Contains(m.Id)).ToList();
 
-    public async Task<IReadOnlyList<Membership>> GetByAccountAsync(Guid accountId, CancellationToken ct = default) =>
-        await db.Memberships.Where(m => m.AccountId == accountId).ToListAsync(ct);
+    public IReadOnlyList<Membership> GetByAccount(Guid accountId) =>
+        db.Memberships.Where(m => m.AccountId == accountId).ToList();
 
-    public async Task<IReadOnlyList<Membership>> GetByCommunityAsync(Guid communityId, CancellationToken ct = default) =>
-        await db.Memberships.Where(m => m.CommunityId == communityId).ToListAsync(ct);
+    public IReadOnlyList<Membership> GetByCommunity(Guid communityId) =>
+        db.Memberships.Where(m => m.CommunityId == communityId).ToList();
 
-    public Task<int> CountConfirmedAsync(Guid communityId, CancellationToken ct = default) =>
-        db.Memberships.CountAsync(m =>
+    public int CountConfirmed(Guid communityId) =>
+        db.Memberships.Count(m =>
             m.CommunityId == communityId
             && m.CertificationStatus == CertificationStatus.Confirmed
-            && m.State == MembershipState.Active, ct);
+            && m.State == MembershipState.Active);
 }

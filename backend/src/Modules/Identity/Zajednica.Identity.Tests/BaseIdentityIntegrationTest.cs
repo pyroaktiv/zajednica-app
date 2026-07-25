@@ -22,11 +22,11 @@ public class BaseIdentityIntegrationTest : BaseWebIntegrationTest<IdentityTestFa
 
     protected static string UniqueEmail() => $"{Guid.NewGuid():N}@test.local";
 
-    protected static async Task<(string email, Guid accountId)> RegisterAsync(IServiceScope scope, string? email = null)
+    protected static (string email, Guid accountId) Register(IServiceScope scope, string? email = null)
     {
         email ??= UniqueEmail();
-        await Controller(scope).Register(
-            new RegisterAccountRequest(email, email, ValidPassword, null, null, null, null), default);
+        Controller(scope).Register(
+            new RegisterAccountRequest(email, email, ValidPassword, null, null, null, null));
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
@@ -34,20 +34,20 @@ public class BaseIdentityIntegrationTest : BaseWebIntegrationTest<IdentityTestFa
         return (email, account.Id);
     }
 
-    protected static async Task<(string email, Guid accountId)> RegisterVerifiedAsync(IServiceScope scope, string? email = null)
+    protected static (string email, Guid accountId) RegisterVerified(IServiceScope scope, string? email = null)
     {
-        var (registeredEmail, accountId) = await RegisterAsync(scope, email);
+        var (registeredEmail, accountId) = Register(scope, email);
 
         var db = Db(scope);
         var token = db.EmailVerificationTokens.Single(t => t.AccountId == accountId);
-        await Controller(scope).VerifyEmail(new VerifyEmailRequest(token.Token), default);
+        Controller(scope).VerifyEmail(new VerifyEmailRequest(token.Token));
 
         return (registeredEmail, accountId);
     }
 
-    protected static async Task<AuthTokens> LoginAsync(IServiceScope scope, string usernameOrEmail)
+    protected static AuthTokens Login(IServiceScope scope, string usernameOrEmail)
     {
-        var result = await Controller(scope).Login(new LoginRequest(usernameOrEmail, ValidPassword), default);
+        var result = Controller(scope).Login(new LoginRequest(usernameOrEmail, ValidPassword));
         return Value<AuthTokens>(result.Result!);
     }
 

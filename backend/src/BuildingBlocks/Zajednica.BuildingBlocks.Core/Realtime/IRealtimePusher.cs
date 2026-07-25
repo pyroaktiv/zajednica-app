@@ -2,7 +2,7 @@ namespace Zajednica.BuildingBlocks.Core.Realtime;
 
 public interface IRealtimePusher
 {
-    Task PushToUserAsync(Guid accountId, RealtimeMessage message, CancellationToken ct = default);
+    void PushToUser(Guid accountId, RealtimeMessage message);
     
-    Task PushToChannelAsync(string channel, RealtimeMessage message, CancellationToken ct = default);
+    void PushToChannel(string channel, RealtimeMessage message);
 }

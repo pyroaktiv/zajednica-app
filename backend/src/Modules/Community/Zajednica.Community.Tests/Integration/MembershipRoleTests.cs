@@ -17,17 +17,17 @@ public class MembershipRoleTests : BaseCommunityIntegrationTest
         scope.ServiceProvider.GetRequiredService<IInternalMembershipService>();
 
     [Fact]
-    public async Task An_issuer_can_share_the_right_to_certify()
+    public void An_issuer_can_share_the_right_to_certify()
     {
         using var scope = Factory.Services.CreateScope();
         var issuerId = NewAccount(scope);
         var memberId = NewAccount(scope);
-        var community = await CreateCommunityAsync(scope, issuerId);
-        var qrToken = await QrTokenAsync(scope, issuerId, community.Id);
-        await JoinAsync(scope, memberId, qrToken);
-        var member = await CertifyAsync(scope, issuerId, memberId, community.Id);
+        var community = CreateCommunity(scope, issuerId);
+        var qrToken = QrToken(scope, issuerId, community.Id);
+        Join(scope, memberId, qrToken);
+        var member = Certify(scope, issuerId, memberId, community.Id);
 
-        await Members(scope, issuerId).GrantIssuer(community.Id, member.MembershipId, default);
+        Members(scope, issuerId).GrantIssuer(community.Id, member.MembershipId);
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
@@ -36,37 +36,37 @@ public class MembershipRoleTests : BaseCommunityIntegrationTest
     }
 
     [Fact]
-    public async Task A_member_without_the_issuer_role_cannot_share_it()
+    public void A_member_without_the_issuer_role_cannot_share_it()
     {
         using var scope = Factory.Services.CreateScope();
         var issuerId = NewAccount(scope);
         var memberId = NewAccount(scope);
-        var community = await CreateCommunityAsync(scope, issuerId);
-        var qrToken = await QrTokenAsync(scope, issuerId, community.Id);
-        await JoinAsync(scope, memberId, qrToken);
-        var member = await CertifyAsync(scope, issuerId, memberId, community.Id);
+        var community = CreateCommunity(scope, issuerId);
+        var qrToken = QrToken(scope, issuerId, community.Id);
+        Join(scope, memberId, qrToken);
+        var member = Certify(scope, issuerId, memberId, community.Id);
 
-        await Should.ThrowAsync<ForbiddenException>(() =>
-            Members(scope, memberId).GrantIssuer(community.Id, member.MembershipId, default));
+        Should.Throw<ForbiddenException>(() =>
+            Members(scope, memberId).GrantIssuer(community.Id, member.MembershipId));
     }
 
     [Fact]
-    public async Task Electing_a_manager_moves_the_role_off_the_previous_one()
+    public void Electing_a_manager_moves_the_role_off_the_previous_one()
     {
         using var scope = Factory.Services.CreateScope();
         var firstId = NewAccount(scope);
         var secondId = NewAccount(scope);
-        var community = await CreateCommunityAsync(scope, firstId);
-        var qrToken = await QrTokenAsync(scope, firstId, community.Id);
-        await JoinAsync(scope, secondId, qrToken);
-        var second = await CertifyAsync(scope, firstId, secondId, community.Id);
+        var community = CreateCommunity(scope, firstId);
+        var qrToken = QrToken(scope, firstId, community.Id);
+        Join(scope, secondId, qrToken);
+        var second = Certify(scope, firstId, secondId, community.Id);
 
         var db = Db(scope);
         var first = db.Memberships.Single(m => m.AccountId == firstId && m.CommunityId == community.Id);
         db.ChangeTracker.Clear();
 
-        await Internal(scope).ElectManagerAsync(first.Id);
-        await Internal(scope).ElectManagerAsync(second.MembershipId);
+        Internal(scope).ElectManager(first.Id);
+        Internal(scope).ElectManager(second.MembershipId);
 
         db.ChangeTracker.Clear();
         db.Memberships.Single(m => m.Id == first.Id).HasRole(CommunityRole.Manager).ShouldBeFalse();
@@ -74,19 +74,19 @@ public class MembershipRoleTests : BaseCommunityIntegrationTest
     }
 
     [Fact]
-    public async Task The_elected_manager_may_change_the_community_details()
+    public void The_elected_manager_may_change_the_community_details()
     {
         using var scope = Factory.Services.CreateScope();
         var accountId = NewAccount(scope);
-        var community = await CreateCommunityAsync(scope, accountId);
+        var community = CreateCommunity(scope, accountId);
 
         var db = Db(scope);
         var membership = db.Memberships.Single(m => m.AccountId == accountId && m.CommunityId == community.Id);
         db.ChangeTracker.Clear();
-        await Internal(scope).ElectManagerAsync(membership.Id);
+        Internal(scope).ElectManager(membership.Id);
 
-        var updated = Value<CommunityDetailsDto>((await Communities(scope, accountId)
-            .Update(community.Id, new UpdateCommunityRequest("Zgrada 2", community.Address, "12345678", "123456789", "160-1"), default)).Result!);
+        var updated = Value<CommunityDetailsDto>((Communities(scope, accountId)
+            .Update(community.Id, new UpdateCommunityRequest("Zgrada 2", community.Address, "12345678", "123456789", "160-1"))).Result!);
 
         updated.Name.ShouldBe("Zgrada 2");
         updated.RegistrationNumber.ShouldBe("12345678");
@@ -94,24 +94,24 @@ public class MembershipRoleTests : BaseCommunityIntegrationTest
     }
 
     [Fact]
-    public async Task Member_lists_are_scoped_by_the_caller_role()
+    public void Member_lists_are_scoped_by_the_caller_role()
     {
         using var scope = Factory.Services.CreateScope();
         var issuerId = NewAccount(scope);
         var newcomerId = NewAccount(scope);
-        var community = await CreateCommunityAsync(scope, issuerId);
-        var qrToken = await QrTokenAsync(scope, issuerId, community.Id);
-        await JoinAsync(scope, newcomerId, qrToken);
+        var community = CreateCommunity(scope, issuerId);
+        var qrToken = QrToken(scope, issuerId, community.Id);
+        Join(scope, newcomerId, qrToken);
 
         var unconfirmed = Value<IReadOnlyList<MemberSummaryDto>>(
-            (await Members(scope, issuerId).GetUnconfirmed(community.Id, default)).Result!);
+            (Members(scope, issuerId).GetUnconfirmed(community.Id)).Result!);
         unconfirmed.Select(m => m.AccountId).ShouldContain(newcomerId);
 
         var issuers = Value<IReadOnlyList<MemberSummaryDto>>(
-            (await Members(scope, newcomerId).GetIssuers(community.Id, default)).Result!);
+            (Members(scope, newcomerId).GetIssuers(community.Id)).Result!);
         issuers.Select(m => m.AccountId).ShouldBe(new[] { issuerId });
 
-        await Should.ThrowAsync<ForbiddenException>(() =>
-            Members(scope, newcomerId).GetConfirmed(community.Id, default));
+        Should.Throw<ForbiddenException>(() =>
+            Members(scope, newcomerId).GetConfirmed(community.Id));
     }
 }

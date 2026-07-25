@@ -14,38 +14,38 @@ public sealed class DocumentService(
     IRealtimePusher realtime,
     MembershipAccess access) : IDocumentService
 {
-    public async Task<DocumentDto> AddAsync(Guid accountId, Guid communityId, AddDocumentRequest request, CancellationToken ct = default)
+    public DocumentDto Add(Guid accountId, Guid communityId, AddDocumentRequest request)
     {
-        var (_, actor) = await access.RequireRoleAsync(accountId, communityId, CommunityRole.Manager, ct);
+        var (_, actor) = access.RequireRole(accountId, communityId, CommunityRole.Manager);
 
         var document = new Document(communityId, actor.Id, request.Name, request.Url, DateTime.UtcNow);
-        await documents.AddAsync(document, ct);
+        documents.Add(document);
 
-        await realtime.PushToChannelAsync(Channels.Community(communityId),
-            new RealtimeMessage("community.documents.changed", new { communityId }), ct);
+        realtime.PushToChannel(Channels.Community(communityId),
+            new RealtimeMessage("community.documents.changed", new { communityId }));
 
         return document.ToDto();
     }
 
-    public async Task<PagedResult<DocumentDto>> GetPagedAsync(Guid accountId, Guid communityId, int page, int pageSize, CancellationToken ct = default)
+    public PagedResult<DocumentDto> GetPaged(Guid accountId, Guid communityId, int page, int pageSize)
     {
-        await access.RequireConfirmedAsync(accountId, communityId, ct);
+        access.RequireConfirmed(accountId, communityId);
 
-        var paged = await documents.GetPagedAsync(communityId, page, pageSize, ct);
+        var paged = documents.GetPaged(communityId, page, pageSize);
         return new PagedResult<DocumentDto>(paged.Results.Select(d => d.ToDto()).ToList(), paged.TotalCount);
     }
 
-    public async Task RemoveAsync(Guid accountId, Guid communityId, Guid documentId, CancellationToken ct = default)
+    public void Remove(Guid accountId, Guid communityId, Guid documentId)
     {
-        await access.RequireRoleAsync(accountId, communityId, CommunityRole.Manager, ct);
+        access.RequireRole(accountId, communityId, CommunityRole.Manager);
 
-        var document = await documents.GetByIdAsync(documentId, ct);
+        var document = documents.GetById(documentId);
         if (document is null || document.CommunityId != communityId)
             throw new NotFoundException("Document not found in this community.");
 
-        await documents.RemoveAsync(document, ct);
+        documents.Remove(document);
 
-        await realtime.PushToChannelAsync(Channels.Community(communityId),
-            new RealtimeMessage("community.documents.changed", new { communityId }), ct);
+        realtime.PushToChannel(Channels.Community(communityId),
+            new RealtimeMessage("community.documents.changed", new { communityId }));
     }
 }

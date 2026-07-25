@@ -12,13 +12,13 @@ public class LogoutTests : BaseIdentityIntegrationTest
     public LogoutTests(IdentityTestFactory factory) : base(factory) { }
 
     [Fact]
-    public async Task Revokes_the_refresh_token()
+    public void Revokes_the_refresh_token()
     {
         using var scope = Factory.Services.CreateScope();
-        var (email, _) = await RegisterVerifiedAsync(scope);
-        var issued = await LoginAsync(scope, email);
+        var (email, _) = RegisterVerified(scope);
+        var issued = Login(scope, email);
 
-        await Controller(scope).Logout(new LogoutRequest(issued.RefreshToken), default);
+        Controller(scope).Logout(new LogoutRequest(issued.RefreshToken));
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
@@ -26,24 +26,24 @@ public class LogoutTests : BaseIdentityIntegrationTest
     }
 
     [Fact]
-    public async Task Is_idempotent_for_an_unknown_token()
+    public void Is_idempotent_for_an_unknown_token()
     {
         using var scope = Factory.Services.CreateScope();
 
-        var result = await Controller(scope).Logout(new LogoutRequest("no-such-token"), default);
+        var result = Controller(scope).Logout(new LogoutRequest("no-such-token"));
 
         result.ShouldBeOfType<OkResult>();
     }
 
     [Fact]
-    public async Task A_revoked_token_can_no_longer_be_refreshed()
+    public void A_revoked_token_can_no_longer_be_refreshed()
     {
         using var scope = Factory.Services.CreateScope();
-        var (email, _) = await RegisterVerifiedAsync(scope);
-        var issued = await LoginAsync(scope, email);
-        await Controller(scope).Logout(new LogoutRequest(issued.RefreshToken), default);
+        var (email, _) = RegisterVerified(scope);
+        var issued = Login(scope, email);
+        Controller(scope).Logout(new LogoutRequest(issued.RefreshToken));
 
-        await Should.ThrowAsync<EntityValidationException>(() =>
-            Controller(scope).Refresh(new RefreshRequest(issued.RefreshToken), default));
+        Should.Throw<EntityValidationException>(() =>
+            Controller(scope).Refresh(new RefreshRequest(issued.RefreshToken)));
     }
 }

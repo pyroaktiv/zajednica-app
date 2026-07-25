@@ -2,7 +2,7 @@ namespace Zajednica.Community.Core.Domain.RepositoryInterfaces;
 
 public interface IBlacklistRepository
 {
-    Task AddAsync(BlacklistEntry entry, CancellationToken ct = default);
+    void Add(BlacklistEntry entry);
 
-    Task<bool> ExistsAsync(Guid accountId, Guid communityId, CancellationToken ct = default);
+    bool Exists(Guid accountId, Guid communityId);
 }

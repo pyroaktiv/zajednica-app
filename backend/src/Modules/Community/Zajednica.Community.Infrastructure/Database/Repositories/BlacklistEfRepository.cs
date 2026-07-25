@@ -6,12 +6,12 @@ namespace Zajednica.Community.Infrastructure.Database.Repositories;
 
 internal sealed class BlacklistEfRepository(CommunityDbContext db) : IBlacklistRepository
 {
-    public Task AddAsync(BlacklistEntry entry, CancellationToken ct = default)
+    public void Add(BlacklistEntry entry)
     {
         db.BlacklistEntries.Add(entry);
-        return db.SaveChangesAsync(ct);
+        db.SaveChanges();
     }
 
-    public Task<bool> ExistsAsync(Guid accountId, Guid communityId, CancellationToken ct = default) =>
-        db.BlacklistEntries.AnyAsync(b => b.AccountId == accountId && b.CommunityId == communityId, ct);
+    public bool Exists(Guid accountId, Guid communityId) =>
+        db.BlacklistEntries.Any(b => b.AccountId == accountId && b.CommunityId == communityId);
 }

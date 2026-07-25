@@ -5,9 +5,9 @@ namespace Zajednica.BuildingBlocks.Infrastructure.Realtime;
 
 public sealed class SignalRRealtimePusher(IHubContext<RealtimeHub> hub) : IRealtimePusher
 {
-    public Task PushToUserAsync(Guid accountId, RealtimeMessage message, CancellationToken ct = default)
-        => hub.Clients.User(accountId.ToString()).SendAsync(message.Event, message.Payload, ct);
+    public void PushToUser(Guid accountId, RealtimeMessage message)
+        => hub.Clients.User(accountId.ToString()).SendAsync(message.Event, message.Payload).GetAwaiter().GetResult();
 
-    public Task PushToChannelAsync(string channel, RealtimeMessage message, CancellationToken ct = default)
-        => hub.Clients.Group(channel).SendAsync(message.Event, message.Payload, ct);
+    public void PushToChannel(string channel, RealtimeMessage message)
+        => hub.Clients.Group(channel).SendAsync(message.Event, message.Payload).GetAwaiter().GetResult();
 }

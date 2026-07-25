@@ -17,24 +17,24 @@ public class ProfileServiceTests
     private static UpdateProfileRequest Update() => new("Pera", "Peric", "060123456", "pera@example.com", null);
 
     [Fact]
-    public async Task Updating_an_existing_profile_persists_once()
+    public void Updating_an_existing_profile_persists_once()
     {
         var account = new Account("pera", "pera@example.com", "salt.hash", DateTime.UtcNow);
-        _accounts.Setup(r => r.GetByIdAsync(account.Id, It.IsAny<CancellationToken>())).ReturnsAsync(account);
+        _accounts.Setup(r => r.GetById(account.Id)).Returns(account);
 
-        var result = await Sut().UpdateAsync(account.Id, Update());
+        var result = Sut().Update(account.Id, Update());
 
         result.FirstName.ShouldBe("Pera");
-        _accounts.Verify(r => r.UpdateAsync(account, It.IsAny<CancellationToken>()), Times.Once);
+        _accounts.Verify(r => r.Update(account), Times.Once);
     }
 
     [Fact]
-    public async Task Updating_an_unknown_account_throws_and_never_persists()
+    public void Updating_an_unknown_account_throws_and_never_persists()
     {
-        _accounts.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync((Account?)null);
+        _accounts.Setup(r => r.GetById(It.IsAny<Guid>())).Returns((Account?)null);
 
-        await Should.ThrowAsync<NotFoundException>(() => Sut().UpdateAsync(Guid.NewGuid(), Update()));
+        Should.Throw<NotFoundException>(() => Sut().Update(Guid.NewGuid(), Update()));
 
-        _accounts.Verify(r => r.UpdateAsync(It.IsAny<Account>(), It.IsAny<CancellationToken>()), Times.Never);
+        _accounts.Verify(r => r.Update(It.IsAny<Account>()), Times.Never);
     }
 }

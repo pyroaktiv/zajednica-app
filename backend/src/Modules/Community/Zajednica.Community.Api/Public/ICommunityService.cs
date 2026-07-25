@@ -4,11 +4,11 @@ namespace Zajednica.Community.Api.Public;
 
 public interface ICommunityService
 {
-    Task<CommunityDetailsDto> CreateAsync(Guid accountId, CreateCommunityRequest request, CancellationToken ct = default);
-    Task<IReadOnlyList<MyCommunityDto>> GetMineAsync(Guid accountId, CancellationToken ct = default);
-    Task<CommunityDetailsDto> GetAsync(Guid accountId, Guid communityId, CancellationToken ct = default);
-    Task<CommunityDetailsDto> UpdateAsync(Guid accountId, Guid communityId, UpdateCommunityRequest request, CancellationToken ct = default);
-    Task<CommunityQrDto> GetQrAsync(Guid accountId, Guid communityId, CancellationToken ct = default);
-    Task<JoinedCommunityDto> JoinAsync(Guid accountId, JoinCommunityRequest request, CancellationToken ct = default);
-    Task LeaveAsync(Guid accountId, Guid communityId, CancellationToken ct = default);
+    CommunityDetailsDto Create(Guid accountId, CreateCommunityRequest request);
+    IReadOnlyList<MyCommunityDto> GetMine(Guid accountId);
+    CommunityDetailsDto Get(Guid accountId, Guid communityId);
+    CommunityDetailsDto Update(Guid accountId, Guid communityId, UpdateCommunityRequest request);
+    CommunityQrDto GetQr(Guid accountId, Guid communityId);
+    JoinedCommunityDto Join(Guid accountId, JoinCommunityRequest request);
+    void Leave(Guid accountId, Guid communityId);
 }

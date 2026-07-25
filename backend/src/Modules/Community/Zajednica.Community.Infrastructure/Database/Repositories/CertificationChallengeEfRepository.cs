@@ -6,21 +6,21 @@ namespace Zajednica.Community.Infrastructure.Database.Repositories;
 
 internal sealed class CertificationChallengeEfRepository(CommunityDbContext db) : ICertificationChallengeRepository
 {
-    public Task AddAsync(CertificationChallenge challenge, CancellationToken ct = default)
+    public void Add(CertificationChallenge challenge)
     {
         db.CertificationChallenges.Add(challenge);
-        return db.SaveChangesAsync(ct);
+        db.SaveChanges();
     }
 
-    public Task RemoveAsync(CertificationChallenge challenge, CancellationToken ct = default)
+    public void Remove(CertificationChallenge challenge)
     {
         db.CertificationChallenges.Remove(challenge);
-        return db.SaveChangesAsync(ct);
+        db.SaveChanges();
     }
 
-    public Task<CertificationChallenge?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
-        db.CertificationChallenges.FirstOrDefaultAsync(c => c.Id == id, ct);
+    public CertificationChallenge? GetById(Guid id) =>
+        db.CertificationChallenges.FirstOrDefault(c => c.Id == id);
 
-    public Task<CertificationChallenge?> GetByTokenAsync(string token, CancellationToken ct = default) =>
-        db.CertificationChallenges.FirstOrDefaultAsync(c => c.Token == token, ct);
+    public CertificationChallenge? GetByToken(string token) =>
+        db.CertificationChallenges.FirstOrDefault(c => c.Token == token);
 }

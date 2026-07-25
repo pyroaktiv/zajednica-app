@@ -5,7 +5,7 @@ namespace Zajednica.Community.Api.Public;
 
 public interface IDocumentService
 {
-    Task<DocumentDto> AddAsync(Guid accountId, Guid communityId, AddDocumentRequest request, CancellationToken ct = default);
-    Task<PagedResult<DocumentDto>> GetPagedAsync(Guid accountId, Guid communityId, int page, int pageSize, CancellationToken ct = default);
-    Task RemoveAsync(Guid accountId, Guid communityId, Guid documentId, CancellationToken ct = default);
+    DocumentDto Add(Guid accountId, Guid communityId, AddDocumentRequest request);
+    PagedResult<DocumentDto> GetPaged(Guid accountId, Guid communityId, int page, int pageSize);
+    void Remove(Guid accountId, Guid communityId, Guid documentId);
 }

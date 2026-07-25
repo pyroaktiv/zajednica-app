@@ -19,14 +19,14 @@ public sealed class ProfileController : ControllerBase
     }
 
     [HttpGet("me")]
-    public async Task<ActionResult<ProfileDto>> GetMine(CancellationToken ct)
+    public ActionResult<ProfileDto> GetMine()
     {
-        return Ok(await _profiles.GetAsync(User.AccountId(), ct));
+        return Ok(_profiles.Get(User.AccountId()));
     }
 
     [HttpPut]
-    public async Task<ActionResult<ProfileDto>> Update([FromBody] UpdateProfileRequest request, CancellationToken ct)
+    public ActionResult<ProfileDto> Update([FromBody] UpdateProfileRequest request)
     {
-        return Ok(await _profiles.UpdateAsync(User.AccountId(), request, ct));
+        return Ok(_profiles.Update(User.AccountId(), request));
     }
 }

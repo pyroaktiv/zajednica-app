@@ -18,7 +18,7 @@ public sealed class CommunityService(
     IRealtimePusher realtime,
     MembershipAccess access) : ICommunityService
 {
-    public async Task<CommunityDetailsDto> CreateAsync(Guid accountId, CreateCommunityRequest request, CancellationToken ct = default)
+    public CommunityDetailsDto Create(Guid accountId, CreateCommunityRequest request)
     {
         var now = DateTime.UtcNow;
         var community = new CommunityAggregate(
@@ -30,21 +30,21 @@ public sealed class CommunityService(
             CommunityMappers.ToTaxId(request.TaxId),
             request.BankAccountNumber);
 
-        await communities.AddAsync(community, ct);
-        await memberships.AddAsync(Membership.Creator(accountId, community.Id, now), ct);
+        communities.Add(community);
+        memberships.Add(Membership.Creator(accountId, community.Id, now));
 
         return community.ToDetailsDto();
     }
 
-    public async Task<IReadOnlyList<MyCommunityDto>> GetMineAsync(Guid accountId, CancellationToken ct = default)
+    public IReadOnlyList<MyCommunityDto> GetMine(Guid accountId)
     {
-        var mine = (await memberships.GetByAccountAsync(accountId, ct))
+        var mine = (memberships.GetByAccount(accountId))
             .Where(m => m.IsActive())
             .ToList();
         if (mine.Count == 0)
             return [];
 
-        var found = (await communities.GetManyByIdsAsync(mine.Select(m => m.CommunityId).ToList(), ct))
+        var found = (communities.GetManyByIds(mine.Select(m => m.CommunityId).ToList()))
             .ToDictionary(c => c.Id);
 
         return mine
@@ -53,15 +53,15 @@ public sealed class CommunityService(
             .ToList();
     }
 
-    public async Task<CommunityDetailsDto> GetAsync(Guid accountId, Guid communityId, CancellationToken ct = default)
+    public CommunityDetailsDto Get(Guid accountId, Guid communityId)
     {
-        var (community, _) = await access.RequireMemberAsync(accountId, communityId, ct);
+        var (community, _) = access.RequireMember(accountId, communityId);
         return community.ToDetailsDto();
     }
 
-    public async Task<CommunityDetailsDto> UpdateAsync(Guid accountId, Guid communityId, UpdateCommunityRequest request, CancellationToken ct = default)
+    public CommunityDetailsDto Update(Guid accountId, Guid communityId, UpdateCommunityRequest request)
     {
-        var (community, actor) = await access.RequireRoleAsync(accountId, communityId, CommunityRole.Manager, ct);
+        var (community, actor) = access.RequireRole(accountId, communityId, CommunityRole.Manager);
 
         community.UpdateDetails(
             actor,
@@ -71,52 +71,52 @@ public sealed class CommunityService(
             CommunityMappers.ToTaxId(request.TaxId),
             request.BankAccountNumber);
 
-        await communities.UpdateAsync(community, ct);
-        await realtime.PushToChannelAsync(Channels.Community(communityId),
-            new RealtimeMessage("community.updated", new { communityId }), ct);
+        communities.Update(community);
+        realtime.PushToChannel(Channels.Community(communityId),
+            new RealtimeMessage("community.updated", new { communityId }));
 
         return community.ToDetailsDto();
     }
 
-    public async Task<CommunityQrDto> GetQrAsync(Guid accountId, Guid communityId, CancellationToken ct = default)
+    public CommunityQrDto GetQr(Guid accountId, Guid communityId)
     {
-        var (community, _) = await access.RequireConfirmedAsync(accountId, communityId, ct);
+        var (community, _) = access.RequireConfirmed(accountId, communityId);
         return community.ToQrDto();
     }
 
-    public async Task<JoinedCommunityDto> JoinAsync(Guid accountId, JoinCommunityRequest request, CancellationToken ct = default)
+    public JoinedCommunityDto Join(Guid accountId, JoinCommunityRequest request)
     {
-        var community = await communities.GetByQrTokenAsync(request.QrToken, ct)
+        var community = communities.GetByQrToken(request.QrToken)
             ?? throw new NotFoundException("No community matches this QR code.");
 
-        if (await blacklist.ExistsAsync(accountId, community.Id, ct))
+        if (blacklist.Exists(accountId, community.Id))
             throw new ForbiddenException("This account is banned from the community.");
 
-        var existing = await memberships.GetAsync(accountId, community.Id, ct);
+        var existing = memberships.Get(accountId, community.Id);
         if (existing is not null && existing.IsActive())
             throw new EntityValidationException("Already a member of this community.");
 
         var membership = existing ?? new Membership(accountId, community.Id, DateTime.UtcNow);
 
         if (existing is null)
-            await memberships.AddAsync(membership, ct);
+            memberships.Add(membership);
         else
         {
             membership.Rejoin();
-            await memberships.UpdateAsync(membership, ct);
+            memberships.Update(membership);
         }
 
         return membership.ToJoinedDto(community.Name);
     }
 
-    public async Task LeaveAsync(Guid accountId, Guid communityId, CancellationToken ct = default)
+    public void Leave(Guid accountId, Guid communityId)
     {
-        var (_, membership) = await access.RequireMemberAsync(accountId, communityId, ct);
+        var (_, membership) = access.RequireMember(accountId, communityId);
 
         membership.Leave(DateTime.UtcNow);
-        await memberships.UpdateAsync(membership, ct);
+        memberships.Update(membership);
 
-        await realtime.PushToUserAsync(accountId,
-            new RealtimeMessage("membership.roles.changed", new { communityId }), ct);
+        realtime.PushToUser(accountId,
+            new RealtimeMessage("membership.roles.changed", new { communityId }));
     }
 }

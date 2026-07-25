@@ -20,21 +20,21 @@ public sealed class CertificationController : ControllerBase
     }
 
     [HttpPost("{communityId:guid}/certification-challenges")]
-    public async Task<ActionResult<CertificationChallengeDto>> CreateChallenge(Guid communityId, CancellationToken ct)
+    public ActionResult<CertificationChallengeDto> CreateChallenge(Guid communityId)
     {
-        return Ok(await _certification.CreateChallengeAsync(User.AccountId(), communityId, ct));
+        return Ok(_certification.CreateChallenge(User.AccountId(), communityId));
     }
 
     [HttpDelete("{communityId:guid}/certification-challenges/{challengeId:guid}")]
-    public async Task<IActionResult> CancelChallenge(Guid communityId, Guid challengeId, CancellationToken ct)
+    public IActionResult CancelChallenge(Guid communityId, Guid challengeId)
     {
-        await _certification.CancelChallengeAsync(User.AccountId(), communityId, challengeId, ct);
+        _certification.CancelChallenge(User.AccountId(), communityId, challengeId);
         return NoContent();
     }
 
     [HttpPost("certification-challenges/confirm")]
-    public async Task<ActionResult<MemberProfileDto>> Confirm([FromBody] ConfirmCertificationRequest request, CancellationToken ct)
+    public ActionResult<MemberProfileDto> Confirm([FromBody] ConfirmCertificationRequest request)
     {
-        return Ok(await _certification.ConfirmAsync(User.AccountId(), request, ct));
+        return Ok(_certification.Confirm(User.AccountId(), request));
     }
 }

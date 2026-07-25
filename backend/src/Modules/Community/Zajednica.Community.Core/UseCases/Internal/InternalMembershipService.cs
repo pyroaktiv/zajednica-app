@@ -15,72 +15,78 @@ public sealed class InternalMembershipService(
     ManagerElectionService election,
     MembershipBanService ban) : IInternalMembershipService
 {
-    public async Task<MembershipContextDto?> GetContextAsync(Guid accountId, Guid communityId, CancellationToken ct = default) =>
-        (await memberships.GetAsync(accountId, communityId, ct))?.ToContextDto();
+    public MembershipContextDto? GetContext(Guid accountId, Guid communityId) =>
+        (memberships.Get(accountId, communityId))?.ToContextDto();
 
-    public async Task<IReadOnlyList<MembershipContextDto>> GetContextsAsync(IReadOnlyCollection<Guid> membershipIds, CancellationToken ct = default)
+    public IReadOnlyList<MembershipContextDto> GetContexts(IReadOnlyCollection<Guid> membershipIds)
     {
         if (membershipIds.Count == 0)
             return [];
 
-        var found = await memberships.GetManyByIdsAsync(membershipIds, ct);
+        var found = memberships.GetManyByIds(membershipIds);
         return found.Select(m => m.ToContextDto()).ToList();
     }
 
-    public Task<int> GetConfirmedCountAsync(Guid communityId, CancellationToken ct = default) =>
-        memberships.CountConfirmedAsync(communityId, ct);
+    public IReadOnlyList<MembershipContextDto> GetConfirmed(Guid communityId) =>
+        (memberships.GetByCommunity(communityId))
+        .Where(m => m.IsActive() && m.IsConfirmed())
+        .Select(m => m.ToContextDto())
+        .ToList();
 
-    public async Task<bool> AreEligibleAsync(IReadOnlyCollection<Guid> membershipIds, CancellationToken ct = default)
+    public int GetConfirmedCount(Guid communityId) =>
+        memberships.CountConfirmed(communityId);
+
+    public bool AreEligible(IReadOnlyCollection<Guid> membershipIds)
     {
         if (membershipIds.Count == 0)
             return false;
 
-        var found = await memberships.GetManyByIdsAsync(membershipIds, ct);
+        var found = memberships.GetManyByIds(membershipIds);
         return found.Count == membershipIds.Distinct().Count()
                && found.All(m => m.IsActive() && m.IsConfirmed());
     }
 
-    public async Task BanAsync(Guid membershipId, Guid intentId, CancellationToken ct = default)
+    public void Ban(Guid membershipId, Guid intentId)
     {
-        var membership = await Require(membershipId, ct);
+        var membership = Require(membershipId);
 
         var entry = ban.Ban(membership, intentId, DateTime.UtcNow);
-        await memberships.UpdateAsync(membership, ct);
-        await blacklist.AddAsync(entry, ct);
+        memberships.Update(membership);
+        blacklist.Add(entry);
 
-        await PushRolesChanged(membership, ct);
+        PushRolesChanged(membership);
     }
 
-    public async Task ElectManagerAsync(Guid membershipId, CancellationToken ct = default)
+    public void ElectManager(Guid membershipId)
     {
-        var newManager = await Require(membershipId, ct);
+        var newManager = Require(membershipId);
 
-        var currentManager = (await memberships.GetByCommunityAsync(newManager.CommunityId, ct))
+        var currentManager = (memberships.GetByCommunity(newManager.CommunityId))
             .SingleOrDefault(m => m.HasRole(CommunityRole.Manager));
 
         election.Elect(currentManager, newManager, DateTime.UtcNow);
 
-        await memberships.UpdateAsync(newManager, ct);
+        memberships.Update(newManager);
         if (currentManager is not null)
         {
-            await memberships.UpdateAsync(currentManager, ct);
-            await PushRolesChanged(currentManager, ct);
+            memberships.Update(currentManager);
+            PushRolesChanged(currentManager);
         }
-        await PushRolesChanged(newManager, ct);
+        PushRolesChanged(newManager);
     }
 
-    public async Task AddStarsAsync(Guid membershipId, int stars, CancellationToken ct = default)
+    public void AddStars(Guid membershipId, int stars)
     {
-        var membership = await Require(membershipId, ct);
+        var membership = Require(membershipId);
 
         membership.AddStars(stars);
-        await memberships.UpdateAsync(membership, ct);
+        memberships.Update(membership);
     }
 
-    private async Task<Membership> Require(Guid membershipId, CancellationToken ct) =>
-        await memberships.GetByIdAsync(membershipId, ct) ?? throw new NotFoundException("Membership not found.");
+    private Membership Require(Guid membershipId) =>
+        memberships.GetById(membershipId) ?? throw new NotFoundException("Membership not found.");
 
-    private Task PushRolesChanged(Membership membership, CancellationToken ct) =>
-        realtime.PushToUserAsync(membership.AccountId,
-            new RealtimeMessage("membership.roles.changed", new { communityId = membership.CommunityId }), ct);
+    private void PushRolesChanged(Membership membership) =>
+        realtime.PushToUser(membership.AccountId,
+            new RealtimeMessage("membership.roles.changed", new { communityId = membership.CommunityId }));
 }

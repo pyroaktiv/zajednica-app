@@ -9,7 +9,7 @@ public sealed class SmtpEmailSender(IOptions<SmtpOptions> options) : IEmailSende
 {
     private readonly SmtpOptions _options = options.Value;
 
-    public async Task SendAsync(string toEmail, string subject, string body, CancellationToken ct = default)
+    public void Send(string toEmail, string subject, string body)
     {
         using var client = new SmtpClient(_options.Host, _options.Port)
         {
@@ -26,6 +26,6 @@ public sealed class SmtpEmailSender(IOptions<SmtpOptions> options) : IEmailSende
         };
         message.To.Add(toEmail);
 
-        await client.SendMailAsync(message, ct);
+        client.Send(message);
     }
 }
