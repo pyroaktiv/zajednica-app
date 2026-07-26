@@ -37,6 +37,11 @@ public static class FeedModule
         services.AddScoped<AuthorDirectory>();
         services.AddScoped<IPostService, PostService>();
         services.AddScoped<ICommentService, CommentService>();
+        services.AddScoped<IntentAccess>();
+        services.AddScoped<IntentNotifier>();
+        services.AddScoped<IntentClosing>();
+        services.AddScoped<IntentPresenter>();
         services.AddScoped<IIntentService, IntentService>();
+        services.AddScoped<IIntentQueryService, IntentQueryService>();
     }
 }

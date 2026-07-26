@@ -17,8 +17,8 @@ public static class CommentMappers
             comment.Text,
             comment.Date);
 
-    public static Page<CommentDto> ToDtoPage(
-        this Page<Comment> page, IReadOnlyDictionary<Guid, AccountProfileDto> authors) =>
-        new(page.Items.Select(c => c.ToDto(authors.GetValueOrDefault(c.AuthorMembershipId))).ToList(),
-            page.NextCursor);
+    public static CursorPage<CommentDto> ToDtoPage(
+        this CursorPage<Comment> cursorPage, IReadOnlyDictionary<Guid, AccountProfileDto> authors) =>
+        new(cursorPage.Items.Select(c => c.ToDto(authors.GetValueOrDefault(c.AuthorMembershipId))).ToList(),
+            cursorPage.NextCursor);
 }

@@ -1,12 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Zajednica.Identity.Core.Domain;
+using Zajednica.Identity.Core.Infrastructural;
 
 namespace Zajednica.Identity.Infrastructure.Database;
 
 public class IdentityDbContext(DbContextOptions<IdentityDbContext> options) : DbContext(options)
 {
     public DbSet<Account> Accounts => Set<Account>();
-    public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
+    public DbSet<Verification> EmailVerificationTokens => Set<Verification>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

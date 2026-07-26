@@ -32,13 +32,13 @@ public sealed class CommentController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<Page<CommentDto>> GetRoots(Guid communityId, Guid postId, [FromQuery] DateTime? after, [FromQuery] int limit)
+    public ActionResult<CursorPage<CommentDto>> GetRoots(Guid communityId, Guid postId, [FromQuery] DateTime? after, [FromQuery] int limit)
     {
         return Ok(_comments.GetRoots(User.AccountId(), communityId, postId, after, limit));
     }
 
     [HttpGet("{commentId:guid}/replies")]
-    public ActionResult<Page<CommentDto>> GetReplies(Guid communityId, Guid postId, Guid commentId, [FromQuery] DateTime? after, [FromQuery] int limit)
+    public ActionResult<CursorPage<CommentDto>> GetReplies(Guid communityId, Guid postId, Guid commentId, [FromQuery] DateTime? after, [FromQuery] int limit)
     {
         return Ok(_comments.GetReplies(User.AccountId(), communityId, postId, commentId, after, limit));
     }

@@ -35,7 +35,7 @@ public class CommunityTests
     public void UpdateDetails_is_forbidden_for_the_creator_who_only_holds_the_issuer_role()
     {
         var community = NewCommunity();
-        var creator = Membership.Creator(Guid.NewGuid(), community.Id, Now);
+        var creator = Membership.MakeCreator(Guid.NewGuid(), community.Id, Now);
 
         Should.Throw<ForbiddenException>(() =>
             community.UpdateDetails(creator, "Zgrada 2", community.Address, null, null, null));

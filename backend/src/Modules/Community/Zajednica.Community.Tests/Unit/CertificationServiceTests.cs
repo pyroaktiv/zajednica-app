@@ -9,7 +9,7 @@ public class CertificationServiceTests
     private static readonly DateTime Now = new(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
     private readonly CertificationService _service = new();
 
-    private static Membership Issuer(Guid communityId) => Membership.Creator(Guid.NewGuid(), communityId, Now);
+    private static Membership Issuer(Guid communityId) => Membership.MakeCreator(Guid.NewGuid(), communityId, Now);
     private static Membership Candidate(Guid communityId) => new(Guid.NewGuid(), communityId, Now);
 
     [Fact]

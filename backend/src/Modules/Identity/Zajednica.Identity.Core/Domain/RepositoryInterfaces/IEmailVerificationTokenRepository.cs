@@ -2,8 +2,8 @@ namespace Zajednica.Identity.Core.Domain.RepositoryInterfaces;
 
 public interface IEmailVerificationTokenRepository
 {
-    void Add(EmailVerificationToken token);
-    void Remove(EmailVerificationToken token);
+    void Add(Verification token);
+    void Remove(Verification token);
 
-    EmailVerificationToken? GetByToken(string token);
+    Verification? GetByToken(string token);
 }

@@ -16,10 +16,10 @@ public sealed class MembershipService(
     IRealtimePusher realtime,
     MembershipAccess access) : IMembershipService
 {
-    public MyMembershipDto GetMine(Guid accountId, Guid communityId)
+    public MemberProfileDto GetMine(Guid accountId, Guid communityId)
     {
         var (_, membership) = access.RequireMember(accountId, communityId);
-        return membership.ToMyMembershipDto();
+        return membership.ToProfileDto(accounts.GetProfile(accountId));
     }
 
     public UnitNumberDto SetUnitNumber(Guid accountId, Guid communityId, SetUnitNumberRequest request)

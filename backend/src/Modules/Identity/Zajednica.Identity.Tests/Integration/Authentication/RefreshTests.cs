@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.Identity.Api.Dto;
-using Zajednica.Identity.Core.Domain;
+using Zajednica.Identity.Core.Infrastructural;
 
 namespace Zajednica.Identity.Tests.Integration.Authentication;
 

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Zajednica.Identity.Core.Domain;
-using Zajednica.Identity.Core.Domain.RepositoryInterfaces;
+using Zajednica.Identity.Core.Infrastructural;
+using Zajednica.Identity.Core.Infrastructural.RepositoryInterfaces;
 
 namespace Zajednica.Identity.Infrastructure.Database.Repositories;
 

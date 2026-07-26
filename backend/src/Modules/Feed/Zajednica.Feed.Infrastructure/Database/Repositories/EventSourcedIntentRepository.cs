@@ -20,10 +20,10 @@ internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRe
             .OrderBy(e => e.Sequence)
             .ToList();
 
-        return stream.Count == 0 ? null : Intent.Load(id, stream);
+        return stream.Count == 0 ? null : Intent.Load(stream);
     }
 
-    public Page<IntentView> GetPage(Guid communityId, DateTime? before, int limit)
+    public CursorPage<IntentView> GetPage(Guid communityId, DateTime? before, int limit)
     {
         var query = db.IntentViews.AsNoTracking().Where(v => v.CommunityId == communityId);
 
@@ -35,8 +35,28 @@ internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRe
             .Take(limit)
             .ToList();
 
-        return new Page<IntentView>(items, items.Count < limit ? null : items[^1].DateCreated);
+        return new CursorPage<IntentView>(items, items.Count < limit ? null : items[^1].DateCreated);
     }
+
+    public IntentView? GetView(Guid intentId) =>
+        db.IntentViews.AsNoTracking().FirstOrDefault(v => v.Id == intentId);
+
+    public IReadOnlyList<IntentVoteView> GetVotes(Guid intentId) =>
+        db.IntentEvents
+            .AsNoTracking()
+            .OfType<VoteCast>()
+            .Where(e => e.StreamId == intentId)
+            .OrderBy(e => e.Sequence)
+            .Select(e => new IntentVoteView(e.VoterMembershipId, e.InFavor, e.OccurredAt))
+            .ToList();
+
+    public bool? GetVote(Guid intentId, Guid voterMembershipId) =>
+        db.IntentEvents
+            .AsNoTracking()
+            .OfType<VoteCast>()
+            .Where(e => e.StreamId == intentId && e.VoterMembershipId == voterMembershipId)
+            .Select(e => (bool?)e.InFavor)
+            .FirstOrDefault();
 
     public IReadOnlyList<IntentView> GetDueViews(Guid communityId, DateTime now) =>
         db.IntentViews

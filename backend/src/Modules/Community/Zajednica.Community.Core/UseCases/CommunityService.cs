@@ -31,7 +31,7 @@ public sealed class CommunityService(
             request.BankAccountNumber);
 
         communities.Add(community);
-        memberships.Add(Membership.Creator(accountId, community.Id, now));
+        memberships.Add(Membership.MakeCreator(accountId, community.Id, now));
 
         return community.ToDetailsDto();
     }

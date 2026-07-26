@@ -3,7 +3,9 @@ using Zajednica.BuildingBlocks.Core.Security;
 using Zajednica.Identity.Api.Dto;
 using Zajednica.Identity.Api.Public;
 using Zajednica.Identity.Core.Domain;
+using Zajednica.Identity.Core.Infrastructural;
 using Zajednica.Identity.Core.Domain.RepositoryInterfaces;
+using Zajednica.Identity.Core.Infrastructural.RepositoryInterfaces;
 
 namespace Zajednica.Identity.Core.UseCases;
 
@@ -59,7 +61,7 @@ public sealed class AuthenticationService : IAuthenticationService
 
         _accounts.Add(account);
 
-        var verificationToken = new EmailVerificationToken(
+        var verificationToken = new Verification(
             account.Id, _secureTokens.Generate(), now.AddHours(_settings.EmailVerificationTokenHours));
         _emailTokens.Add(verificationToken);
 
@@ -88,7 +90,7 @@ public sealed class AuthenticationService : IAuthenticationService
     {
         var account = _accounts.GetByUsernameOrEmail(request.UsernameOrEmail);
 
-        if (account is null || !_passwordHasher.Verify(request.Password, account.PasswordHash))
+        if (account is null || !_passwordHasher.Verify(request.Password, account.Password))
             throw new EntityValidationException("Invalid username/email or password.");
 
         if (!account.IsEmailVerified)

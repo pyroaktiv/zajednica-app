@@ -1,6 +1,6 @@
 namespace Zajednica.Feed.Core.Domain.Intents;
 
-public enum IntentKind
+public enum UserActionKind
 {
     Ban,
     ManagerElection

@@ -7,18 +7,18 @@ public class Account : AggregateRoot
 {
     public string Username { get; private set; } = null!;
     public string Email { get; private set; } = null!;
-    public string PasswordHash { get; private set; } = null!;
+    public string Password { get; private set; } = null!;
     public bool IsEmailVerified { get; private set; }
     public DateTime DateCreated { get; private set; }
     public Profile? Profile { get; private set; }
 
     private Account() { }
 
-    public Account(string username, string email, string passwordHash, DateTime now)
+    public Account(string username, string email, string password, DateTime now)
     {
         Username = NormalizeUsername(username);
         Email = NormalizeEmail(email);
-        PasswordHash = RequireHash(passwordHash);
+        Password = RequirePassword(password);
         IsEmailVerified = false;
         DateCreated = now;
     }
@@ -54,11 +54,11 @@ public class Account : AggregateRoot
         return value;
     }
 
-    private static string RequireHash(string passwordHash)
+    private static string RequirePassword(string password)
     {
-        if (string.IsNullOrWhiteSpace(passwordHash))
+        if (string.IsNullOrWhiteSpace(password))
             throw new EntityValidationException("Password hash is required.");
-        return passwordHash;
+        return password;
     }
 
     private static bool IsValidEmail(string email)

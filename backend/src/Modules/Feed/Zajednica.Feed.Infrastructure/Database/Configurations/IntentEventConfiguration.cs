@@ -9,12 +9,11 @@ public class IntentEventConfiguration : IEntityTypeConfiguration<IntentEvent>
     public void Configure(EntityTypeBuilder<IntentEvent> builder)
     {
         builder.ToTable("IntentEvents");
-        builder.UseTptMappingStrategy();
         builder.HasKey(e => new { e.StreamId, e.Sequence });
 
-        builder.Property(e => e.Type).HasConversion<string>().IsRequired();
-        builder.Property(e => e.Kind).HasConversion<string>().IsRequired();
-        builder.Property(e => e.Status).HasConversion<string>().IsRequired();
-        builder.Property(e => e.Text).IsRequired();
+        builder.HasDiscriminator<string>("Type")
+            .HasValue<UserTargetingIntentOpened>(nameof(UserTargetingIntentOpened))
+            .HasValue<VoteCast>(nameof(VoteCast))
+            .HasValue<IntentClosed>(nameof(IntentClosed));
     }
 }

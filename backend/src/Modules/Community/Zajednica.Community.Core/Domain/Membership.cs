@@ -5,7 +5,7 @@ namespace Zajednica.Community.Core.Domain;
 
 public class Membership : AggregateRoot
 {
-    private readonly List<MembershipRole> _roles = [];
+    private readonly List<RoleGrant> _roles = [];
 
     public Guid AccountId { get; private set; }
     public Guid CommunityId { get; private set; }
@@ -15,7 +15,7 @@ public class Membership : AggregateRoot
     public DateTime? LeftAt { get; private set; }
     public int Stars { get; private set; }
     public DateTime DateJoined { get; private set; }
-    public IReadOnlyList<MembershipRole> Roles => _roles;
+    public IReadOnlyList<RoleGrant> Roles => _roles;
 
     private Membership() { }
 
@@ -34,7 +34,7 @@ public class Membership : AggregateRoot
         DateJoined = now;
     }
 
-    public static Membership Creator(Guid accountId, Guid communityId, DateTime now)
+    public static Membership MakeCreator(Guid accountId, Guid communityId, DateTime now)
     {
         var membership = new Membership(accountId, communityId, now);
         membership.Confirm();
@@ -96,7 +96,7 @@ public class Membership : AggregateRoot
         if (HasRole(role))
             throw new EntityValidationException($"Membership already holds the {role} role.");
 
-        _roles.Add(new MembershipRole(role, byMembershipId, now));
+        _roles.Add(new RoleGrant(role, byMembershipId, now));
     }
 
     public void Revoke(CommunityRole role)

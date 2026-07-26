@@ -13,41 +13,49 @@ namespace Zajednica.Api.Controllers.Feed;
 public sealed class IntentController : ControllerBase
 {
     private readonly IIntentService _intents;
+    private readonly IIntentQueryService _queries;
 
-    public IntentController(IIntentService intents)
+    public IntentController(IIntentService intents, IIntentQueryService queries)
     {
         _intents = intents;
+        _queries = queries;
     }
 
     [HttpPost("ban")]
-    public ActionResult<UserTargetingIntentDetailsDto> OpenBan(Guid communityId, [FromBody] OpenUserTargetingIntentRequest request)
+    public ActionResult<IntentDetailsDto> OpenBan(Guid communityId, [FromBody] OpenUserTargetingIntentRequest request)
     {
         var opened = _intents.OpenBan(User.AccountId(), communityId, request);
         return CreatedAtAction(nameof(Get), new { communityId, intentId = opened.Id }, opened);
     }
 
     [HttpPost("manager-election")]
-    public ActionResult<UserTargetingIntentDetailsDto> OpenManagerElection(Guid communityId, [FromBody] OpenUserTargetingIntentRequest request)
+    public ActionResult<IntentDetailsDto> OpenManagerElection(Guid communityId, [FromBody] OpenUserTargetingIntentRequest request)
     {
         var opened = _intents.OpenManagerElection(User.AccountId(), communityId, request);
         return CreatedAtAction(nameof(Get), new { communityId, intentId = opened.Id }, opened);
     }
 
     [HttpPost("{intentId:guid}/votes")]
-    public ActionResult<UserTargetingIntentDetailsDto> Vote(Guid communityId, Guid intentId, [FromBody] CastVoteRequest request)
+    public ActionResult<IntentDetailsDto> Vote(Guid communityId, Guid intentId, [FromBody] CastVoteRequest request)
     {
         return Ok(_intents.Vote(User.AccountId(), communityId, intentId, request));
     }
 
     [HttpGet("{intentId:guid}")]
-    public ActionResult<UserTargetingIntentDetailsDto> Get(Guid communityId, Guid intentId)
+    public ActionResult<IntentDetailsDto> Get(Guid communityId, Guid intentId)
     {
-        return Ok(_intents.Get(User.AccountId(), communityId, intentId));
+        return Ok(_queries.Get(User.AccountId(), communityId, intentId));
+    }
+
+    [HttpGet("{intentId:guid}/votes")]
+    public ActionResult<IReadOnlyList<IntentVoterDto>> GetVotes(Guid communityId, Guid intentId)
+    {
+        return Ok(_queries.GetVotes(User.AccountId(), communityId, intentId));
     }
 
     [HttpGet]
-    public ActionResult<Page<UserTargetingIntentSummaryDto>> GetPage(Guid communityId, [FromQuery] DateTime? before, [FromQuery] int limit)
+    public ActionResult<CursorPage<IntentSummaryDto>> GetPage(Guid communityId, [FromQuery] DateTime? before, [FromQuery] int limit)
     {
-        return Ok(_intents.GetPage(User.AccountId(), communityId, before, limit));
+        return Ok(_queries.GetPage(User.AccountId(), communityId, before, limit));
     }
 }

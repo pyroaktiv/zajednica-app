@@ -56,7 +56,7 @@ public class CommunityLifecycleTests : BaseCommunityIntegrationTest
         joined.CommunityName.ShouldBe(community.Name);
         joined.IsConfirmed.ShouldBeFalse();
 
-        var mine = Value<MyMembershipDto>(
+        var mine = Value<MemberProfileDto>(
             (Members(scope, newcomerId).GetMine(community.Id)).Result!);
         mine.Stars.ShouldBeNull();
         mine.Roles.ShouldBeEmpty();

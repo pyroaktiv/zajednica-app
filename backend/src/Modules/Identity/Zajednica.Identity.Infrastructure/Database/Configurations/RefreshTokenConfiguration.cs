@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Zajednica.Identity.Core.Domain;
+using Zajednica.Identity.Core.Infrastructural;
 
 namespace Zajednica.Identity.Infrastructure.Database.Configurations;
 

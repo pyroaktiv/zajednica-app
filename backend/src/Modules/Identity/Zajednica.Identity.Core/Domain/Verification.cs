@@ -3,15 +3,15 @@ using Zajednica.BuildingBlocks.Core.Exceptions;
 
 namespace Zajednica.Identity.Core.Domain;
 
-public class EmailVerificationToken : AggregateRoot
+public class Verification : AggregateRoot
 {
     public Guid AccountId { get; private set; }
     public string Token { get; private set; } = null!;
     public DateTime ExpiresAt { get; private set; }
 
-    private EmailVerificationToken() { }
+    private Verification() { }
 
-    public EmailVerificationToken(Guid accountId, string token, DateTime expiresAt)
+    public Verification(Guid accountId, string token, DateTime expiresAt)
     {
         if (accountId == Guid.Empty)
             throw new EntityValidationException("AccountId is required.");

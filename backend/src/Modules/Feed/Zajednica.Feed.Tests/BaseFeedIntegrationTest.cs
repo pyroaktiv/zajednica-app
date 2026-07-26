@@ -32,7 +32,9 @@ public class BaseFeedIntegrationTest : BaseWebIntegrationTest<FeedTestFactory>
         As(new CommentController(scope.ServiceProvider.GetRequiredService<ICommentService>()), accountId);
 
     protected static IntentController Intents(IServiceScope scope, Guid accountId) =>
-        As(new IntentController(scope.ServiceProvider.GetRequiredService<IIntentService>()), accountId);
+        As(new IntentController(
+            scope.ServiceProvider.GetRequiredService<IIntentService>(),
+            scope.ServiceProvider.GetRequiredService<IIntentQueryService>()), accountId);
 
     protected static (CommunityDetailsDto Community, Member Owner) CreateCommunity(IServiceScope scope)
     {

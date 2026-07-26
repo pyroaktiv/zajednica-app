@@ -1,4 +1,4 @@
-namespace Zajednica.Identity.Core.Domain.RepositoryInterfaces;
+namespace Zajednica.Identity.Core.Infrastructural.RepositoryInterfaces;
 
 public interface IRefreshTokenRepository
 {

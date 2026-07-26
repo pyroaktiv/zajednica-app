@@ -18,7 +18,7 @@ internal sealed class PostEfRepository(FeedDbContext db) : IPostRepository
     public Post? Get(Guid id) =>
         db.Posts.FirstOrDefault(p => p.Id == id);
 
-    public Page<Post> GetPage(Guid communityId, DateTime? before, int limit)
+    public CursorPage<Post> GetPage(Guid communityId, DateTime? before, int limit)
     {
         var query = db.Posts.AsNoTracking().Where(p => p.CommunityId == communityId);
 
@@ -30,13 +30,13 @@ internal sealed class PostEfRepository(FeedDbContext db) : IPostRepository
             .Take(limit)
             .ToList();
 
-        return new Page<Post>(items, items.Count < limit ? null : items[^1].DateCreated);
+        return new CursorPage<Post>(items, items.Count < limit ? null : items[^1].DateCreated);
     }
 
     public Comment? GetComment(Guid postId, Guid commentId) =>
         db.Comments.FirstOrDefault(c => c.PostId == postId && c.Id == commentId);
 
-    public Page<Comment> GetCommentPage(Guid postId, Guid? parentCommentId, DateTime? after, int limit)
+    public CursorPage<Comment> GetCommentPage(Guid postId, Guid? parentCommentId, DateTime? after, int limit)
     {
         var query = parentCommentId is null
             ? db.Comments.AsNoTracking().Where(c => c.PostId == postId && c.ParentCommentId == null)
@@ -50,6 +50,6 @@ internal sealed class PostEfRepository(FeedDbContext db) : IPostRepository
             .Take(limit)
             .ToList();
 
-        return new Page<Comment>(items, items.Count < limit ? null : items[^1].Date);
+        return new CursorPage<Comment>(items, items.Count < limit ? null : items[^1].Date);
     }
 }

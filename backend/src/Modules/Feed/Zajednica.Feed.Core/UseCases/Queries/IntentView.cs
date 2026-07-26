@@ -8,7 +8,7 @@ public class IntentView
     public Guid CommunityId { get; private set; }
     public Guid AuthorMembershipId { get; private set; }
     public Guid? TargetMembershipId { get; private set; }
-    public IntentKind Kind { get; private set; }
+    public string Kind { get; private set; } = null!;
     public string Text { get; private set; } = null!;
     public DateTime DateCreated { get; private set; }
     public DateTime Deadline { get; private set; }
@@ -17,6 +17,7 @@ public class IntentView
     public int EligibleVoterCount { get; private set; }
     public int VotesFor { get; private set; }
     public int VotesAgainst { get; private set; }
+    public bool QuorumReached { get; private set; }
 
     private IntentView() { }
 
@@ -25,8 +26,8 @@ public class IntentView
         Id = intent.Id;
         CommunityId = intent.CommunityId;
         AuthorMembershipId = intent.AuthorMembershipId;
-        TargetMembershipId = (intent as UserTargetingIntent)?.TargetMembershipId;
-        Kind = intent.Kind;
+        TargetMembershipId = (intent.Action as UserTargetingAction)?.TargetMembershipId;
+        Kind = intent.Action.Name;
         Text = intent.Text;
         DateCreated = intent.DateCreated;
         Deadline = intent.Deadline;
@@ -41,5 +42,6 @@ public class IntentView
         DateOfClosure = intent.DateOfClosure;
         VotesFor = intent.VotesFor;
         VotesAgainst = intent.VotesAgainst;
+        QuorumReached = intent.QuorumReached();
     }
 }

@@ -3,12 +3,13 @@ using Zajednica.BuildingBlocks.Core.Exceptions;
 
 namespace Zajednica.Feed.Core.Domain.Intents;
 
-public abstract class Intent : EventSourcedAggregateRoot<IntentEvent>
+public class Intent : EventSourcedAggregateRoot<IntentEvent>
 {
-    public static TimeSpan VotingWindow { get; protected set; } = TimeSpan.FromHours(48);
+    private static readonly TimeSpan VotingWindow = TimeSpan.FromHours(48);
 
     private readonly Dictionary<Guid, bool> _votes = [];
 
+    public IntentAction Action { get; private set; }
     public Guid CommunityId { get; private set; }
     public Guid AuthorMembershipId { get; private set; }
     public string Text { get; private set; } = string.Empty;
@@ -17,27 +18,37 @@ public abstract class Intent : EventSourcedAggregateRoot<IntentEvent>
     public int EligibleVoterCount { get; private set; }
     public IntentStatus Status { get; private set; }
 
-    public abstract IntentKind Kind { get; }
-
     public DateTime Deadline => DateCreated.Add(VotingWindow);
     public int VotesFor => _votes.Count(v => v.Value);
     public int VotesAgainst => _votes.Count(v => !v.Value);
 
-    protected Intent() { }
+    private Intent() { }
 
-    public static Intent Load(Guid id, IReadOnlyList<IntentEvent> history)
+    public static Intent Open(IntentAction action, Guid communityId, Guid authorMembershipId, string text,
+        int eligibleVoterCount, DateTime now)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            throw new EntityValidationException("Text is required.");
+        if (eligibleVoterCount < 1)
+            throw new EntityValidationException("An intent needs at least one eligible voter.");
+
+        action.EnsureValidFor(authorMembershipId);
+
+        var intent = new Intent();
+        intent.RegisterEvent(action.ToOpenedEvent(communityId, authorMembershipId, text, eligibleVoterCount, now));
+
+        return intent;
+    }
+
+    public static Intent Load(IReadOnlyList<IntentEvent> history)
     {
         if (history.Count == 0)
             throw new EntityValidationException("An intent stream cannot be empty.");
+        if (history[0] is not IntentOpened)
+            throw new EntityValidationException("An intent stream must begin with the event that opened it.");
 
-        Intent intent = history[0].Kind switch
-        {
-            IntentKind.Ban => new BanIntent(),
-            IntentKind.ManagerElection => new ManagerElectionIntent(),
-            _ => throw new EntityValidationException("Unknown intent kind.")
-        };
-
-        intent.ReplayFromHistory(id, history);
+        var intent = new Intent();
+        intent.ReplayFromHistory(history);
 
         return intent;
     }
@@ -49,7 +60,7 @@ public abstract class Intent : EventSourcedAggregateRoot<IntentEvent>
         if (_votes.ContainsKey(voterMembershipId))
             throw new EntityValidationException("This member has already voted on this intent.");
 
-        RegisterEvent(NewVote(voterMembershipId, inFavor, now));
+        RegisterEvent(new VoteCast(voterMembershipId, inFavor, now));
     }
 
     public IntentStatus Close(DateTime now)
@@ -58,17 +69,17 @@ public abstract class Intent : EventSourcedAggregateRoot<IntentEvent>
             throw new EntityValidationException("Intent is already closed.");
 
         var status = Decide();
-        RegisterEvent(NewClosed(status, now));
+        RegisterEvent(new IntentClosed(status, ClosureReason.Decision, now));
 
         return status;
     }
 
-    public void Cancel(DateTime now)
+    public void Supersede(DateTime now)
     {
         if (Status != IntentStatus.Open)
-            throw new EntityValidationException("Only an open intent can be cancelled.");
+            throw new EntityValidationException("Only an open intent can be superseded.");
 
-        RegisterEvent(NewClosed(IntentStatus.Rejected, now));
+        RegisterEvent(new IntentClosed(IntentStatus.Rejected, ClosureReason.Superseded, now));
     }
 
     public bool? VoteOf(Guid membershipId) => _votes.TryGetValue(membershipId, out var vote) ? vote : null;
@@ -79,40 +90,27 @@ public abstract class Intent : EventSourcedAggregateRoot<IntentEvent>
 
     public bool ShouldClose(DateTime now) => Status == IntentStatus.Open && (now >= Deadline || HasDecisiveMajority());
 
-    protected abstract IntentEvent NewVote(Guid voterMembershipId, bool inFavor, DateTime at);
-
-    protected abstract IntentEvent NewClosed(IntentStatus status, DateTime at);
-
-    protected void RaiseOpened(IntentEvent opened)
-    {
-        if (string.IsNullOrEmpty(opened.Text))
-            throw new EntityValidationException("Text is required.");
-        if (opened.EligibleVoterCount < 1)
-            throw new EntityValidationException("An intent needs at least one eligible voter.");
-
-        RegisterEvent(opened);
-    }
-
     protected override void ApplyToSelf(IntentEvent intentEvent)
     {
-        switch (intentEvent.Type)
+        switch (intentEvent)
         {
-            case IntentEventType.Opened:
-                CommunityId = intentEvent.CommunityId;
-                AuthorMembershipId = intentEvent.AuthorMembershipId;
-                Text = intentEvent.Text;
-                DateCreated = intentEvent.OccurredAt;
-                EligibleVoterCount = intentEvent.EligibleVoterCount;
+            case IntentOpened opened:
+                Action = opened.ToAction();
+                CommunityId = opened.CommunityId;
+                AuthorMembershipId = opened.AuthorMembershipId;
+                Text = opened.Text;
+                DateCreated = opened.OccurredAt;
+                EligibleVoterCount = opened.EligibleVoterCount;
                 Status = IntentStatus.Open;
                 break;
 
-            case IntentEventType.VoteCast:
-                _votes[intentEvent.VoterMembershipId] = intentEvent.InFavor;
+            case VoteCast vote:
+                _votes[vote.VoterMembershipId] = vote.InFavor;
                 break;
 
-            case IntentEventType.Closed:
-                Status = intentEvent.Status;
-                DateOfClosure = intentEvent.OccurredAt;
+            case IntentClosed closed:
+                Status = closed.Status;
+                DateOfClosure = closed.OccurredAt;
                 break;
         }
     }

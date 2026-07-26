@@ -9,9 +9,9 @@ using Zajednica.Community.Core.Domain;
 namespace Zajednica.Community.Tests.Integration;
 
 [Collection("Sequential")]
-public class MembershipRoleTests : BaseCommunityIntegrationTest
+public class RoleGrantTests : BaseCommunityIntegrationTest
 {
-    public MembershipRoleTests(CommunityTestFactory factory) : base(factory) { }
+    public RoleGrantTests(CommunityTestFactory factory) : base(factory) { }
 
     private static IInternalMembershipService Internal(IServiceScope scope) =>
         scope.ServiceProvider.GetRequiredService<IInternalMembershipService>();

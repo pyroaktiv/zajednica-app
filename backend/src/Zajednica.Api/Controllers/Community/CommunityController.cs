@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Zajednica.Community.Api.Dto.Communities;
-using Zajednica.Community.Api.Dto.Memberships;
 using Zajednica.Community.Api.Public;
 using Zajednica.Identity.Infrastructure.Authentication;
 
@@ -51,7 +50,7 @@ public sealed class CommunityController : ControllerBase
     }
 
     [HttpPost("join")]
-    public ActionResult<MemberProfileDto> Join([FromBody] JoinCommunityRequest request)
+    public ActionResult<JoinedCommunityDto> Join([FromBody] JoinCommunityRequest request)
     {
         return Ok(_communities.Join(User.AccountId(), request));
     }

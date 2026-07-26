@@ -1,19 +1,15 @@
 namespace Zajednica.Feed.Api.Dto.Intents;
 
-public record UserTargetingIntentDetailsDto(
+public record IntentSummaryDto(
     Guid Id,
-    string Type,
+    string Kind,
     string Status,
     Guid AuthorMembershipId,
-    string AuthorUsername,
     Guid? TargetMembershipId,
-    string TargetUsername,
+    string? TargetUsername,
     string Text,
     DateTime DateCreated,
     DateTime Deadline,
-    DateTime? DateOfClosure,
     int EligibleVoterCount,
     int VotesFor,
-    int VotesAgainst,
-    bool QuorumReached,
-    bool? MyVote);
+    int VotesAgainst);

@@ -53,7 +53,7 @@ public sealed class CommentService(
         return Single(reply);
     }
 
-    public Page<CommentDto> GetRoots(Guid accountId, Guid communityId, Guid postId, DateTime? after,
+    public CursorPage<CommentDto> GetRoots(Guid accountId, Guid communityId, Guid postId, DateTime? after,
         int limit)
     {
         access.RequireConfirmed(accountId, communityId);
@@ -62,7 +62,7 @@ public sealed class CommentService(
         return Page(postId, null, after, limit);
     }
 
-    public Page<CommentDto> GetReplies(Guid accountId, Guid communityId, Guid postId, Guid commentId,
+    public CursorPage<CommentDto> GetReplies(Guid accountId, Guid communityId, Guid postId, Guid commentId,
         DateTime? after, int limit)
     {
         access.RequireConfirmed(accountId, communityId);
@@ -71,7 +71,7 @@ public sealed class CommentService(
         return Page(postId, commentId, after, limit);
     }
 
-    private Page<CommentDto> Page(Guid postId, Guid? parentCommentId, DateTime? after, int limit)
+    private CursorPage<CommentDto> Page(Guid postId, Guid? parentCommentId, DateTime? after, int limit)
     {
         var page = posts.GetCommentPage(postId, parentCommentId, after, Paging.Clamp(limit));
         var profiles = authors.For(page.Items.Select(c => c.AuthorMembershipId).ToList());

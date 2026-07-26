@@ -4,7 +4,7 @@ namespace Zajednica.Community.Api.Public;
 
 public interface IMembershipService
 {
-    MyMembershipDto GetMine(Guid accountId, Guid communityId);
+    MemberProfileDto GetMine(Guid accountId, Guid communityId);
     UnitNumberDto SetUnitNumber(Guid accountId, Guid communityId, SetUnitNumberRequest request);
     MemberProfileDto Get(Guid accountId, Guid communityId, Guid membershipId);
 

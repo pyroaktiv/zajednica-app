@@ -13,7 +13,7 @@ public class IntentViewConfiguration : IEntityTypeConfiguration<IntentView>
         builder.HasKey(v => v.Id);
         builder.Property(v => v.Id).ValueGeneratedNever();
 
-        builder.Property(v => v.Kind).HasConversion<string>().IsRequired();
+        builder.Property(v => v.Kind).IsRequired();
         builder.Property(v => v.Status).HasConversion<string>().IsRequired();
         builder.Property(v => v.Text).IsRequired();
 

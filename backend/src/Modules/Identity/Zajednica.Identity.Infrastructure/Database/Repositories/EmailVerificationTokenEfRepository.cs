@@ -6,18 +6,18 @@ namespace Zajednica.Identity.Infrastructure.Database.Repositories;
 
 internal sealed class EmailVerificationTokenEfRepository(IdentityDbContext db) : IEmailVerificationTokenRepository
 {
-    public void Add(EmailVerificationToken token)
+    public void Add(Verification token)
     {
         db.EmailVerificationTokens.Add(token);
         db.SaveChanges();
     }
 
-    public void Remove(EmailVerificationToken token)
+    public void Remove(Verification token)
     {
         db.EmailVerificationTokens.Remove(token);
         db.SaveChanges();
     }
 
-    public EmailVerificationToken? GetByToken(string token) =>
+    public Verification? GetByToken(string token) =>
         db.EmailVerificationTokens.FirstOrDefault(t => t.Token == token);
 }

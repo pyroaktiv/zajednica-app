@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Zajednica.Identity.Api.Internal;
 using Zajednica.Identity.Api.Public;
 using Zajednica.Identity.Core.Domain.RepositoryInterfaces;
+using Zajednica.Identity.Core.Infrastructural.RepositoryInterfaces;
 using Zajednica.Identity.Core.UseCases;
 using Zajednica.Identity.Core.UseCases.Internal;
 using Zajednica.Identity.Infrastructure.Authentication;

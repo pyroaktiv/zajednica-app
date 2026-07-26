@@ -23,8 +23,8 @@ public class RegistrationTests : BaseIdentityIntegrationTest
         var account = db.Accounts.Single(a => a.Email == email);
         account.IsEmailVerified.ShouldBeFalse();
         account.Profile.ShouldBeNull();
-        account.PasswordHash.ShouldNotBe(ValidPassword);
-        account.PasswordHash.ShouldContain(".");
+        account.Password.ShouldNotBe(ValidPassword);
+        account.Password.ShouldContain(".");
         db.EmailVerificationTokens.Count(t => t.AccountId == account.Id).ShouldBe(1);
     }
 

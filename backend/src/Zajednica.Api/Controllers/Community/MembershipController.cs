@@ -18,14 +18,14 @@ public sealed class MembershipController : ControllerBase
         _memberships = memberships;
     }
 
-    [HttpGet("me")]
+    [HttpGet("members/me")]
     public ActionResult<MemberProfileDto> GetMine(Guid communityId)
     {
         return Ok(_memberships.GetMine(User.AccountId(), communityId));
     }
 
-    [HttpPut("me/unit-number")]
-    public ActionResult<MemberProfileDto> SetUnitNumber(Guid communityId, [FromBody] SetUnitNumberRequest request)
+    [HttpPut("members/me/unit-number")]
+    public ActionResult<UnitNumberDto> SetUnitNumber(Guid communityId, [FromBody] SetUnitNumberRequest request)
     {
         return Ok(_memberships.SetUnitNumber(User.AccountId(), communityId, request));
     }

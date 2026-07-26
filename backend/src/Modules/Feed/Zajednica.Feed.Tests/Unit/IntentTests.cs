@@ -11,23 +11,25 @@ public class IntentTests
     private static readonly Guid Author = Guid.NewGuid();
     private static readonly Guid Target = Guid.NewGuid();
 
-    private static BanIntent Ban(int eligibleVoterCount = 10) =>
-        BanIntent.Open(Community, Author, Target, "Ne postuje kucni red.", eligibleVoterCount, true, Now);
+    private static Intent Ban(int eligibleVoterCount = 10) =>
+        Intent.Open(UserTargetingAction.For(UserActionKind.Ban, Target, true), Community, Author,
+            "Ne postuje kucni red.", eligibleVoterCount, Now);
 
-    private static Intent Replay(Intent intent) => Intent.Load(intent.Id, intent.NewEvents);
+    private static Intent Replay(Intent intent) => Intent.Load(intent.NewEvents);
 
     [Fact]
     public void An_intent_cannot_be_opened_about_its_own_author()
     {
         Should.Throw<EntityValidationException>(() =>
-            BanIntent.Open(Community, Author, Author, "Sam o sebi.", 10, true, Now));
+            Intent.Open(UserTargetingAction.For(UserActionKind.Ban, Author, true), Community, Author, "Sam o sebi.",
+                10, Now));
     }
 
     [Fact]
-    public void An_intent_cannot_be_opened_about_someone_who_is_not_a_confirmed_member()
+    public void An_intent_can_only_be_opened_about_a_confirmed_member()
     {
         Should.Throw<EntityValidationException>(() =>
-            BanIntent.Open(Community, Author, Target, "Nije clan.", 10, false, Now));
+            UserTargetingAction.For(UserActionKind.Ban, Target, false));
     }
 
     [Fact]
@@ -41,18 +43,26 @@ public class IntentTests
         var replayed = Replay(intent);
 
         replayed.Id.ShouldBe(intent.Id);
-        replayed.ShouldBeOfType<BanIntent>();
-        replayed.Kind.ShouldBe(IntentKind.Ban);
         replayed.CommunityId.ShouldBe(Community);
         replayed.AuthorMembershipId.ShouldBe(Author);
-        ((BanIntent)replayed).TargetMembershipId.ShouldBe(Target);
         replayed.Text.ShouldBe(intent.Text);
-        replayed.Deadline.ShouldBe(Now.Add(Intent.VotingWindow));
+        replayed.Deadline.ShouldBe(intent.Deadline);
         replayed.EligibleVoterCount.ShouldBe(10);
         replayed.VotesFor.ShouldBe(5);
         replayed.Status.ShouldBe(status);
         replayed.DateOfClosure.ShouldBe(Now.AddHours(1));
         replayed.Version.ShouldBe(intent.Version);
+    }
+
+    [Fact]
+    public void Replaying_the_stream_reconstructs_the_action_the_intent_was_opened_with()
+    {
+        var replayed = Replay(Ban());
+
+        var action = replayed.Action.ShouldBeOfType<UserTargetingAction>();
+        action.Kind.ShouldBe(UserActionKind.Ban);
+        action.TargetMembershipId.ShouldBe(Target);
+        replayed.Action.Name.ShouldBe("Ban");
     }
 
     [Fact]
@@ -90,9 +100,9 @@ public class IntentTests
         intent.CastVote(Guid.NewGuid(), true, Now);
 
         intent.ShouldClose(Now.AddHours(1)).ShouldBeFalse();
-        intent.ShouldClose(Now.Add(Intent.VotingWindow)).ShouldBeTrue();
+        intent.ShouldClose(intent.Deadline).ShouldBeTrue();
 
-        intent.Close(Now.Add(Intent.VotingWindow)).ShouldBe(IntentStatus.Expired);
+        intent.Close(intent.Deadline).ShouldBe(IntentStatus.Expired);
     }
 
     [Fact]
@@ -103,20 +113,34 @@ public class IntentTests
         intent.CastVote(Guid.NewGuid(), false, Now);
         intent.CastVote(Guid.NewGuid(), false, Now);
 
-        intent.Close(Now.Add(Intent.VotingWindow)).ShouldBe(IntentStatus.Rejected);
+        intent.Close(intent.Deadline).ShouldBe(IntentStatus.Rejected);
     }
 
     [Fact]
-    public void A_cancelled_intent_is_rejected()
+    public void A_superseded_intent_is_rejected_and_the_stream_says_it_was_not_a_decision()
     {
         var intent = Ban();
         intent.CastVote(Guid.NewGuid(), true, Now);
 
-        intent.Cancel(Now.AddHours(2));
+        intent.Supersede(Now.AddHours(2));
 
         intent.Status.ShouldBe(IntentStatus.Rejected);
         intent.DateOfClosure.ShouldBe(Now.AddHours(2));
+        intent.NewEvents.OfType<IntentClosed>().Single().Reason.ShouldBe(ClosureReason.Superseded);
         Replay(intent).Status.ShouldBe(IntentStatus.Rejected);
+    }
+
+    [Fact]
+    public void The_stream_of_an_intent_is_a_typed_sequence_of_what_happened_to_it()
+    {
+        var intent = Ban();
+        intent.CastVote(Guid.NewGuid(), true, Now);
+        intent.Close(intent.Deadline);
+
+        intent.NewEvents.Select(e => e.GetType()).ShouldBe(
+            [typeof(UserTargetingIntentOpened), typeof(VoteCast), typeof(IntentClosed)]);
+        intent.NewEvents.Select(e => e.Sequence).ShouldBe([1, 2, 3]);
+        intent.NewEvents.OfType<IntentClosed>().Single().Reason.ShouldBe(ClosureReason.Decision);
     }
 
     [Fact]
@@ -127,6 +151,6 @@ public class IntentTests
         intent.Close(Now);
 
         Should.Throw<EntityValidationException>(() => intent.CastVote(Guid.NewGuid(), true, Now));
-        Should.Throw<EntityValidationException>(() => intent.Cancel(Now));
+        Should.Throw<EntityValidationException>(() => intent.Supersede(Now));
     }
 }

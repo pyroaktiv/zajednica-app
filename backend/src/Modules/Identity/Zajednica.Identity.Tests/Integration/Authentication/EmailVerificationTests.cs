@@ -43,7 +43,7 @@ public class EmailVerificationTests : BaseIdentityIntegrationTest
         var db = Db(scope);
         var tokenValue = $"expired-{Guid.NewGuid():N}";
         db.EmailVerificationTokens.RemoveRange(db.EmailVerificationTokens.Where(t => t.AccountId == accountId));
-        var expired = new EmailVerificationToken(accountId, tokenValue, DateTime.UtcNow.AddHours(-1));
+        var expired = new Verification(accountId, tokenValue, DateTime.UtcNow.AddHours(-1));
         db.EmailVerificationTokens.Add(expired);
         db.SaveChanges();
         db.ChangeTracker.Clear();
@@ -63,7 +63,7 @@ public class EmailVerificationTests : BaseIdentityIntegrationTest
         var (_, accountId) = RegisterVerified(scope);
         var db = Db(scope);
         var tokenValue = $"second-{Guid.NewGuid():N}";
-        var second = new EmailVerificationToken(accountId, tokenValue, DateTime.UtcNow.AddHours(24));
+        var second = new Verification(accountId, tokenValue, DateTime.UtcNow.AddHours(24));
         db.EmailVerificationTokens.Add(second);
         db.SaveChanges();
         db.ChangeTracker.Clear();

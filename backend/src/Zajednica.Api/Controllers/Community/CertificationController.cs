@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Zajednica.Community.Api.Dto.Certification;
-using Zajednica.Community.Api.Dto.Memberships;
 using Zajednica.Community.Api.Public;
 using Zajednica.Identity.Infrastructure.Authentication;
 
@@ -33,7 +32,7 @@ public sealed class CertificationController : ControllerBase
     }
 
     [HttpPost("certification-challenges/confirm")]
-    public ActionResult<MemberProfileDto> Confirm([FromBody] ConfirmCertificationRequest request)
+    public ActionResult<CertificationResultDto> Confirm([FromBody] ConfirmCertificationRequest request)
     {
         return Ok(_certification.Confirm(User.AccountId(), request));
     }

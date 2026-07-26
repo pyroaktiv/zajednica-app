@@ -8,6 +8,6 @@ public interface ICommentService
     CommentDto Add(Guid accountId, Guid communityId, Guid postId, AddCommentRequest request);
     CommentDto Reply(Guid accountId, Guid communityId, Guid postId, Guid commentId, AddCommentRequest request);
 
-    Page<CommentDto> GetRoots(Guid accountId, Guid communityId, Guid postId, DateTime? after, int limit);
-    Page<CommentDto> GetReplies(Guid accountId, Guid communityId, Guid postId, Guid commentId, DateTime? after, int limit);
+    CursorPage<CommentDto> GetRoots(Guid accountId, Guid communityId, Guid postId, DateTime? after, int limit);
+    CursorPage<CommentDto> GetReplies(Guid accountId, Guid communityId, Guid postId, Guid commentId, DateTime? after, int limit);
 }

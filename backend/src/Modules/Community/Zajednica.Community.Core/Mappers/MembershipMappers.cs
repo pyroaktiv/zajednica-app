@@ -34,15 +34,6 @@ public static class MembershipMappers
             membership.DateJoined,
             membership.State.ToString());
 
-    public static MyMembershipDto ToMyMembershipDto(this Membership membership) =>
-        new(membership.Id,
-            membership.CommunityId,
-            membership.UnitNumber,
-            membership.IsConfirmed(),
-            membership.IsConfirmed() ? membership.Stars : null,
-            membership.Roles.Select(r => r.Role.ToString()).ToList(),
-            membership.DateJoined);
-
     public static JoinedCommunityDto ToJoinedDto(this Membership membership, string communityName) =>
         new(membership.Id,
             membership.CommunityId,

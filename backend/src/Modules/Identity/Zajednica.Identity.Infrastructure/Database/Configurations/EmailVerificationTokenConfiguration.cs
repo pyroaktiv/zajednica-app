@@ -4,9 +4,9 @@ using Zajednica.Identity.Core.Domain;
 
 namespace Zajednica.Identity.Infrastructure.Database.Configurations;
 
-public class EmailVerificationTokenConfiguration : IEntityTypeConfiguration<EmailVerificationToken>
+public class EmailVerificationTokenConfiguration : IEntityTypeConfiguration<Verification>
 {
-    public void Configure(EntityTypeBuilder<EmailVerificationToken> builder)
+    public void Configure(EntityTypeBuilder<Verification> builder)
     {
         builder.ToTable("EmailVerificationTokens");
         builder.HasKey(t => t.Id);

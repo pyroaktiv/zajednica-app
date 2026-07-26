@@ -40,7 +40,7 @@ public class MembershipTests
     [Fact]
     public void Creator_is_a_confirmed_issuer_and_nothing_more()
     {
-        var creator = Membership.Creator(Account, CommunityId, Now);
+        var creator = Membership.MakeCreator(Account, CommunityId, Now);
 
         creator.CertificationStatus.ShouldBe(CertificationStatus.Confirmed);
         creator.HasRole(CommunityRole.Issuer).ShouldBeTrue();

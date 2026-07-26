@@ -1,10 +1,11 @@
 using Zajednica.BuildingBlocks.Core.Domain;
 using Zajednica.BuildingBlocks.Core.Exceptions;
 
-namespace Zajednica.Identity.Core.Domain;
+namespace Zajednica.Identity.Core.Infrastructural;
 
-public class RefreshToken : AggregateRoot
+public class RefreshToken
 {
+    public Guid Id { get; private set; }
     public Guid AccountId { get; private set; }
     public string Token { get; private set; } = null!;
     public DateTime ExpiresAt { get; private set; }
