@@ -29,10 +29,8 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
     {
         if (string.IsNullOrWhiteSpace(text))
             throw new EntityValidationException("Text is required.");
-        if (eligibleVoterCount < 1)
-            throw new EntityValidationException("An intent needs at least one eligible voter.");
-
-        action.EnsureValidFor(authorMembershipId);
+        if (eligibleVoterCount < 2)
+            throw new EntityValidationException("An intent needs at least two eligible voters.");
 
         var intent = new Intent();
         intent.RegisterEvent(action.ToOpenedEvent(communityId, authorMembershipId, text, eligibleVoterCount, now));

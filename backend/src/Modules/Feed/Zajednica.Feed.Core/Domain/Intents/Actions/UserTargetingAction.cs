@@ -23,12 +23,6 @@ public sealed class UserTargetingAction : IntentAction
         return new UserTargetingAction(kind, targetMembershipId);
     }
 
-    public override void EnsureValidFor(Guid authorMembershipId)
-    {
-        if (TargetMembershipId == authorMembershipId)
-            throw new EntityValidationException("An intent cannot be opened about its own author.");
-    }
-
     public override IntentOpened ToOpenedEvent(Guid communityId, Guid authorMembershipId, string text,
         int eligibleVoterCount, DateTime at) =>
         new UserTargetingIntentOpened(Kind, TargetMembershipId, communityId, authorMembershipId, text,
