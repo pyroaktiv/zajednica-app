@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Zajednica.Feed.Api.Internal;
 using Zajednica.Feed.Api.Public;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 using Zajednica.Feed.Core.UseCases;
 using Zajednica.Feed.Core.UseCases.Comments;
 using Zajednica.Feed.Core.UseCases.Intents;
+using Zajednica.Feed.Core.UseCases.Internal;
 using Zajednica.Feed.Core.UseCases.Posts;
 using Zajednica.Feed.Core.UseCases.Queries;
 using Zajednica.Feed.Infrastructure.Database;
@@ -41,6 +43,7 @@ public static class FeedModule
 
         services.AddScoped<IPostService, PostService>();
         services.AddScoped<ICommentService, CommentService>();
+        services.AddScoped<IInternalHelpRequestService, InternalHelpRequestService>();
 
         services.AddScoped<IntentAccess>();
         services.AddScoped<IntentNotifier>();
