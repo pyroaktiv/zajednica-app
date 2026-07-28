@@ -18,6 +18,9 @@ internal sealed class PostEfRepository(FeedDbContext db) : IPostRepository
     public Post? Get(Guid id) =>
         db.Posts.FirstOrDefault(p => p.Id == id);
 
+    public bool Exists(Guid postId, Guid communityId) =>
+        db.Posts.Any(p => p.Id == postId && p.CommunityId == communityId);
+
     public CursorPage<Post> GetPage(Guid communityId, DateTime? before, int limit)
     {
         var query = db.Posts.AsNoTracking().Where(p => p.CommunityId == communityId);

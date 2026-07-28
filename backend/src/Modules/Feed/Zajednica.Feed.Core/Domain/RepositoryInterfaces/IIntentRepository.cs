@@ -8,4 +8,6 @@ public interface IIntentRepository
     void Update(Intent intent);
 
     Intent? Get(Guid id);
+    IReadOnlyList<Intent> GetDue(DateTime now);
+    IReadOnlyList<Intent> GetOpenByTarget(Guid communityId, Guid targetMembershipId);
 }

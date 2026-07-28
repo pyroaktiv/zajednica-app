@@ -3,6 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Zajednica.Feed.Api.Public;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 using Zajednica.Feed.Core.UseCases;
+using Zajednica.Feed.Core.UseCases.Comments;
+using Zajednica.Feed.Core.UseCases.Intents;
+using Zajednica.Feed.Core.UseCases.Posts;
 using Zajednica.Feed.Core.UseCases.Queries;
 using Zajednica.Feed.Infrastructure.Database;
 using Zajednica.Feed.Infrastructure.Database.Repositories;
@@ -33,15 +36,19 @@ public static class FeedModule
 
     private static void AddApplicationServices(IServiceCollection services)
     {
+        services.AddScoped<MemberDirectory>();
         services.AddScoped<CommunityAccess>();
-        services.AddScoped<AuthorDirectory>();
+
         services.AddScoped<IPostService, PostService>();
         services.AddScoped<ICommentService, CommentService>();
+
         services.AddScoped<IntentAccess>();
         services.AddScoped<IntentNotifier>();
         services.AddScoped<IntentClosing>();
         services.AddScoped<IntentPresenter>();
         services.AddScoped<IIntentService, IntentService>();
         services.AddScoped<IIntentQueryService, IntentQueryService>();
+
+        services.AddHostedService<IntentClosingWorker>();
     }
 }

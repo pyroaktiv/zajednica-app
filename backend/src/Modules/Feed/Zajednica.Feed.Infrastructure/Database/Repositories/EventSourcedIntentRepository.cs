@@ -58,18 +58,25 @@ internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRe
             .Select(e => (bool?)e.InFavor)
             .FirstOrDefault();
 
-    public IReadOnlyList<IntentView> GetDueViews(Guid communityId, DateTime now) =>
-        db.IntentViews
-            .AsNoTracking()
-            .Where(v => v.CommunityId == communityId && v.Status == IntentStatus.Open && v.Deadline <= now)
-            .ToList();
+    public IReadOnlyList<Intent> GetDue(DateTime now) =>
+        LoadStreams(OpenViews().Where(v => v.Deadline <= now).Select(v => v.Id));
 
-    public IReadOnlyList<IntentView> GetOpenViewsByTarget(Guid communityId, Guid targetMembershipId) =>
-        db.IntentViews
+    public IReadOnlyList<Intent> GetOpenByTarget(Guid communityId, Guid targetMembershipId) =>
+        LoadStreams(OpenViews()
+            .Where(v => v.CommunityId == communityId && v.TargetMembershipId == targetMembershipId)
+            .Select(v => v.Id));
+
+    private IQueryable<IntentView> OpenViews() =>
+        db.IntentViews.AsNoTracking().Where(v => v.Status == IntentStatus.Open);
+
+    private IReadOnlyList<Intent> LoadStreams(IQueryable<Guid> streamIds) =>
+        db.IntentEvents
             .AsNoTracking()
-            .Where(v => v.CommunityId == communityId
-                        && v.TargetMembershipId == targetMembershipId
-                        && v.Status == IntentStatus.Open)
+            .Where(e => streamIds.Contains(e.StreamId))
+            .OrderBy(e => e.StreamId).ThenBy(e => e.Sequence)
+            .ToList()
+            .GroupBy(e => e.StreamId)
+            .Select(stream => Intent.Load(stream.ToList()))
             .ToList();
 
     private void Append(Intent intent)

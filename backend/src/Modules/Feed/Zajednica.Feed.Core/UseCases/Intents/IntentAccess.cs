@@ -3,11 +3,11 @@ using Zajednica.Feed.Core.Domain.Intents;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 using Zajednica.Feed.Core.UseCases.Queries;
 
-namespace Zajednica.Feed.Core.UseCases;
+namespace Zajednica.Feed.Core.UseCases.Intents;
 
 public sealed class IntentAccess(IIntentRepository intents, IIntentQueryStore intentQueries)
 {
-    public Intent Require(Guid intentId, Guid communityId)
+    public Intent RequireAggregate(Guid intentId, Guid communityId)
     {
         var intent = intents.Get(intentId);
         if (intent is null || intent.CommunityId != communityId)

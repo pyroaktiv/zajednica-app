@@ -6,11 +6,12 @@ using Zajednica.Feed.Api.Public;
 using Zajednica.Feed.Core.Domain.Intents;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 
-namespace Zajednica.Feed.Core.UseCases;
+namespace Zajednica.Feed.Core.UseCases.Intents;
 
 public sealed class IntentService(
     IIntentRepository intents,
     IInternalMembershipService memberships,
+    MemberDirectory directory,
     CommunityAccess access,
     IntentAccess lookup,
     IntentClosing closing,
@@ -22,12 +23,7 @@ public sealed class IntentService(
         var author = access.RequireConfirmed(accountId, communityId);
         var target = RequireTarget(request.TargetMembershipId);
 
-        var intent = Intent.Open(
-            UserTargetingAction.For(UserActionKind.Ban, target.MembershipId, target.IsConfirmed),
-            communityId, author.MembershipId, request.Text, memberships.GetConfirmedCount(communityId),
-            DateTime.UtcNow);
-
-        return CompleteOpening(intent, author.MembershipId);
+        return Open(UserActionKind.Ban, communityId, author.MembershipId, target, request.Text);
     }
 
     public IntentDetailsDto OpenManagerElection(Guid accountId, Guid communityId, OpenUserTargetingIntentRequest request)
@@ -35,23 +31,16 @@ public sealed class IntentService(
         var author = access.RequireConfirmed(accountId, communityId);
         var target = RequireTarget(request.TargetMembershipId);
 
-        var intent = Intent.Open(
-            UserTargetingAction.For(UserActionKind.ManagerElection, target.MembershipId, target.IsConfirmed),
-            communityId, author.MembershipId, request.Text, memberships.GetConfirmedCount(communityId),
-            DateTime.UtcNow);
-
-        return CompleteOpening(intent, author.MembershipId);
+        return Open(UserActionKind.ManagerElection, communityId, author.MembershipId, target, request.Text);
     }
 
     public IntentDetailsDto Vote(Guid accountId, Guid communityId, Guid intentId, CastVoteRequest request)
     {
         var voter = access.RequireConfirmed(accountId, communityId);
-        var intent = lookup.Require(intentId, communityId);
+        var intent = lookup.RequireAggregate(intentId, communityId);
         var now = DateTime.UtcNow;
 
-        if (closing.CloseIfDue(intent, now))
-            throw new EntityValidationException("Voting on this intent is closed.");
-
+        closing.CloseIfDue(intent, now);
         intent.CastVote(voter.MembershipId, request.Value, now);
 
         if (!closing.CloseIfDue(intent, now))
@@ -60,18 +49,24 @@ public sealed class IntentService(
             notifier.Changed(intent);
         }
 
-        return presenter.Details(intent, voter.MembershipId);
+        return presenter.Details(lookup.RequireView(intentId, communityId), request.Value);
     }
 
-    private MembershipContextDto RequireTarget(Guid targetMembershipId) =>
-        memberships.GetContexts([targetMembershipId]).SingleOrDefault()
-        ?? throw new NotFoundException("Membership not found.");
-
-    private IntentDetailsDto CompleteOpening(Intent intent, Guid authorMembershipId)
+    private IntentDetailsDto Open(
+        UserActionKind kind, Guid communityId, Guid authorMembershipId, MembershipContextDto target, string text)
     {
+        var intent = Intent.Open(
+            UserTargetingAction.For(kind, target.MembershipId, target.IsConfirmed),
+            communityId, authorMembershipId, text, memberships.GetConfirmedCount(communityId),
+            DateTime.UtcNow);
+
         intents.Add(intent);
         notifier.Opened(intent);
 
-        return presenter.Details(intent, authorMembershipId);
+        return presenter.Details(lookup.RequireView(intent.Id, communityId), null);
     }
+
+    private MembershipContextDto RequireTarget(Guid targetMembershipId) =>
+        directory.Context(targetMembershipId)
+        ?? throw new NotFoundException("Membership not found.");
 }

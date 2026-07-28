@@ -1,13 +1,11 @@
 using Zajednica.Community.Api.Internal;
 using Zajednica.Feed.Core.Domain.Intents;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
-using Zajednica.Feed.Core.UseCases.Queries;
 
-namespace Zajednica.Feed.Core.UseCases;
+namespace Zajednica.Feed.Core.UseCases.Intents;
 
 public sealed class IntentClosing(
     IIntentRepository intents,
-    IIntentQueryStore intentQueries,
     IInternalMembershipService memberships,
     IntentNotifier notifier)
 {
@@ -16,31 +14,6 @@ public sealed class IntentClosing(
         if (!intent.ShouldClose(now))
             return false;
 
-        Close(intent, now);
-
-        return true;
-    }
-
-    public bool CloseIfDue(IntentView view, DateTime now)
-    {
-        if (view.Status != IntentStatus.Open || view.Deadline > now)
-            return false;
-
-        var intent = intents.Get(view.Id);
-
-        return intent is not null && CloseIfDue(intent, now);
-    }
-
-    public void CloseDue(Guid communityId)
-    {
-        var now = DateTime.UtcNow;
-
-        foreach (var view in intentQueries.GetDueViews(communityId, now))
-            CloseIfDue(view, now);
-    }
-
-    private void Close(Intent intent, DateTime now)
-    {
         var status = intent.Close(now);
         intents.Update(intent);
 
@@ -48,6 +21,16 @@ public sealed class IntentClosing(
             Execute(intent);
 
         notifier.Closed(intent, status);
+
+        return true;
+    }
+
+    public void CloseDue()
+    {
+        var now = DateTime.UtcNow;
+
+        foreach (var intent in intents.GetDue(now))
+            CloseIfDue(intent, now);
     }
 
     private void Execute(Intent intent)
@@ -68,14 +51,10 @@ public sealed class IntentClosing(
     private void SupersedeOthersAbout(Intent ban, Guid targetMembershipId)
     {
         var now = DateTime.UtcNow;
-        var open = intentQueries.GetOpenViewsByTarget(ban.CommunityId, targetMembershipId);
+        var open = intents.GetOpenByTarget(ban.CommunityId, targetMembershipId);
 
-        foreach (var view in open.Where(v => v.Id != ban.Id))
+        foreach (var other in open.Where(i => i.Id != ban.Id))
         {
-            var other = intents.Get(view.Id);
-            if (other is null)
-                continue;
-
             other.Supersede(now);
             intents.Update(other);
             notifier.Changed(other);

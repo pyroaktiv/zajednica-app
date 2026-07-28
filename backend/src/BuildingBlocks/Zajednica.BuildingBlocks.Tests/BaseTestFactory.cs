@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Zajednica.BuildingBlocks.Tests;
@@ -16,6 +18,9 @@ public abstract class BaseTestFactory<TDbContext> : WebApplicationFactory<Progra
     {
         builder.ConfigureServices(services =>
         {
+            // Background workers would run against the test database and mutate state under the tests.
+            services.RemoveAll<IHostedService>();
+
             using var scope = BuildServiceProvider(services).CreateScope();
             var scopedServices = scope.ServiceProvider;
             var db = scopedServices.GetRequiredService<TDbContext>();

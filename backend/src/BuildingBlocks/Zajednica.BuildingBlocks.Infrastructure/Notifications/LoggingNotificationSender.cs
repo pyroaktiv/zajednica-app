@@ -7,6 +7,10 @@ public sealed class LoggingNotificationSender(ILogger<LoggingNotificationSender>
 {
     public void Send(NotificationRequest request)
     {
-        logger.LogInformation("NOTIFY [{Priority}] {Recipient}: {Title}", request.Priority, request.RecipientAccountId, request.Title);
+        if (request.RecipientAccountIds.Count == 0)
+            return;
+
+        logger.LogInformation("NOTIFY [{Priority}] {Recipients}: {Title}",
+            request.Priority, string.Join(", ", request.RecipientAccountIds), request.Title);
     }
 }

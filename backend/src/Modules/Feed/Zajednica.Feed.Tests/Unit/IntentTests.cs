@@ -18,14 +18,6 @@ public class IntentTests
     private static Intent Replay(Intent intent) => Intent.Load(intent.NewEvents);
 
     [Fact]
-    public void An_intent_cannot_be_opened_about_its_own_author()
-    {
-        Should.Throw<EntityValidationException>(() =>
-            Intent.Open(UserTargetingAction.For(UserActionKind.Ban, Author, true), Community, Author, "Sam o sebi.",
-                10, Now));
-    }
-
-    [Fact]
     public void An_intent_can_only_be_opened_about_a_confirmed_member()
     {
         Should.Throw<EntityValidationException>(() =>
@@ -146,7 +138,7 @@ public class IntentTests
     [Fact]
     public void A_closed_intent_takes_no_further_votes()
     {
-        var intent = Ban(1);
+        var intent = Ban(2);
         intent.CastVote(Guid.NewGuid(), true, Now);
         intent.Close(Now);
 

@@ -1,13 +1,16 @@
 using Zajednica.Community.Api.Internal;
+using Zajednica.Community.Api.Internal.Dto;
 using Zajednica.Identity.Api.Internal;
 using Zajednica.Identity.Api.Internal.Dto;
 
 namespace Zajednica.Feed.Core.UseCases;
 
-public sealed class AuthorDirectory(IInternalMembershipService memberships, IInternalAccountService accounts)
+public sealed class MemberDirectory(IInternalMembershipService memberships, IInternalAccountService accounts)
 {
-    public IReadOnlyDictionary<Guid, AccountProfileDto> For(
-        IReadOnlyCollection<Guid> membershipIds)
+    public MembershipContextDto? Context(Guid membershipId) =>
+        memberships.GetContexts([membershipId]).SingleOrDefault();
+
+    public IReadOnlyDictionary<Guid, AccountProfileDto> Profiles(IReadOnlyCollection<Guid> membershipIds)
     {
         var empty = new Dictionary<Guid, AccountProfileDto>();
         if (membershipIds.Count == 0)
@@ -17,7 +20,7 @@ public sealed class AuthorDirectory(IInternalMembershipService memberships, IInt
         if (contexts.Count == 0)
             return empty;
 
-        var profiles = (accounts.GetProfiles(contexts.Select(c => c.AccountId).Distinct().ToList()))
+        var profiles = accounts.GetProfiles(contexts.Select(c => c.AccountId).Distinct().ToList())
             .ToDictionary(p => p.AccountId);
 
         return contexts

@@ -3,24 +3,24 @@ using Zajednica.BuildingBlocks.Core.Notifications;
 using Zajednica.BuildingBlocks.Core.Realtime;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Community.Api.Internal;
+using Zajednica.Community.Api.Internal.Dto;
 using Zajednica.Feed.Api.Dto.Posts;
 using Zajednica.Feed.Api.Public;
 using Zajednica.Feed.Core.Domain.Posts;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 using Zajednica.Feed.Core.Mappers;
+using Zajednica.Feed.Core.UseCases.Queries;
 
-namespace Zajednica.Feed.Core.UseCases;
+namespace Zajednica.Feed.Core.UseCases.Posts;
 
 public sealed class PostService(
     IPostRepository posts,
     IInternalMembershipService memberships,
     INotificationSender notifications,
     IRealtimePusher realtime,
-    AuthorDirectory authors,
+    MemberDirectory directory,
     CommunityAccess access) : IPostService
 {
-    private const string ManagerRole = "Manager";
-
     public PostDto CreateGeneral(Guid accountId, Guid communityId, CreateGeneralPostRequest request)
     {
         var author = access.RequireConfirmed(accountId, communityId);
@@ -73,7 +73,7 @@ public sealed class PostService(
         access.RequireConfirmed(accountId, communityId);
 
         var page = posts.GetPage(communityId, before, Paging.Clamp(limit));
-        var profiles = authors.For(page.Items.Select(p => p.AuthorMembershipId).ToList());
+        var profiles = directory.Profiles(page.Items.Select(p => p.AuthorMembershipId).ToList());
 
         return new CursorPage<PostDto>(page.Items.ToDtos(profiles), page.NextCursor);
     }
@@ -89,30 +89,38 @@ public sealed class PostService(
 
     private PostDto Single(Post post)
     {
-        var profiles = authors.For([post.AuthorMembershipId]);
+        var profiles = directory.Profiles([post.AuthorMembershipId]);
         return post.ToDto(profiles.GetValueOrDefault(post.AuthorMembershipId));
     }
 
     private void Announce(Post post)
     {
-        var (title, body, priority) = Channel(post);
+        var (title, body, priority) = Announcement(post);
         var confirmed = memberships.GetConfirmed(post.CommunityId);
 
-        foreach (var member in confirmed.Where(m => m.MembershipId != post.AuthorMembershipId))
-            notifications.Send(new NotificationRequest(member.AccountId, title, body, priority));
+        var audience = confirmed
+            .Where(m => m.MembershipId != post.AuthorMembershipId)
+            .Select(m => m.AccountId)
+            .ToList();
+        notifications.Send(new NotificationRequest(audience, title, body, priority));
 
         if (post is GeneralTopicPost { Kind: GeneralPostKind.Problem })
-        {
-            var manager = confirmed.SingleOrDefault(m => m.Roles.Contains(ManagerRole));
-            if (manager is not null)
-                notifications.Send(new NotificationRequest(manager.AccountId, "Prijavljen problem",
-                    "U zgradi je prijavljen problem koji traži reakciju upravnika.", NotificationPriority.Default));
-        }
+            NotifyManager(confirmed);
 
         PushChanged(post.CommunityId);
     }
 
-    private static (string Title, string Body, NotificationPriority Priority) Channel(Post post) => post switch
+    private void NotifyManager(IReadOnlyList<MembershipContextDto> confirmed)
+    {
+        var manager = confirmed.SingleOrDefault(m => m.Roles.Contains(CommunityRoleNames.Manager));
+        if (manager is null)
+            return;
+
+        notifications.Send(new NotificationRequest(manager.AccountId, "Prijavljen problem",
+            "U zgradi je prijavljen problem koji traži reakciju upravnika.", NotificationPriority.Default));
+    }
+
+    private static (string Title, string Body, NotificationPriority Priority) Announcement(Post post) => post switch
     {
         GeneralTopicPost { Kind: GeneralPostKind.Emergency } =>
             ("Hitan slučaj", "U zajednici je objavljen hitan slučaj.", NotificationPriority.High),

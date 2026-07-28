@@ -2,21 +2,20 @@ using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.BuildingBlocks.Core.Notifications;
 using Zajednica.BuildingBlocks.Core.Realtime;
 using Zajednica.BuildingBlocks.Core.UseCases;
-using Zajednica.Community.Api.Internal;
 using Zajednica.Feed.Api.Dto.Comments;
 using Zajednica.Feed.Api.Public;
 using Zajednica.Feed.Core.Domain.Posts;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 using Zajednica.Feed.Core.Mappers;
+using Zajednica.Feed.Core.UseCases.Queries;
 
-namespace Zajednica.Feed.Core.UseCases;
+namespace Zajednica.Feed.Core.UseCases.Comments;
 
 public sealed class CommentService(
     IPostRepository posts,
-    IInternalMembershipService memberships,
     INotificationSender notifications,
     IRealtimePusher realtime,
-    AuthorDirectory authors,
+    MemberDirectory directory,
     CommunityAccess access) : ICommentService
 {
     public CommentDto Add(Guid accountId, Guid communityId, Guid postId, AddCommentRequest request)
@@ -29,7 +28,7 @@ public sealed class CommentService(
 
         Notify(post.AuthorMembershipId, author.MembershipId, "Novi komentar",
             "Neko je komentarisao vašu objavu.");
-        PushChanged(post);
+        PushChanged(communityId, postId);
 
         return Single(comment);
     }
@@ -48,7 +47,7 @@ public sealed class CommentService(
 
         Notify(parent.AuthorMembershipId, author.MembershipId, "Novi odgovor",
             "Neko je odgovorio na vaš komentar.");
-        PushChanged(post);
+        PushChanged(communityId, postId);
 
         return Single(reply);
     }
@@ -57,7 +56,7 @@ public sealed class CommentService(
         int limit)
     {
         access.RequireConfirmed(accountId, communityId);
-        Require(postId, communityId);
+        RequireExists(postId, communityId);
 
         return Page(postId, null, after, limit);
     }
@@ -66,7 +65,7 @@ public sealed class CommentService(
         DateTime? after, int limit)
     {
         access.RequireConfirmed(accountId, communityId);
-        Require(postId, communityId);
+        RequireExists(postId, communityId);
 
         return Page(postId, commentId, after, limit);
     }
@@ -74,7 +73,7 @@ public sealed class CommentService(
     private CursorPage<CommentDto> Page(Guid postId, Guid? parentCommentId, DateTime? after, int limit)
     {
         var page = posts.GetCommentPage(postId, parentCommentId, after, Paging.Clamp(limit));
-        var profiles = authors.For(page.Items.Select(c => c.AuthorMembershipId).ToList());
+        var profiles = directory.Profiles(page.Items.Select(c => c.AuthorMembershipId).ToList());
 
         return page.ToDtoPage(profiles);
     }
@@ -88,9 +87,15 @@ public sealed class CommentService(
         return post;
     }
 
+    private void RequireExists(Guid postId, Guid communityId)
+    {
+        if (!posts.Exists(postId, communityId))
+            throw new NotFoundException("Post not found in this community.");
+    }
+
     private CommentDto Single(Comment comment)
     {
-        var profiles = authors.For([comment.AuthorMembershipId]);
+        var profiles = directory.Profiles([comment.AuthorMembershipId]);
         return comment.ToDto(profiles.GetValueOrDefault(comment.AuthorMembershipId));
     }
 
@@ -99,7 +104,7 @@ public sealed class CommentService(
         if (recipientMembershipId == actorMembershipId)
             return;
 
-        var recipient = (memberships.GetContexts([recipientMembershipId])).SingleOrDefault();
+        var recipient = directory.Context(recipientMembershipId);
         if (recipient is null)
             return;
 
@@ -107,7 +112,7 @@ public sealed class CommentService(
             new NotificationRequest(recipient.AccountId, title, body, NotificationPriority.Default));
     }
 
-    private void PushChanged(Post post) =>
-        realtime.PushToChannel(Channels.Community(post.CommunityId),
-            new RealtimeMessage("post.comments.changed", new { postId = post.Id }));
+    private void PushChanged(Guid communityId, Guid postId) =>
+        realtime.PushToChannel(Channels.Community(communityId),
+            new RealtimeMessage("post.comments.changed", new { postId }));
 }

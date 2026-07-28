@@ -1,12 +1,11 @@
 using Zajednica.BuildingBlocks.Core.Notifications;
 using Zajednica.BuildingBlocks.Core.Realtime;
-using Zajednica.Community.Api.Internal;
 using Zajednica.Feed.Core.Domain.Intents;
 
-namespace Zajednica.Feed.Core.UseCases;
+namespace Zajednica.Feed.Core.UseCases.Intents;
 
 public sealed class IntentNotifier(
-    IInternalMembershipService memberships,
+    MemberDirectory directory,
     INotificationSender notifications,
     IRealtimePusher realtime)
 {
@@ -44,7 +43,7 @@ public sealed class IntentNotifier(
         if (intent.Action is not UserTargetingAction targeting)
             return;
 
-        var target = memberships.GetContexts([targeting.TargetMembershipId]).SingleOrDefault();
+        var target = directory.Context(targeting.TargetMembershipId);
         if (target is null)
             return;
 

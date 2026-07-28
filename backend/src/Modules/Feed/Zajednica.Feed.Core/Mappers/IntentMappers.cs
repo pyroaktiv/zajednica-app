@@ -1,5 +1,4 @@
 using Zajednica.Feed.Api.Dto.Intents;
-using Zajednica.Feed.Core.Domain.Intents;
 using Zajednica.Feed.Core.UseCases.Queries;
 using Zajednica.Identity.Api.Internal.Dto;
 
@@ -45,24 +44,4 @@ public static class IntentMappers
             voter?.Username,
             vote.InFavor,
             vote.OccurredAt);
-
-    public static IntentDetailsDto ToDetailsDto(
-        this Intent intent, AccountProfileDto? author, Guid? targetMembershipId, AccountProfileDto? target,
-        Guid readerMembershipId) =>
-        new(intent.Id,
-            intent.Action.Name,
-            intent.Status.ToString(),
-            intent.AuthorMembershipId,
-            author?.Username,
-            targetMembershipId,
-            target?.Username,
-            intent.Text,
-            intent.DateCreated,
-            intent.Deadline,
-            intent.DateOfClosure,
-            intent.EligibleVoterCount,
-            intent.VotesFor,
-            intent.VotesAgainst,
-            intent.QuorumReached(),
-            intent.VoteOf(readerMembershipId));
 }
