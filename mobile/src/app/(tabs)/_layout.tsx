@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Redirect, Tabs } from "expo-router";
-import { ColorValue } from "react-native";
+import { Redirect, router, Tabs } from "expo-router";
+import { ColorValue, Pressable } from "react-native";
 import { useAuth } from "../../state/AuthContext";
 import { useCommunity } from "../../state/CommunityContext";
 import { Loading } from "../../ui/Basics";
@@ -44,7 +44,19 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="home"
-        options={{ ...tab("home", "Početna", fullAccess), headerTitle: "Početna" }}
+        options={{
+          ...tab("home", "Početna", fullAccess),
+          headerTitle: "Početna",
+          headerRight: () => (
+            <Pressable
+              onPress={() => router.push("/communities")}
+              hitSlop={12}
+              style={{ marginRight: 16 }}
+            >
+              <Ionicons name="swap-horizontal-outline" size={22} color={colors.primary} />
+            </Pressable>
+          ),
+        }}
         listeners={guard(fullAccess)}
       />
       <Tabs.Screen

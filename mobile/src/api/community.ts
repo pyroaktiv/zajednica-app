@@ -36,6 +36,8 @@ export const memberApi = {
     api.get<MemberSummaryDto[]>(`/api/communities/${communityId}/members/issuers`),
   getUnconfirmed: (communityId: string) =>
     api.get<MemberSummaryDto[]>(`/api/communities/${communityId}/members/unconfirmed`),
+  getManager: (communityId: string) =>
+    api.get<MemberSummaryDto | null>(`/api/communities/${communityId}/members/manager`),
   get: (communityId: string, membershipId: string) =>
     api.get<MemberProfileDto>(`/api/communities/${communityId}/members/${membershipId}`),
   grantIssuer: (communityId: string, membershipId: string) =>
