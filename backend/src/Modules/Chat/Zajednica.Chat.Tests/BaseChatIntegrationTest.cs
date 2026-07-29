@@ -93,9 +93,6 @@ public class BaseChatIntegrationTest : BaseWebIntegrationTest<ChatTestFactory>
         Guid helpRequestId) =>
         Value<ChatDetailsDto>(HelpChats(scope, accountId).Respond(communityId, helpRequestId).Result!);
 
-    protected static void Leave(IServiceScope scope, Guid accountId, Guid communityId) =>
-        Communities(scope).Leave(accountId, communityId);
-
     protected static PostDto CreateHelpRequest(IServiceScope scope, Guid accountId, Guid communityId, string text) =>
         Posts(scope).CreateHelpRequest(accountId, communityId, new CreateHelpRequestRequest(text, null));
 
@@ -115,6 +112,9 @@ public class BaseChatIntegrationTest : BaseWebIntegrationTest<ChatTestFactory>
         db.ChangeTracker.Clear();
         return account.Id;
     }
+
+    protected static ChatParticipantDto ParticipantOf(ChatDetailsDto chat, Guid membershipId) =>
+        chat.Participants.Single(p => p.MembershipId == membershipId);
 
     protected static T Value<T>(IActionResult result) => (T)((ObjectResult)result).Value!;
 

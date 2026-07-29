@@ -2,8 +2,8 @@ namespace Zajednica.Chat.Api.Dto.Chats;
 
 public record ChatSummaryDto(
     Guid Id,
-    string Type,
-    string Title,
+    IReadOnlyList<string> ParticipantUsernames,
+    Guid? HelpRequestId,
     string? Status,
     DateTime LastActivityAt,
     bool HasUnread);

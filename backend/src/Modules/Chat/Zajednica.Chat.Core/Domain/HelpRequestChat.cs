@@ -30,9 +30,9 @@ public class HelpRequestChat : Chat
         AddParticipant(helperMembershipId, ChatParticipantRole.Helper);
     }
 
-    public Guid HelperMembershipId => RequireParticipant(ChatParticipantRole.Helper).MembershipId;
+    public Guid HelperMembershipId => MembershipIdOf(ChatParticipantRole.Helper);
 
-    public Guid RequesterMembershipId => RequireParticipant(ChatParticipantRole.Requester).MembershipId;
+    public Guid RequesterMembershipId => MembershipIdOf(ChatParticipantRole.Requester);
 
     public int ConcludeWithReward(Guid actorMembershipId, int stars)
     {
@@ -74,9 +74,13 @@ public class HelpRequestChat : Chat
 
     private void RequireActor(Guid actorMembershipId, ChatParticipantRole role)
     {
-        if (RequireParticipant(role).MembershipId != actorMembershipId)
+        if (MembershipIdOf(role) != actorMembershipId)
             throw new ForbiddenException($"Only the {role} of this chat can do this.");
     }
+
+    private Guid MembershipIdOf(ChatParticipantRole role) =>
+        Participants.SingleOrDefault(p => p.Role == role)?.MembershipId
+            ?? throw new EntityValidationException($"This chat has no {role} participant.");
 
     private void RequireActive()
     {

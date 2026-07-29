@@ -19,10 +19,12 @@ internal sealed class ChatEfRepository(ChatDbContext db) : IChatRepository
     public ChatAggregate? Get(Guid id) =>
         db.Chats.Include(c => c.Participants).FirstOrDefault(c => c.Id == id);
 
-    public CursorPage<ChatAggregate> GetPage(Guid communityId, Guid membershipId, DateTime? before, int limit)
+    public CursorPage<TChat> GetPage<TChat>(Guid communityId, Guid membershipId, DateTime? before, int limit)
+        where TChat : ChatAggregate
     {
         var query = db.Chats
             .AsNoTracking()
+            .OfType<TChat>()
             .Include(c => c.Participants)
             .Where(c => c.CommunityId == communityId && c.Participants.Any(p => p.MembershipId == membershipId));
 
@@ -34,7 +36,7 @@ internal sealed class ChatEfRepository(ChatDbContext db) : IChatRepository
             .Take(limit)
             .ToList();
 
-        return new CursorPage<ChatAggregate>(items, items.Count < limit ? null : items[^1].LastActivityAt);
+        return new CursorPage<TChat>(items, items.Count < limit ? null : items[^1].LastActivityAt);
     }
 
     public DirectChat? GetDirect(Guid communityId, Guid membershipId, Guid otherMembershipId) =>

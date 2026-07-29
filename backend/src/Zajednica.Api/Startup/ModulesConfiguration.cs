@@ -1,6 +1,7 @@
 using Zajednica.BuildingBlocks.Infrastructure.Notifications;
 using Zajednica.BuildingBlocks.Infrastructure.Realtime;
 using Zajednica.BuildingBlocks.Infrastructure.Security;
+using Zajednica.BuildingBlocks.Infrastructure.Storage;
 using Zajednica.Chat.Infrastructure;
 using Zajednica.Community.Infrastructure;
 using Zajednica.Feed.Infrastructure;
@@ -19,6 +20,7 @@ public static class ModulesConfiguration
         services.AddNotifications();
         services.AddRealtime();
         services.AddSecurity();
+        services.AddStorage(configuration);
 
         // One line per module. New module = one more call here.
         services.AddIdentityModule(connectionString, configuration);

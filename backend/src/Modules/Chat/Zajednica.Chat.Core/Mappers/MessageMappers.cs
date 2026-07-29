@@ -22,13 +22,14 @@ public static class MessageMappers
 
     private static MessageDto ToDto(Message message, AccountProfileDto? sender, string type, string? text,
         string? audioUrl, int? durationSeconds) =>
-        new(message.Id,
-            message.ChatId,
-            message.SenderMembershipId,
-            sender?.Username ?? string.Empty,
-            type,
-            text,
-            audioUrl,
-            durationSeconds,
-            message.Date);
+        new MessageDto(
+            Id: message.Id,
+            ChatId: message.ChatId,
+            SenderMembershipId: message.SenderMembershipId,
+            SenderUsername: sender?.Username ?? string.Empty,
+            Type: type,
+            Text: text,
+            AudioUrl: audioUrl,
+            DurationSeconds: durationSeconds,
+            Date: message.Date);
 }

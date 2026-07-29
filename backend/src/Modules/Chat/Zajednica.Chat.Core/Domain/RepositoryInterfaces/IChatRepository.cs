@@ -8,7 +8,8 @@ public interface IChatRepository
     void Update(Chat chat);
 
     Chat? Get(Guid id);
-    CursorPage<Chat> GetPage(Guid communityId, Guid membershipId, DateTime? before, int limit);
+    CursorPage<TChat> GetPage<TChat>(Guid communityId, Guid membershipId, DateTime? before, int limit)
+        where TChat : Chat;
 
     DirectChat? GetDirect(Guid communityId, Guid membershipId, Guid otherMembershipId);
     TemporaryChat? GetTemporary(Guid communityId, Guid uncertifiedMembershipId, Guid issuerMembershipId);

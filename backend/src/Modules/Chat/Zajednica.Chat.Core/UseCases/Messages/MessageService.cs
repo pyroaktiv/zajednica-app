@@ -19,8 +19,7 @@ public sealed class MessageService(
     {
         var (me, chat) = Require(accountId, communityId, chatId);
 
-        var message = chat.SendText(me.MembershipId, request.Text,
-            access.ParticipantsEligible(chat), DateTime.UtcNow);
+        var message = chat.SendText(me.MembershipId, request.Text, DateTime.UtcNow);
         chats.Update(chat);
 
         return Announce(chat, message, me.MembershipId);
@@ -30,8 +29,7 @@ public sealed class MessageService(
     {
         var (me, chat) = Require(accountId, communityId, chatId);
 
-        var message = chat.SendVoice(me.MembershipId, request.AudioUrl, request.DurationSeconds,
-            access.ParticipantsEligible(chat), DateTime.UtcNow);
+        var message = chat.SendVoice(me.MembershipId, request.AudioUrl, request.DurationSeconds, DateTime.UtcNow);
         chats.Update(chat);
 
         return Announce(chat, message, me.MembershipId);

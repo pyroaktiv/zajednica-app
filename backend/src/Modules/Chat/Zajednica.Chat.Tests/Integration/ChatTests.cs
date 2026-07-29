@@ -22,8 +22,8 @@ public class ChatTests : BaseChatIntegrationTest
         var chat = OpenDirect(scope, owner.AccountId, community.Id, neighbour.MembershipId);
 
         chat.Type.ShouldBe("DIRECT");
-        chat.CounterpartMembershipId.ShouldBe(neighbour.MembershipId);
-        chat.Title.ShouldNotBeNullOrEmpty();
+        chat.Participants.Select(p => p.MembershipId).ShouldBe([owner.MembershipId, neighbour.MembershipId]);
+        ParticipantOf(chat, neighbour.MembershipId).Username.ShouldNotBeNullOrEmpty();
         chat.CanSend.ShouldBeTrue();
         OpenDirect(scope, neighbour.AccountId, community.Id, owner.MembershipId).Id.ShouldBe(chat.Id);
 
@@ -55,16 +55,57 @@ public class ChatTests : BaseChatIntegrationTest
         SendText(scope, owner.AccountId, community.Id, older.Id, "Prva");
         SendText(scope, owner.AccountId, community.Id, newer.Id, "Druga");
 
-        var mine = List(scope, owner.AccountId, community.Id);
+        var mine = Direct(scope, owner.AccountId, community.Id);
         mine.Items.Select(c => c.Id).ShouldBe([newer.Id, older.Id]);
         mine.Items.Select(c => c.HasUnread).ShouldAllBe(unread => unread == false);
 
-        var theirs = List(scope, first.AccountId, community.Id);
+        var theirs = Direct(scope, first.AccountId, community.Id);
         theirs.Items.Single().HasUnread.ShouldBeTrue();
 
         Messages(scope, first.AccountId).MarkRead(community.Id, older.Id);
 
-        List(scope, first.AccountId, community.Id).Items.Single().HasUnread.ShouldBeFalse();
+        Direct(scope, first.AccountId, community.Id).Items.Single().HasUnread.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Each_kind_of_chat_is_listed_on_its_own_endpoint()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var (community, owner) = CreateCommunity(scope);
+        var neighbour = AddConfirmedMember(scope, owner.AccountId, community.Id);
+        var newcomer = AddUnconfirmedMember(scope, owner.AccountId, community.Id);
+
+        var direct = OpenDirect(scope, owner.AccountId, community.Id, neighbour.MembershipId);
+        var post = CreateHelpRequest(scope, owner.AccountId, community.Id, "Treba mi pomoc oko selidbe.");
+        var help = Respond(scope, neighbour.AccountId, community.Id, post.Id);
+        var temporary = OpenTemporary(scope, newcomer.AccountId, community.Id, owner.MembershipId);
+
+        Direct(scope, owner.AccountId, community.Id).Items.Single().Id.ShouldBe(direct.Id);
+        Temporary(scope, owner.AccountId, community.Id).Items.Single().Id.ShouldBe(temporary.Id);
+
+        var listedHelp = HelpRequests(scope, owner.AccountId, community.Id).Items.Single();
+        listedHelp.Id.ShouldBe(help.Id);
+        listedHelp.HelpRequestId.ShouldBe(post.Id);
+        listedHelp.ParticipantUsernames.ShouldHaveSingleItem().ShouldNotBeNullOrEmpty();
+
+        Temporary(scope, newcomer.AccountId, community.Id).Items.Single().Id.ShouldBe(temporary.Id);
+        Direct(scope, newcomer.AccountId, community.Id).Items.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void A_concluded_help_request_chat_stays_in_the_list()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var (community, requester) = CreateCommunity(scope);
+        var helper = AddConfirmedMember(scope, requester.AccountId, community.Id);
+        var post = CreateHelpRequest(scope, requester.AccountId, community.Id, "Treba mi pomoc.");
+
+        var chat = Respond(scope, helper.AccountId, community.Id, post.Id);
+        HelpChats(scope, requester.AccountId).ConcludeWithoutReward(community.Id, chat.Id);
+
+        var listed = HelpRequests(scope, helper.AccountId, community.Id).Items.Single();
+        listed.Id.ShouldBe(chat.Id);
+        listed.Status.ShouldBe("Concluded");
     }
 
     [Fact]
@@ -80,28 +121,12 @@ public class ChatTests : BaseChatIntegrationTest
         var chat = OpenTemporary(scope, newcomer.AccountId, community.Id, owner.MembershipId);
 
         chat.Type.ShouldBe("TEMPORARY");
-        chat.MyRole.ShouldBe("Uncertified");
+        ParticipantOf(chat, newcomer.MembershipId).Role.ShouldBe("Uncertified");
         SendText(scope, newcomer.AccountId, community.Id, chat.Id, "Kada mozemo da se nadjemo?");
 
         Confirm(scope, owner.AccountId, newcomer.AccountId, community.Id);
 
         Db(scope).Chats.Any(c => c.Id == chat.Id).ShouldBeFalse();
-    }
-
-    [Fact]
-    public void A_member_who_left_the_community_can_no_longer_be_messaged()
-    {
-        using var scope = Factory.Services.CreateScope();
-        var (community, owner) = CreateCommunity(scope);
-        var neighbour = AddConfirmedMember(scope, owner.AccountId, community.Id);
-        var chat = OpenDirect(scope, owner.AccountId, community.Id, neighbour.MembershipId);
-
-        Leave(scope, neighbour.AccountId, community.Id);
-
-        Should.Throw<EntityValidationException>(() =>
-            SendText(scope, owner.AccountId, community.Id, chat.Id, "Jesi tu?"));
-        Value<ChatDetailsDto>(Chats(scope, owner.AccountId).Get(community.Id, chat.Id).Result!)
-            .CanSend.ShouldBeFalse();
     }
 
     [Fact]
@@ -122,6 +147,12 @@ public class ChatTests : BaseChatIntegrationTest
         Value<CursorPage<MessageDto>>(Messages(scope, accountId)
             .GetPage(communityId, chatId, after, limit).Result!);
 
-    private static CursorPage<ChatSummaryDto> List(IServiceScope scope, Guid accountId, Guid communityId) =>
-        Value<CursorPage<ChatSummaryDto>>(Chats(scope, accountId).GetPage(communityId, null, 10).Result!);
+    private static CursorPage<ChatSummaryDto> Direct(IServiceScope scope, Guid accountId, Guid communityId) =>
+        Value<CursorPage<ChatSummaryDto>>(Chats(scope, accountId).GetDirectPage(communityId, null, 10).Result!);
+
+    private static CursorPage<ChatSummaryDto> HelpRequests(IServiceScope scope, Guid accountId, Guid communityId) =>
+        Value<CursorPage<ChatSummaryDto>>(Chats(scope, accountId).GetHelpRequestPage(communityId, null, 10).Result!);
+
+    private static CursorPage<ChatSummaryDto> Temporary(IServiceScope scope, Guid accountId, Guid communityId) =>
+        Value<CursorPage<ChatSummaryDto>>(Chats(scope, accountId).GetTemporaryPage(communityId, null, 10).Result!);
 }

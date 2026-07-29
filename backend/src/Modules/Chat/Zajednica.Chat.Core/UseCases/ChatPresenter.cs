@@ -5,21 +5,24 @@ using ChatAggregate = Zajednica.Chat.Core.Domain.Chat;
 
 namespace Zajednica.Chat.Core.UseCases;
 
-public sealed class ChatPresenter(MemberDirectory directory, ChatAccess access)
+public sealed class ChatPresenter(MemberDirectory directory)
 {
     public ChatDetailsDto Details(ChatAggregate chat, Guid viewerMembershipId)
     {
-        var counterpartMembershipId = chat.CounterpartOf(viewerMembershipId);
-        var profiles = directory.Profiles([counterpartMembershipId]);
+        var profiles = directory.Profiles(chat.Participants.Select(p => p.MembershipId).ToList());
 
-        return chat.ToDetailsDto(viewerMembershipId,
-            profiles.GetValueOrDefault(counterpartMembershipId), access.ParticipantsEligible(chat));
+        return chat.ToDetailsDto(viewerMembershipId, profiles);
     }
 
-    public CursorPage<ChatSummaryDto> Summaries(CursorPage<ChatAggregate> page, Guid viewerMembershipId)
+    public CursorPage<ChatSummaryDto> Summaries<TChat>(CursorPage<TChat> page, Guid viewerMembershipId)
+        where TChat : ChatAggregate
     {
-        var counterpartIds = page.Items.Select(c => c.CounterpartOf(viewerMembershipId)).ToList();
+        var otherMembershipIds = page.Items
+            .SelectMany(c => c.Participants)
+            .Select(p => p.MembershipId)
+            .Where(id => id != viewerMembershipId)
+            .ToList();
 
-        return page.ToSummaryPage(viewerMembershipId, directory.Profiles(counterpartIds));
+        return page.ToSummaryPage(viewerMembershipId, directory.Profiles(otherMembershipIds));
     }
 }

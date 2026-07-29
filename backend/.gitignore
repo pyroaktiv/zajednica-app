@@ -483,3 +483,6 @@ $RECYCLE.BIN/
 
 #Migrations - not committed.
 src/Modules/*/Zajednica.*.Infrastructure/Migrations/
+
+#Uploaded files - local file storage provider.
+src/Zajednica.Api/uploads/

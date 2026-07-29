@@ -10,38 +10,50 @@ namespace Zajednica.Chat.Core.Mappers;
 public static class ChatMappers
 {
     public static ChatDetailsDto ToDetailsDto(this ChatAggregate chat, Guid viewerMembershipId,
-        AccountProfileDto? counterpart, bool participantsEligible)
+        IReadOnlyDictionary<Guid, AccountProfileDto> profiles)
     {
         var help = chat as HelpRequestChat;
 
         return new ChatDetailsDto(
-            chat.Id,
-            TypeOf(chat),
-            counterpart?.Username ?? string.Empty,
-            chat.CounterpartOf(viewerMembershipId),
-            chat.ParticipantOf(viewerMembershipId)?.Role?.ToString(),
-            chat.CanSend(viewerMembershipId, participantsEligible),
-            help?.HelpRequestId,
-            help?.Status.ToString(),
-            help?.AwardedStars);
+            Id: chat.Id,
+            Type: TypeOf(chat),
+            Participants: chat.Participants
+                .Select(p => new ChatParticipantDto(
+                    MembershipId: p.MembershipId,
+                    Username: UsernameOf(profiles, p.MembershipId),
+                    Role: p.Role?.ToString()))
+                .ToList(),
+            CanSend: chat.CanSend(viewerMembershipId),
+            HelpRequestId: help?.HelpRequestId,
+            Status: help?.Status.ToString(),
+            AwardedStars: help?.AwardedStars);
     }
 
     public static ChatSummaryDto ToSummaryDto(this ChatAggregate chat, Guid viewerMembershipId,
-        AccountProfileDto? counterpart) =>
-        new(chat.Id,
-            TypeOf(chat),
-            counterpart?.Username ?? string.Empty,
-            (chat as HelpRequestChat)?.Status.ToString(),
-            chat.LastActivityAt,
-            chat.HasUnread(viewerMembershipId));
+        IReadOnlyDictionary<Guid, AccountProfileDto> profiles)
+    {
+        var help = chat as HelpRequestChat;
 
-    public static CursorPage<ChatSummaryDto> ToSummaryPage(this CursorPage<ChatAggregate> page,
-        Guid viewerMembershipId, IReadOnlyDictionary<Guid, AccountProfileDto> counterparts) =>
-        new(page.Items
-                .Select(c => c.ToSummaryDto(viewerMembershipId,
-                    counterparts.GetValueOrDefault(c.CounterpartOf(viewerMembershipId))))
+        return new ChatSummaryDto(
+            Id: chat.Id,
+            ParticipantUsernames: chat.Participants
+                .Where(p => p.MembershipId != viewerMembershipId)
+                .Select(p => UsernameOf(profiles, p.MembershipId))
                 .ToList(),
+            HelpRequestId: help?.HelpRequestId,
+            Status: help?.Status.ToString(),
+            LastActivityAt: chat.LastActivityAt,
+            HasUnread: chat.HasUnread(viewerMembershipId));
+    }
+
+    public static CursorPage<ChatSummaryDto> ToSummaryPage<TChat>(this CursorPage<TChat> page,
+        Guid viewerMembershipId, IReadOnlyDictionary<Guid, AccountProfileDto> profiles)
+        where TChat : ChatAggregate =>
+        new(page.Items.Select(c => c.ToSummaryDto(viewerMembershipId, profiles)).ToList(),
             page.NextCursor);
+
+    private static string UsernameOf(IReadOnlyDictionary<Guid, AccountProfileDto> profiles, Guid membershipId) =>
+        profiles.GetValueOrDefault(membershipId)?.Username ?? string.Empty;
 
     private static string TypeOf(ChatAggregate chat) => chat switch
     {

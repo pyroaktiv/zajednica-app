@@ -22,7 +22,7 @@ public class HelpRequestChatTests : BaseChatIntegrationTest
         var chat = Respond(scope, helper.AccountId, community.Id, post.Id);
 
         chat.Type.ShouldBe("HELP_REQUEST");
-        chat.MyRole.ShouldBe("Helper");
+        ParticipantOf(chat, helper.MembershipId).Role.ShouldBe("Helper");
         chat.HelpRequestId.ShouldBe(post.Id);
         chat.Status.ShouldBe("Active");
         Respond(scope, helper.AccountId, community.Id, post.Id).Id.ShouldBe(chat.Id);

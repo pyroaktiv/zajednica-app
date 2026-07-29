@@ -29,6 +29,18 @@ public sealed class ChatAccess(IInternalMembershipService memberships, IChatRepo
         return context;
     }
 
+    public MembershipContextDto RequireCounterpart(Guid communityId, Guid membershipId)
+    {
+        var context = memberships.GetContexts([membershipId]).SingleOrDefault();
+
+        if (context is null || context.CommunityId != communityId)
+            throw new NotFoundException("Member not found in this community.");
+        if (!context.IsActive || !context.IsConfirmed)
+            throw new ForbiddenException("The member is not a confirmed active member of this community.");
+
+        return context;
+    }
+
     public ChatAggregate RequireChat(Guid communityId, Guid chatId, Guid membershipId)
     {
         var chat = chats.Get(chatId);
@@ -36,13 +48,5 @@ public sealed class ChatAccess(IInternalMembershipService memberships, IChatRepo
             throw new NotFoundException("Chat not found in this community.");
 
         return chat;
-    }
-
-    public bool ParticipantsEligible(ChatAggregate chat)
-    {
-        var membershipIds = chat.Participants.Select(p => p.MembershipId).ToList();
-        var contexts = memberships.GetContexts(membershipIds);
-
-        return contexts.Count == membershipIds.Count && contexts.All(c => c.IsActive);
     }
 }

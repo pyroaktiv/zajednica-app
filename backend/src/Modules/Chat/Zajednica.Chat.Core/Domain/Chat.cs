@@ -31,14 +31,8 @@ public abstract class Chat : AggregateRoot
     public ChatParticipant? ParticipantOf(Guid membershipId) =>
         _participants.SingleOrDefault(p => p.MembershipId == membershipId);
 
-    public ChatParticipant? Participant(ChatParticipantRole role) =>
-        _participants.SingleOrDefault(p => p.Role == role);
-
-    public Guid CounterpartOf(Guid membershipId) =>
-        _participants.First(p => p.MembershipId != membershipId).MembershipId;
-
-    public bool CanSend(Guid senderMembershipId, bool participantsEligible) =>
-        IsParticipant(senderMembershipId) && participantsEligible && IsSendable();
+    public bool CanSend(Guid senderMembershipId) =>
+        IsParticipant(senderMembershipId) && IsSendable();
 
     public bool HasUnread(Guid membershipId)
     {
@@ -49,27 +43,20 @@ public abstract class Chat : AggregateRoot
         return participant.LastReadAt is null || LastActivityAt > participant.LastReadAt;
     }
 
-    public TextMessage SendText(Guid senderMembershipId, string text, bool participantsEligible, DateTime now)
+    public TextMessage SendText(Guid senderMembershipId, string text, DateTime now)
     {
-        var sender = RequireSender(senderMembershipId, participantsEligible);
-
+        var sender = RequireSender(senderMembershipId);
         var message = new TextMessage(Id, senderMembershipId, text, now);
-        _messages.Add(message);
-        LastActivityAt = now;
-        sender.MarkReadAt(now);
+        Append(message, sender, now);
 
         return message;
     }
 
-    public VoiceMessage SendVoice(Guid senderMembershipId, string audioUrl, int durationSeconds,
-        bool participantsEligible, DateTime now)
+    public VoiceMessage SendVoice(Guid senderMembershipId, string audioUrl, int durationSeconds, DateTime now)
     {
-        var sender = RequireSender(senderMembershipId, participantsEligible);
-
+        var sender = RequireSender(senderMembershipId);
         var message = new VoiceMessage(Id, senderMembershipId, audioUrl, durationSeconds, now);
-        _messages.Add(message);
-        LastActivityAt = now;
-        sender.MarkReadAt(now);
+        Append(message, sender, now);
 
         return message;
     }
@@ -92,16 +79,18 @@ public abstract class Chat : AggregateRoot
         _participants.Add(new ChatParticipant(membershipId, role));
     }
 
-    protected ChatParticipant RequireParticipant(ChatParticipantRole role) =>
-        Participant(role) ?? throw new EntityValidationException($"This chat has no {role} participant.");
+    private void Append(Message message, ChatParticipant sender, DateTime now)
+    {
+        _messages.Add(message);
+        LastActivityAt = now;
+        sender.MarkReadAt(now);
+    }
 
-    private ChatParticipant RequireSender(Guid senderMembershipId, bool participantsEligible)
+    private ChatParticipant RequireSender(Guid senderMembershipId)
     {
         var sender = ParticipantOf(senderMembershipId)
             ?? throw new ForbiddenException("Only a participant can send messages to this chat.");
 
-        if (!participantsEligible)
-            throw new EntityValidationException("A participant is no longer an active member of the community.");
         if (!IsSendable())
             throw new EntityValidationException("This chat no longer accepts messages.");
 

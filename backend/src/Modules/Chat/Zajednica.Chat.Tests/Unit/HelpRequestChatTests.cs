@@ -54,12 +54,12 @@ public class HelpRequestChatTests
     public void A_concluded_chat_takes_no_further_messages_and_is_not_concluded_twice()
     {
         var chat = Chat();
-        chat.SendText(Helper, "Stizem za pola sata", true, Now);
+        chat.SendText(Helper, "Stizem za pola sata", Now);
 
         chat.ConcludeWithReward(Requester, HelpRequestChat.MinReward);
 
-        chat.CanSend(Helper, true).ShouldBeFalse();
-        Should.Throw<EntityValidationException>(() => chat.SendText(Helper, "Jos jedna", true, Now));
+        chat.CanSend(Helper).ShouldBeFalse();
+        Should.Throw<EntityValidationException>(() => chat.SendText(Helper, "Jos jedna", Now));
         Should.Throw<EntityValidationException>(() => chat.ConcludeWithoutReward(Requester));
         Should.Throw<EntityValidationException>(() => chat.Resign(Helper));
     }

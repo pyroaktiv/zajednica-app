@@ -1,6 +1,7 @@
 using Zajednica.Api.Middleware;
 using Zajednica.Api.Startup;
 using Zajednica.BuildingBlocks.Infrastructure.Realtime;
+using Zajednica.BuildingBlocks.Infrastructure.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,8 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
+
+app.UseLocalFiles();
 
 app.UseRouting();
 app.UseCors();
