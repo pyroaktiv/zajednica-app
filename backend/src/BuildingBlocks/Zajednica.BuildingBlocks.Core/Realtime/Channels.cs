@@ -4,8 +4,6 @@ namespace Zajednica.BuildingBlocks.Core.Realtime;
 // so they live next to IRealtimePusher rather than being spelled out per module.
 public static class Channels
 {
-    public static string Community(Guid communityId) => $"community:{communityId}";
-
     public static string Intent(Guid intentId) => $"intent:{intentId}";
 
     public static string Chat(Guid chatId) => $"chat:{chatId}";

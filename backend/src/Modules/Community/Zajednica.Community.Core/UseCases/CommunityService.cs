@@ -72,8 +72,6 @@ public sealed class CommunityService(
             request.BankAccountNumber);
 
         communities.Update(community);
-        realtime.PushToChannel(Channels.Community(communityId),
-            new RealtimeMessage("community.updated", new { communityId }));
 
         return community.ToDetailsDto();
     }

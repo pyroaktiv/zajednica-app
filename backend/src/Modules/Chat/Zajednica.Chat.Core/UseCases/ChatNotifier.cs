@@ -16,10 +16,7 @@ public sealed class ChatNotifier(
     {
         realtime.PushToChannel(Channels.Chat(chat.Id), new RealtimeMessage("chat.message", message));
 
-        var participants = Participants(chat);
-        PushChatsChanged(chat, participants);
-
-        var recipients = participants
+        var recipients = Participants(chat)
             .Where(p => p.MembershipId != message.SenderMembershipId)
             .Select(p => p.AccountId)
             .ToList();
@@ -30,20 +27,14 @@ public sealed class ChatNotifier(
             $"{message.SenderUsername} vam je poslao poruku.", NotificationPriority.Default));
     }
 
-    public void Responded(HelpRequestChat chat)
-    {
-        PushChatsChanged(chat, Participants(chat));
-
+    public void Responded(HelpRequestChat chat) =>
         Notify(chat.RequesterMembershipId, "Komšija se odazvao",
             "Komšija se odazvao na vašu molbu za ispomoć.");
-    }
 
     public void Concluded(HelpRequestChat chat, int stars)
     {
         realtime.PushToChannel(Channels.Chat(chat.Id), new RealtimeMessage("chat.concluded",
             new { chatId = chat.Id, status = chat.Status.ToString(), stars }));
-
-        PushChatsChanged(chat, Participants(chat));
 
         if (chat.Status == HelpRequestChatStatus.HelperResigned)
         {
@@ -65,13 +56,6 @@ public sealed class ChatNotifier(
 
     private IReadOnlyList<MembershipContextDto> Participants(ChatAggregate chat) =>
         directory.Contexts(chat.Participants.Select(p => p.MembershipId).ToList());
-
-    private void PushChatsChanged(ChatAggregate chat, IReadOnlyList<MembershipContextDto> participants)
-    {
-        foreach (var participant in participants)
-            realtime.PushToUser(participant.AccountId,
-                new RealtimeMessage("chats.changed", new { communityId = chat.CommunityId }));
-    }
 
     private void Notify(Guid membershipId, string title, string body)
     {

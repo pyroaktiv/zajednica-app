@@ -1,6 +1,5 @@
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.BuildingBlocks.Core.Notifications;
-using Zajednica.BuildingBlocks.Core.Realtime;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Community.Api.Internal;
 using Zajednica.Community.Api.Internal.Dto;
@@ -17,7 +16,6 @@ public sealed class PostService(
     IPostRepository posts,
     IInternalMembershipService memberships,
     INotificationSender notifications,
-    IRealtimePusher realtime,
     MemberDirectory directory,
     CommunityAccess access) : IPostService
 {
@@ -55,8 +53,6 @@ public sealed class PostService(
 
         help.Close(actor.MembershipId);
         posts.Update(help);
-
-        PushChanged(communityId);
 
         return Single(help);
     }
@@ -106,8 +102,6 @@ public sealed class PostService(
 
         if (post is GeneralTopicPost { Kind: GeneralPostKind.Problem })
             NotifyManager(confirmed);
-
-        PushChanged(post.CommunityId);
     }
 
     private void NotifyManager(IReadOnlyList<MembershipContextDto> confirmed)
@@ -131,8 +125,4 @@ public sealed class PostService(
         _ =>
             ("Nova objava", "U zajednici je objavljena nova objava.", NotificationPriority.Default)
     };
-
-    private void PushChanged(Guid communityId) =>
-        realtime.PushToChannel(Channels.Community(communityId),
-            new RealtimeMessage("feed.changed", new { communityId }));
 }

@@ -33,9 +33,6 @@ public sealed class IntentNotifier(
             votesAgainst = intent.VotesAgainst,
             status = intent.Status.ToString()
         }));
-
-        realtime.PushToChannel(Channels.Community(intent.CommunityId),
-            new RealtimeMessage("intents.changed", new { communityId = intent.CommunityId }));
     }
 
     private void NotifyTarget(Intent intent, string title, string body, NotificationPriority priority)

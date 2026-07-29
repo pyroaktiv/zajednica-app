@@ -1,5 +1,4 @@
 using Zajednica.BuildingBlocks.Core.Exceptions;
-using Zajednica.BuildingBlocks.Core.Realtime;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Community.Api.Dto.Documents;
 using Zajednica.Community.Api.Public;
@@ -11,7 +10,6 @@ namespace Zajednica.Community.Core.UseCases;
 
 public sealed class DocumentService(
     IDocumentRepository documents,
-    IRealtimePusher realtime,
     MembershipAccess access) : IDocumentService
 {
     public DocumentDto Add(Guid accountId, Guid communityId, AddDocumentRequest request)
@@ -20,9 +18,6 @@ public sealed class DocumentService(
 
         var document = new Document(communityId, actor.Id, request.Name, request.Url, DateTime.UtcNow);
         documents.Add(document);
-
-        realtime.PushToChannel(Channels.Community(communityId),
-            new RealtimeMessage("community.documents.changed", new { communityId }));
 
         return document.ToDto();
     }
@@ -44,8 +39,5 @@ public sealed class DocumentService(
             throw new NotFoundException("Document not found in this community.");
 
         documents.Remove(document);
-
-        realtime.PushToChannel(Channels.Community(communityId),
-            new RealtimeMessage("community.documents.changed", new { communityId }));
     }
 }

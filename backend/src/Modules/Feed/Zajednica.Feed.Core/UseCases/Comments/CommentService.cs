@@ -1,6 +1,5 @@
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.BuildingBlocks.Core.Notifications;
-using Zajednica.BuildingBlocks.Core.Realtime;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Feed.Api.Dto.Comments;
 using Zajednica.Feed.Api.Public;
@@ -14,7 +13,6 @@ namespace Zajednica.Feed.Core.UseCases.Comments;
 public sealed class CommentService(
     IPostRepository posts,
     INotificationSender notifications,
-    IRealtimePusher realtime,
     MemberDirectory directory,
     CommunityAccess access) : ICommentService
 {
@@ -28,7 +26,6 @@ public sealed class CommentService(
 
         Notify(post.AuthorMembershipId, author.MembershipId, "Novi komentar",
             "Neko je komentarisao vašu objavu.");
-        PushChanged(communityId, postId);
 
         return Single(comment);
     }
@@ -44,7 +41,6 @@ public sealed class CommentService(
 
         Notify(post.Comments.Single(c => c.Id == commentId).AuthorMembershipId, author.MembershipId,
             "Novi odgovor", "Neko je odgovorio na vaš komentar.");
-        PushChanged(communityId, postId);
 
         return Single(reply);
     }
@@ -113,8 +109,4 @@ public sealed class CommentService(
         notifications.Send(
             new NotificationRequest(recipient.AccountId, title, body, NotificationPriority.Default));
     }
-
-    private void PushChanged(Guid communityId, Guid postId) =>
-        realtime.PushToChannel(Channels.Community(communityId),
-            new RealtimeMessage("post.comments.changed", new { postId }));
 }
