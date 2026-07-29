@@ -1,12 +1,12 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, FlatList, Pressable, ScrollView, Text, View } from "react-native";
+import { FlatList, Pressable, Text, View } from "react-native";
 import { chatApi } from "../../api/chat";
-import { memberApi } from "../../api/community";
-import type { ChatSummaryDto, MemberSummaryDto } from "../../api/types";
+import type { ChatSummaryDto } from "../../api/types";
 import { useCommunity } from "../../state/CommunityContext";
-import { Button, Card, EmptyState, ErrorText, Screen, SectionTitle } from "../../ui/Basics";
+import { Card, EmptyState, ErrorText, Screen } from "../../ui/Basics";
 import { formatDateTime, helpStatusLabel } from "../../ui/labels";
+import { JoinCommunityShortcut } from "../../ui/Shortcuts";
 import { colors, spacing } from "../../ui/theme";
 
 type Segment = "direct" | "help" | "temporary";
@@ -37,69 +37,6 @@ function ChatRow({ chat, subtitle }: { chat: ChatSummaryDto; subtitle?: string }
   );
 }
 
-function UnconfirmedChats() {
-  const { activeCommunityId } = useCommunity();
-  const [issuers, setIssuers] = useState<MemberSummaryDto[]>([]);
-  const [chats, setChats] = useState<ChatSummaryDto[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (!activeCommunityId) return;
-      Promise.all([
-        memberApi.getIssuers(activeCommunityId),
-        chatApi.getTemporaryPage(activeCommunityId, null),
-      ])
-        .then(([loadedIssuers, page]) => {
-          setIssuers(loadedIssuers);
-          setChats(page.items);
-        })
-        .catch((e) => setError(e.message));
-    }, [activeCommunityId])
-  );
-
-  const openChat = async (issuer: MemberSummaryDto) => {
-    try {
-      const chat = await chatApi.openTemporary(activeCommunityId!, issuer.membershipId);
-      router.push({ pathname: "/chat/[chatId]", params: { chatId: chat.id } });
-    } catch (e: any) {
-      Alert.alert("Greška", e.message);
-    }
-  };
-
-  return (
-    <ScrollView contentContainerStyle={{ padding: spacing.l }}>
-      <Card>
-        <Text style={{ color: colors.text, lineHeight: 20 }}>
-          Još uvek nisi potvrđen član ove zajednice. Dogovori se sa nekim od izdavača potvrde i
-          nađite se uživo — potvrda se izdaje skeniranjem QR koda sa njegovog telefona.
-        </Text>
-      </Card>
-      <Button title="Skeniraj QR kod za potvrdu" onPress={() => router.push("/certify-scan")} />
-      {chats.length > 0 && (
-        <>
-          <SectionTitle>Tvoji razgovori</SectionTitle>
-          {chats.map((chat) => (
-            <ChatRow key={chat.id} chat={chat} />
-          ))}
-        </>
-      )}
-      <SectionTitle>Izdavači potvrde</SectionTitle>
-      <ErrorText error={error} />
-      {issuers.map((issuer) => (
-        <Pressable key={issuer.membershipId} onPress={() => openChat(issuer)}>
-          <Card style={{ padding: spacing.m, marginBottom: spacing.s }}>
-            <Text style={{ fontWeight: "600", color: colors.text }}>{issuer.username}</Text>
-            <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>
-              Započni razgovor o potvrđivanju
-            </Text>
-          </Card>
-        </Pressable>
-      ))}
-    </ScrollView>
-  );
-}
-
 export default function Chats() {
   const { activeCommunityId, status, isIssuer } = useCommunity();
   const [segment, setSegment] = useState<Segment>("direct");
@@ -107,14 +44,16 @@ export default function Chats() {
   const [cursor, setCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const effectiveSegment: Segment = status === "unconfirmed" ? "temporary" : segment;
+
   const fetchPage = useCallback(
     (before: string | null) => {
       if (!activeCommunityId) return Promise.resolve(null);
-      if (segment === "direct") return chatApi.getDirectPage(activeCommunityId, before);
-      if (segment === "help") return chatApi.getHelpRequestPage(activeCommunityId, before);
+      if (effectiveSegment === "direct") return chatApi.getDirectPage(activeCommunityId, before);
+      if (effectiveSegment === "help") return chatApi.getHelpRequestPage(activeCommunityId, before);
       return chatApi.getTemporaryPage(activeCommunityId, before);
     },
-    [activeCommunityId, segment]
+    [activeCommunityId, effectiveSegment]
   );
 
   const reload = useCallback(() => {
@@ -130,11 +69,11 @@ export default function Chats() {
 
   useFocusEffect(
     useCallback(() => {
-      if (status === "confirmed") reload();
+      if (status !== "none") reload();
     }, [reload, status])
   );
 
-  if (status === "unconfirmed") return <UnconfirmedChats />;
+  if (status === "none") return <JoinCommunityShortcut />;
 
   const segments: { value: Segment; label: string }[] = [
     { value: "direct", label: "Članovi" },
@@ -144,27 +83,29 @@ export default function Chats() {
 
   return (
     <Screen>
-      <View style={{ flexDirection: "row", marginBottom: spacing.m, gap: spacing.s }}>
-        {segments.map(({ value, label }) => (
-          <Pressable
-            key={value}
-            onPress={() => setSegment(value)}
-            style={{
-              flex: 1,
-              paddingVertical: spacing.s,
-              borderRadius: 8,
-              alignItems: "center",
-              backgroundColor: segment === value ? colors.primary : colors.card,
-              borderWidth: 1,
-              borderColor: segment === value ? colors.primary : colors.border,
-            }}
-          >
-            <Text style={{ color: segment === value ? "#fff" : colors.text, fontWeight: "600" }}>
-              {label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      {status === "confirmed" && (
+        <View style={{ flexDirection: "row", marginBottom: spacing.m, gap: spacing.s }}>
+          {segments.map(({ value, label }) => (
+            <Pressable
+              key={value}
+              onPress={() => setSegment(value)}
+              style={{
+                flex: 1,
+                paddingVertical: spacing.s,
+                borderRadius: 8,
+                alignItems: "center",
+                backgroundColor: segment === value ? colors.primary : colors.card,
+                borderWidth: 1,
+                borderColor: segment === value ? colors.primary : colors.border,
+              }}
+            >
+              <Text style={{ color: segment === value ? "#fff" : colors.text, fontWeight: "600" }}>
+                {label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
       <ErrorText error={error} />
       <FlatList
         data={chats}
@@ -173,7 +114,7 @@ export default function Chats() {
           <ChatRow
             chat={item}
             subtitle={
-              segment === "help"
+              effectiveSegment === "help"
                 ? `ispomoć · ${helpStatusLabel(item.status)}`
                 : undefined
             }
@@ -190,7 +131,15 @@ export default function Chats() {
             .catch(() => {});
         }}
         onEndReachedThreshold={0.4}
-        ListEmptyComponent={<EmptyState text="Nema razgovora u ovoj kategoriji." />}
+        ListEmptyComponent={
+          <EmptyState
+            text={
+              status === "unconfirmed"
+                ? "Još nemaš razgovora sa izdavačima potvrde. Izaberi izdavača na nekom od ostalih tabova."
+                : "Nema razgovora u ovoj kategoriji."
+            }
+          />
+        }
       />
     </Screen>
   );

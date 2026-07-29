@@ -7,6 +7,7 @@ import { useCommunity } from "../../state/CommunityContext";
 import { Button, Card, EmptyState, ErrorText, Screen } from "../../ui/Basics";
 import { formatDateTime, intentKindLabel, intentStatusLabel } from "../../ui/labels";
 import { PostCard } from "../../ui/PostCard";
+import { CertificationShortcut, JoinCommunityShortcut } from "../../ui/Shortcuts";
 import { colors, spacing } from "../../ui/theme";
 
 type Segment = "general" | "intents";
@@ -43,7 +44,7 @@ function IntentCard({ intent }: { intent: IntentSummaryDto }) {
 }
 
 export default function Feed() {
-  const { activeCommunityId } = useCommunity();
+  const { activeCommunityId, status } = useCommunity();
   const [segment, setSegment] = useState<Segment>("general");
   const [posts, setPosts] = useState<PostDto[]>([]);
   const [postsCursor, setPostsCursor] = useState<string | null>(null);
@@ -52,7 +53,7 @@ export default function Feed() {
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
-    if (!activeCommunityId) return;
+    if (!activeCommunityId || status !== "confirmed") return;
     setError(null);
     try {
       if (segment === "general") {
@@ -67,7 +68,7 @@ export default function Feed() {
     } catch (e: any) {
       setError(e.message);
     }
-  }, [activeCommunityId, segment]);
+  }, [activeCommunityId, segment, status]);
 
   const loadMore = async () => {
     if (!activeCommunityId) return;
@@ -89,6 +90,9 @@ export default function Feed() {
       reload();
     }, [reload])
   );
+
+  if (status === "none") return <JoinCommunityShortcut />;
+  if (status === "unconfirmed") return <CertificationShortcut />;
 
   return (
     <Screen>

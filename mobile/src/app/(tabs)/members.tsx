@@ -6,18 +6,19 @@ import type { MemberSummaryDto } from "../../api/types";
 import { useCommunity } from "../../state/CommunityContext";
 import { EmptyState, ErrorText, Screen } from "../../ui/Basics";
 import { MemberRow } from "../../ui/MemberRow";
+import { CertificationShortcut, JoinCommunityShortcut } from "../../ui/Shortcuts";
 import { colors, spacing } from "../../ui/theme";
 
 type Segment = "confirmed" | "unconfirmed";
 
 export default function Members() {
-  const { activeCommunityId, isIssuer } = useCommunity();
+  const { activeCommunityId, isIssuer, status } = useCommunity();
   const [segment, setSegment] = useState<Segment>("confirmed");
   const [members, setMembers] = useState<MemberSummaryDto[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!activeCommunityId) return;
+    if (!activeCommunityId || status !== "confirmed") return;
     setError(null);
     try {
       setMembers(
@@ -28,13 +29,16 @@ export default function Members() {
     } catch (e: any) {
       setError(e.message);
     }
-  }, [activeCommunityId, segment]);
+  }, [activeCommunityId, segment, status]);
 
   useFocusEffect(
     useCallback(() => {
       load();
     }, [load])
   );
+
+  if (status === "none") return <JoinCommunityShortcut />;
+  if (status === "unconfirmed") return <CertificationShortcut />;
 
   return (
     <Screen>

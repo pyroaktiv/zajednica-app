@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
-import { Redirect, router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { Alert, Linking, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { communityApi, documentApi, memberApi } from "../../api/community";
@@ -8,6 +8,7 @@ import { fileApi } from "../../api/files";
 import type { CommunityDetailsDto, DocumentDto, MemberSummaryDto } from "../../api/types";
 import { useCommunity } from "../../state/CommunityContext";
 import { Button, Card, ErrorText, Loading, Screen, SectionTitle } from "../../ui/Basics";
+import { CertificationShortcut, JoinCommunityShortcut } from "../../ui/Shortcuts";
 import { colors, spacing } from "../../ui/theme";
 
 function Row({ label, value }: { label: string; value: string | null }) {
@@ -29,7 +30,7 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    if (!activeCommunityId) return;
+    if (!activeCommunityId || status !== "confirmed") return;
     setError(null);
     try {
       const [details, mgr, docs, rank] = await Promise.all([
@@ -45,7 +46,7 @@ export default function Home() {
     } catch (e: any) {
       setError(e.message);
     }
-  }, [activeCommunityId]);
+  }, [activeCommunityId, status]);
 
   useFocusEffect(
     useCallback(() => {
@@ -53,7 +54,8 @@ export default function Home() {
     }, [load])
   );
 
-  if (status !== "confirmed") return <Redirect href="/profile" />;
+  if (status === "none") return <JoinCommunityShortcut />;
+  if (status === "unconfirmed") return <CertificationShortcut />;
   if (!community && !error) return <Loading />;
 
   const addDocument = async () => {

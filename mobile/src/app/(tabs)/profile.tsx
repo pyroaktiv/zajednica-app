@@ -97,15 +97,6 @@ export default function Profile() {
           />
         )}
 
-        {status === "none" && (
-          <Button
-            title="Skeniraj QR kod zajednice"
-            variant="secondary"
-            onPress={() => router.push("/join-scan")}
-            style={{ marginTop: spacing.m }}
-          />
-        )}
-
         <Button
           title="Odjavi se"
           variant="danger"
