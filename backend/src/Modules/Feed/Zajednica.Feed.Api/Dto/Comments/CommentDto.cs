@@ -8,4 +8,5 @@ public record CommentDto(
     string AuthorUsername,
     string? AuthorImageUrl,
     string Text,
+    bool HasReplies,
     DateTime Date);

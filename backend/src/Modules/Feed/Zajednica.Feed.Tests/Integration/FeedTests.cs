@@ -63,9 +63,12 @@ public class FeedTests : BaseFeedIntegrationTest
         Comments(scope, owner.AccountId)
             .Reply(community.Id, post.Id, first.Id, new AddCommentRequest("Odgovor na prvi"));
 
+        Db(scope).ChangeTracker.Clear();
+
         var page = Value<CursorPage<CommentDto>>((Comments(scope, owner.AccountId)
             .GetRoots(community.Id, post.Id, null, 2)).Result!);
         page.Items.Select(c => c.Text).ShouldBe(["Prvi", "Drugi"]);
+        page.Items.Select(c => c.HasReplies).ShouldBe([true, false]);
         page.NextCursor.ShouldNotBeNull();
 
         var rest = Value<CursorPage<CommentDto>>((Comments(scope, owner.AccountId)
@@ -76,6 +79,24 @@ public class FeedTests : BaseFeedIntegrationTest
         var replies = Value<CursorPage<CommentDto>>((Comments(scope, owner.AccountId)
             .GetReplies(community.Id, post.Id, first.Id, null, 10)).Result!);
         replies.Items.Select(c => c.Text).ShouldBe(["Odgovor na prvi"]);
+        replies.Items.Single().HasReplies.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void A_reply_reaches_only_a_comment_the_post_itself_holds()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var (community, owner) = CreateCommunity(scope);
+        var post = CreateGeneral(scope, owner.AccountId, community.Id, "Tema", "Plain");
+        var other = CreateGeneral(scope, owner.AccountId, community.Id, "Druga tema", "Plain");
+
+        var elsewhere = Value<CommentDto>((Comments(scope, owner.AccountId)
+            .Add(community.Id, other.Id, new AddCommentRequest("Na drugoj objavi"))).Result!);
+
+        Should.Throw<NotFoundException>(() => Comments(scope, owner.AccountId)
+            .Reply(community.Id, post.Id, elsewhere.Id, new AddCommentRequest("Odgovor")));
+        Should.Throw<NotFoundException>(() => Comments(scope, owner.AccountId)
+            .Reply(community.Id, post.Id, Guid.NewGuid(), new AddCommentRequest("Odgovor")));
     }
 
     [Fact]

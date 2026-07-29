@@ -18,6 +18,11 @@ internal sealed class PostEfRepository(FeedDbContext db) : IPostRepository
     public Post? Get(Guid id) =>
         db.Posts.FirstOrDefault(p => p.Id == id);
 
+    public Post? GetWithComment(Guid postId, Guid commentId) =>
+        db.Posts
+            .Include(p => p.Comments.Where(c => c.Id == commentId))
+            .FirstOrDefault(p => p.Id == postId);
+
     public bool Exists(Guid postId, Guid communityId) =>
         db.Posts.Any(p => p.Id == postId && p.CommunityId == communityId);
 
@@ -35,9 +40,6 @@ internal sealed class PostEfRepository(FeedDbContext db) : IPostRepository
 
         return new CursorPage<Post>(items, items.Count < limit ? null : items[^1].DateCreated);
     }
-
-    public Comment? GetComment(Guid postId, Guid commentId) =>
-        db.Comments.FirstOrDefault(c => c.PostId == postId && c.Id == commentId);
 
     public CursorPage<Comment> GetCommentPage(Guid postId, Guid? parentCommentId, DateTime? after, int limit)
     {

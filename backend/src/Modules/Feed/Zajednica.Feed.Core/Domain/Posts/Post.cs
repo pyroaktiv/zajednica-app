@@ -44,17 +44,19 @@ public abstract class Post : AggregateRoot
         return comment;
     }
 
-    public Comment AddReply(Comment parent, Guid authorMembershipId, string text, DateTime now)
+    public Comment AddReply(Guid parentCommentId, Guid authorMembershipId, string text, DateTime now)
     {
         RequireComments();
 
-        if (parent.PostId != Id)
-            throw new EntityValidationException("The parent comment belongs to another post.");
+        var parent = _comments.SingleOrDefault(c => c.Id == parentCommentId)
+            ?? throw new NotFoundException("Comment not found on this post.");
         if (parent.ParentCommentId is not null)
             throw new EntityValidationException("A reply cannot be answered, only the comment it replies to.");
 
         var reply = new Comment(Id, authorMembershipId, parent.Id, RequireText(text), now);
         _comments.Add(reply);
+        parent.MarkHasReplies();
+
         return reply;
     }
 

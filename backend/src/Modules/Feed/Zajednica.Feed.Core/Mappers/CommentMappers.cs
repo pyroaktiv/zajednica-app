@@ -15,6 +15,7 @@ public static class CommentMappers
             author?.Username ?? string.Empty,
             author?.ImageUrl,
             comment.Text,
+            comment.HasReplies,
             comment.Date);
 
     public static CursorPage<CommentDto> ToDtoPage(

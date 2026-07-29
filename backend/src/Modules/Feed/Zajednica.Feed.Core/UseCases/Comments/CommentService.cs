@@ -37,16 +37,13 @@ public sealed class CommentService(
         AddCommentRequest request)
     {
         var author = access.RequireConfirmed(accountId, communityId);
-        var post = Require(postId, communityId);
+        var post = RequireWithComment(postId, communityId, commentId);
 
-        var parent = posts.GetComment(postId, commentId)
-            ?? throw new NotFoundException("Comment not found on this post.");
-
-        var reply = post.AddReply(parent, author.MembershipId, request.Text, DateTime.UtcNow);
+        var reply = post.AddReply(commentId, author.MembershipId, request.Text, DateTime.UtcNow);
         posts.Update(post);
 
-        Notify(parent.AuthorMembershipId, author.MembershipId, "Novi odgovor",
-            "Neko je odgovorio na vaš komentar.");
+        Notify(post.Comments.Single(c => c.Id == commentId).AuthorMembershipId, author.MembershipId,
+            "Novi odgovor", "Neko je odgovorio na vaš komentar.");
         PushChanged(communityId, postId);
 
         return Single(reply);
@@ -78,9 +75,14 @@ public sealed class CommentService(
         return page.ToDtoPage(profiles);
     }
 
-    private Post Require(Guid postId, Guid communityId)
+    private Post Require(Guid postId, Guid communityId) =>
+        Require(posts.Get(postId), communityId);
+
+    private Post RequireWithComment(Guid postId, Guid communityId, Guid commentId) =>
+        Require(posts.GetWithComment(postId, commentId), communityId);
+
+    private static Post Require(Post? post, Guid communityId)
     {
-        var post = posts.Get(postId);
         if (post is null || post.CommunityId != communityId)
             throw new NotFoundException("Post not found in this community.");
 

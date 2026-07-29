@@ -9,6 +9,7 @@ public class Comment : Entity
     public Guid AuthorMembershipId { get; private set; }
     public Guid? ParentCommentId { get; private set; }
     public string Text { get; private set; } = null!;
+    public bool HasReplies { get; private set; }
     public DateTime Date { get; private set; }
 
     private Comment() { }
@@ -24,4 +25,6 @@ public class Comment : Entity
         Text = text;
         Date = date;
     }
+
+    internal void MarkHasReplies() => HasReplies = true;
 }

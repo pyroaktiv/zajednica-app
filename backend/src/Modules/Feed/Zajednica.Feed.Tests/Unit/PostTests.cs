@@ -32,6 +32,7 @@ public class PostTests
 
         post.AllowsComments().ShouldBeFalse();
         Should.Throw<EntityValidationException>(() => post.AddComment(Guid.NewGuid(), "Komentar", Now));
+        Should.Throw<EntityValidationException>(() => post.AddReply(Guid.NewGuid(), Guid.NewGuid(), "Odgovor", Now));
     }
 
     [Fact]
@@ -40,21 +41,27 @@ public class PostTests
         var post = General();
         var comment = post.AddComment(Guid.NewGuid(), "Prvi komentar", Now);
 
-        var reply = post.AddReply(comment, Guid.NewGuid(), "Odgovor", Now.AddMinutes(1));
+        comment.HasReplies.ShouldBeFalse();
+
+        var reply = post.AddReply(comment.Id, Guid.NewGuid(), "Odgovor", Now.AddMinutes(1));
 
         reply.ParentCommentId.ShouldBe(comment.Id);
         reply.PostId.ShouldBe(post.Id);
-        Should.Throw<EntityValidationException>(() => post.AddReply(reply, Guid.NewGuid(), "Odgovor na odgovor", Now));
+        comment.HasReplies.ShouldBeTrue();
+        reply.HasReplies.ShouldBeFalse();
+        Should.Throw<EntityValidationException>(() =>
+            post.AddReply(reply.Id, Guid.NewGuid(), "Odgovor na odgovor", Now));
     }
 
     [Fact]
-    public void A_comment_of_another_post_cannot_be_replied_to()
+    public void A_comment_the_post_does_not_hold_cannot_be_replied_to()
     {
         var post = General();
         var other = General();
         var comment = other.AddComment(Guid.NewGuid(), "Komentar na drugoj objavi", Now);
 
-        Should.Throw<EntityValidationException>(() => post.AddReply(comment, Guid.NewGuid(), "Odgovor", Now));
+        Should.Throw<NotFoundException>(() => post.AddReply(comment.Id, Guid.NewGuid(), "Odgovor", Now));
+        Should.Throw<NotFoundException>(() => post.AddReply(Guid.NewGuid(), Guid.NewGuid(), "Odgovor", Now));
     }
 
     [Fact]

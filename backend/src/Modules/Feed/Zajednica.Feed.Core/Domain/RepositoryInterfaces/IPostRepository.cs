@@ -9,9 +9,9 @@ public interface IPostRepository
     void Update(Post post);
 
     Post? Get(Guid id);
+    Post? GetWithComment(Guid postId, Guid commentId);
     bool Exists(Guid postId, Guid communityId);
     CursorPage<Post> GetPage(Guid communityId, DateTime? before, int limit);
 
-    Comment? GetComment(Guid postId, Guid commentId);
     CursorPage<Comment> GetCommentPage(Guid postId, Guid? parentCommentId, DateTime? after, int limit);
 }
