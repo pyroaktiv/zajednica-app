@@ -2,6 +2,7 @@ using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.BuildingBlocks.Core.Notifications;
 using Zajednica.BuildingBlocks.Core.Realtime;
 using Zajednica.BuildingBlocks.Core.Security;
+using Zajednica.Chat.Api.Internal;
 using Zajednica.Community.Api.Dto.Certification;
 using Zajednica.Community.Api.Public;
 using Zajednica.Community.Core.Domain;
@@ -16,6 +17,7 @@ public sealed class CertificationService(
     ICertificateRepository certificates,
     IMembershipRepository memberships,
     ISecureTokenGenerator tokens,
+    IInternalChatService chats,
     INotificationSender notifications,
     IRealtimePusher realtime,
     DomainCertificationService certification,
@@ -69,6 +71,7 @@ public sealed class CertificationService(
         memberships.Update(candidate);
         certificates.Add(certificate);
         challenges.Remove(challenge);
+        chats.DeleteTemporaryChats(challenge.CommunityId, candidate.Id);
 
         realtime.PushToUser(issuer.AccountId,
             new RealtimeMessage("certification.confirmed", new { challengeId = challenge.Id, membershipId = candidate.Id }));

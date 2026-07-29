@@ -1,5 +1,6 @@
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.Feed.Api.Dto.Posts;
+using Zajednica.Feed.Api.Internal.Dto;
 using Zajednica.Feed.Core.Domain.Posts;
 using Zajednica.Identity.Api.Internal.Dto;
 
@@ -23,6 +24,9 @@ public static class PostMappers
         HelpRequest help => ToDto(post, author, "HELP_REQUEST", null, help.Closed),
         _ => throw new EntityValidationException("Unknown post type.")
     };
+
+    public static HelpRequestInfoDto ToInfoDto(this HelpRequest help) =>
+        new(help.Id, help.AuthorMembershipId, help.Closed);
 
     public static IReadOnlyList<PostDto> ToDtos(
         this IEnumerable<Post> posts, IReadOnlyDictionary<Guid, AccountProfileDto> authors) =>
