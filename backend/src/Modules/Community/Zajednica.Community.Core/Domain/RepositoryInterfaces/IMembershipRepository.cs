@@ -10,6 +10,8 @@ public interface IMembershipRepository
     IReadOnlyList<Membership> GetManyByIds(IReadOnlyCollection<Guid> ids);
     IReadOnlyList<Membership> GetByAccount(Guid accountId);
     IReadOnlyList<Membership> GetByCommunity(Guid communityId);
+    IReadOnlyList<Membership> GetConfirmedByCommunity(Guid communityId);
+    Membership? GetManager(Guid communityId);
 
     int CountConfirmed(Guid communityId);
 }

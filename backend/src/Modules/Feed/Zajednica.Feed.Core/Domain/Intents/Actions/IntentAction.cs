@@ -4,7 +4,7 @@ public abstract class IntentAction
 {
     public abstract string Name { get; }
 
-    public abstract void EnsureValidFor(ActionContext context);
+    public abstract void EnsureValidFor(IntentContext context);
 
-    public abstract IntentOpened ToOpenedEvent(ActionContext context, string text);
+    public abstract IntentOpened ToOpenedEvent(IntentContext context, string text);
 }

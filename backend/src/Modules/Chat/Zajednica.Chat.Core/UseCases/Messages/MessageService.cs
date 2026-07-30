@@ -4,7 +4,6 @@ using Zajednica.Chat.Api.Public;
 using Zajednica.Chat.Core.Domain;
 using Zajednica.Chat.Core.Domain.RepositoryInterfaces;
 using Zajednica.Chat.Core.Mappers;
-using Zajednica.Community.Api.Internal.Dto;
 using ChatAggregate = Zajednica.Chat.Core.Domain.Chat;
 
 namespace Zajednica.Chat.Core.UseCases.Messages;
@@ -17,29 +16,29 @@ public sealed class MessageService(
 {
     public MessageDto SendText(Guid accountId, Guid communityId, Guid chatId, SendTextRequest request)
     {
-        var (me, chat) = Require(accountId, communityId, chatId);
+        var (myMembershipId, chat) = Require(accountId, communityId, chatId);
 
-        var message = chat.SendText(me.MembershipId, request.Text, DateTime.UtcNow);
+        var message = chat.SendText(myMembershipId, request.Text, DateTime.UtcNow);
         chats.Update(chat);
 
-        return Announce(chat, message, me.MembershipId);
+        return Announce(chat, message, myMembershipId);
     }
 
     public MessageDto SendVoice(Guid accountId, Guid communityId, Guid chatId, SendVoiceRequest request)
     {
-        var (me, chat) = Require(accountId, communityId, chatId);
+        var (myMembershipId, chat) = Require(accountId, communityId, chatId);
 
-        var message = chat.SendVoice(me.MembershipId, request.AudioUrl, request.DurationSeconds, DateTime.UtcNow);
+        var message = chat.SendVoice(myMembershipId, request.AudioUrl, request.DurationSeconds, DateTime.UtcNow);
         chats.Update(chat);
 
-        return Announce(chat, message, me.MembershipId);
+        return Announce(chat, message, myMembershipId);
     }
 
     public void MarkRead(Guid accountId, Guid communityId, Guid chatId)
     {
-        var (me, chat) = Require(accountId, communityId, chatId);
+        var (myMembershipId, chat) = Require(accountId, communityId, chatId);
 
-        chat.MarkRead(me.MembershipId, DateTime.UtcNow);
+        chat.MarkRead(myMembershipId, DateTime.UtcNow);
         chats.Update(chat);
     }
 
@@ -53,11 +52,11 @@ public sealed class MessageService(
         return page.ToDtoPage(senders);
     }
 
-    private (MembershipContextDto Me, ChatAggregate Chat) Require(Guid accountId, Guid communityId, Guid chatId)
+    private (Guid MyMembershipId, ChatAggregate Chat) Require(Guid accountId, Guid communityId, Guid chatId)
     {
-        var me = access.RequireMember(accountId, communityId);
+        var myMembershipId = access.RequireMember(accountId, communityId);
 
-        return (me, access.RequireChat(communityId, chatId, me.MembershipId));
+        return (myMembershipId, access.RequireChat(communityId, chatId, myMembershipId));
     }
 
     private MessageDto Announce(ChatAggregate chat, Message message, Guid senderMembershipId)

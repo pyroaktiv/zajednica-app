@@ -2,7 +2,6 @@ using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.BuildingBlocks.Core.Notifications;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Community.Api.Internal;
-using Zajednica.Community.Api.Internal.Dto;
 using Zajednica.Feed.Api.Dto.Posts;
 using Zajednica.Feed.Api.Public;
 using Zajednica.Feed.Core.Domain.Posts;
@@ -14,16 +13,16 @@ namespace Zajednica.Feed.Core.UseCases.Posts;
 
 public sealed class PostService(
     IPostRepository posts,
-    IInternalMembershipService memberships,
+    IInternalMembershipAudienceService audience,
     INotificationSender notifications,
     MemberDirectory directory,
     CommunityAccess access) : IPostService
 {
     public PostDto CreateGeneral(Guid accountId, Guid communityId, CreateGeneralPostRequest request)
     {
-        var author = access.RequireConfirmed(accountId, communityId);
+        var authorMembershipId = access.RequireConfirmed(accountId, communityId);
 
-        var post = new GeneralTopicPost(communityId, author.MembershipId, request.Text,
+        var post = new GeneralTopicPost(communityId, authorMembershipId, request.Text,
             PostMappers.ToKind(request.Kind), request.ImageUrls, DateTime.UtcNow);
         posts.Add(post);
 
@@ -34,9 +33,9 @@ public sealed class PostService(
 
     public PostDto CreateHelpRequest(Guid accountId, Guid communityId, CreateHelpRequestRequest request)
     {
-        var author = access.RequireConfirmed(accountId, communityId);
+        var authorMembershipId = access.RequireConfirmed(accountId, communityId);
 
-        var post = new HelpRequest(communityId, author.MembershipId, request.Text, request.ImageUrls, DateTime.UtcNow);
+        var post = new HelpRequest(communityId, authorMembershipId, request.Text, request.ImageUrls, DateTime.UtcNow);
         posts.Add(post);
 
         Announce(post);
@@ -46,12 +45,12 @@ public sealed class PostService(
 
     public PostDto CloseHelpRequest(Guid accountId, Guid communityId, Guid postId)
     {
-        var actor = access.RequireConfirmed(accountId, communityId);
+        var actorMembershipId = access.RequireConfirmed(accountId, communityId);
 
         if (Require(postId, communityId) is not HelpRequest help)
             throw new EntityValidationException("Only a help request can be closed for further responses.");
 
-        help.Close(actor.MembershipId);
+        help.Close(actorMembershipId);
         posts.Update(help);
 
         return Single(help);
@@ -92,25 +91,20 @@ public sealed class PostService(
     private void Announce(Post post)
     {
         var (title, body, priority) = Announcement(post);
-        var confirmed = memberships.GetConfirmed(post.CommunityId);
+        var recipients = audience.GetConfirmedAccountIds(post.CommunityId, post.AuthorMembershipId);
 
-        var audience = confirmed
-            .Where(m => m.MembershipId != post.AuthorMembershipId)
-            .Select(m => m.AccountId)
-            .ToList();
-        notifications.Send(new NotificationRequest(audience, title, body, priority));
+        notifications.Send(new NotificationRequest(recipients, title, body, priority));
 
         if (post is GeneralTopicPost { Kind: GeneralPostKind.Problem })
-            NotifyManager(confirmed);
+            NotifyManager(post.CommunityId);
     }
 
-    private void NotifyManager(IReadOnlyList<MembershipContextDto> confirmed)
+    private void NotifyManager(Guid communityId)
     {
-        var manager = confirmed.SingleOrDefault(m => m.Roles.Contains(CommunityRoleNames.Manager));
-        if (manager is null)
+        if (audience.GetManagerAccountId(communityId) is not { } managerAccountId)
             return;
 
-        notifications.Send(new NotificationRequest(manager.AccountId, "Prijavljen problem",
+        notifications.Send(new NotificationRequest(managerAccountId, "Prijavljen problem",
             "U zgradi je prijavljen problem koji traži reakciju upravnika.", NotificationPriority.Default));
     }
 

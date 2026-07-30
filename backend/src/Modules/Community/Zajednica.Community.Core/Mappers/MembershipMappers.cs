@@ -48,13 +48,8 @@ public static class MembershipMappers
             membership.CommunityId,
             membership.Certificate!.Date);
 
-    public static MembershipContextDto ToContextDto(this Membership membership) =>
-        new(membership.Id,
-            membership.AccountId,
-            membership.CommunityId,
-            membership.IsConfirmed(),
-            membership.IsActive(),
-            membership.Roles.Select(r => r.Role.ToString()).ToList());
+    public static MemberAccountDto ToAccountDto(this Membership membership) =>
+        new(membership.Id, membership.AccountId);
 
     public static IReadOnlyList<MemberSummaryDto> ToSummaryDtos(
         this IEnumerable<Membership> memberships, IReadOnlyDictionary<Guid, AccountProfileDto> profiles) =>

@@ -13,8 +13,8 @@ public class RoleGrantTests : BaseCommunityIntegrationTest
 {
     public RoleGrantTests(CommunityTestFactory factory) : base(factory) { }
 
-    private static IInternalMembershipService Internal(IServiceScope scope) =>
-        scope.ServiceProvider.GetRequiredService<IInternalMembershipService>();
+    private static IInternalIntentOutcomeService Outcome(IServiceScope scope) =>
+        scope.ServiceProvider.GetRequiredService<IInternalIntentOutcomeService>();
 
     [Fact]
     public void An_issuer_can_share_the_right_to_certify()
@@ -65,8 +65,8 @@ public class RoleGrantTests : BaseCommunityIntegrationTest
         var first = db.Memberships.Single(m => m.AccountId == firstId && m.CommunityId == community.Id);
         db.ChangeTracker.Clear();
 
-        Internal(scope).ElectManager(first.Id);
-        Internal(scope).ElectManager(second.MembershipId);
+        Outcome(scope).ElectManager(first.Id);
+        Outcome(scope).ElectManager(second.MembershipId);
 
         db.ChangeTracker.Clear();
         db.Memberships.Single(m => m.Id == first.Id).HasRole(CommunityRole.Manager).ShouldBeFalse();
@@ -83,7 +83,7 @@ public class RoleGrantTests : BaseCommunityIntegrationTest
         var db = Db(scope);
         var membership = db.Memberships.Single(m => m.AccountId == accountId && m.CommunityId == community.Id);
         db.ChangeTracker.Clear();
-        Internal(scope).ElectManager(membership.Id);
+        Outcome(scope).ElectManager(membership.Id);
 
         var updated = Value<CommunityDetailsDto>((Communities(scope, accountId)
             .Update(community.Id, new UpdateCommunityRequest("Zgrada 2", community.Address, "12345678", "123456789", "160-1"))).Result!);

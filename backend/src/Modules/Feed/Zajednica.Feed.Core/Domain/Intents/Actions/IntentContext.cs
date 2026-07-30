@@ -2,14 +2,14 @@ using Zajednica.BuildingBlocks.Core.Domain;
 
 namespace Zajednica.Feed.Core.Domain.Intents;
 
-public sealed class ActionContext : ValueObject
+public sealed class IntentContext : ValueObject
 {
     public Guid CommunityId { get; }
     public Guid AuthorMembershipId { get; }
     public int EligibleVoterCount { get; }
     public DateTime Now { get; }
 
-    public ActionContext(Guid communityId, Guid authorMembershipId, int eligibleVoterCount, DateTime now)
+    public IntentContext(Guid communityId, Guid authorMembershipId, int eligibleVoterCount, DateTime now)
     {
         CommunityId = communityId;
         AuthorMembershipId = authorMembershipId;

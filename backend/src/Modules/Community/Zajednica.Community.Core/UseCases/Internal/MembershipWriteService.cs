@@ -1,39 +1,16 @@
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.BuildingBlocks.Core.Realtime;
 using Zajednica.Community.Api.Internal;
-using Zajednica.Community.Api.Internal.Dto;
 using Zajednica.Community.Core.Domain;
 using Zajednica.Community.Core.Domain.RepositoryInterfaces;
-using Zajednica.Community.Core.Mappers;
 
 namespace Zajednica.Community.Core.UseCases.Internal;
 
-public sealed class InternalMembershipService(
+public sealed class MembershipWriteService(
     IMembershipRepository memberships,
     IRealtimePusher realtime,
-    ManagerElectionService election) : IInternalMembershipService
+    ManagerElectionService election) : IInternalIntentOutcomeService, IInternalStarAwardService
 {
-    public MembershipContextDto? GetContext(Guid accountId, Guid communityId) =>
-        (memberships.Get(accountId, communityId))?.ToContextDto();
-
-    public IReadOnlyList<MembershipContextDto> GetContexts(IReadOnlyCollection<Guid> membershipIds)
-    {
-        if (membershipIds.Count == 0)
-            return [];
-
-        var found = memberships.GetManyByIds(membershipIds);
-        return found.Select(m => m.ToContextDto()).ToList();
-    }
-
-    public IReadOnlyList<MembershipContextDto> GetConfirmed(Guid communityId) =>
-        (memberships.GetByCommunity(communityId))
-        .Where(m => m.IsActive() && m.IsConfirmed())
-        .Select(m => m.ToContextDto())
-        .ToList();
-
-    public int GetConfirmedCount(Guid communityId) =>
-        memberships.CountConfirmed(communityId);
-
     public void Ban(Guid membershipId, Guid intentId)
     {
         var membership = Require(membershipId);
@@ -47,9 +24,7 @@ public sealed class InternalMembershipService(
     public void ElectManager(Guid membershipId)
     {
         var newManager = Require(membershipId);
-
-        var currentManager = (memberships.GetByCommunity(newManager.CommunityId))
-            .SingleOrDefault(m => m.HasRole(CommunityRole.Manager));
+        var currentManager = memberships.GetManager(newManager.CommunityId);
 
         election.Elect(currentManager, newManager, DateTime.UtcNow);
 

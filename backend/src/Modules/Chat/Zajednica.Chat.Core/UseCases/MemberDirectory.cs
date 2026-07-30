@@ -5,13 +5,15 @@ using Zajednica.Identity.Api.Internal.Dto;
 
 namespace Zajednica.Chat.Core.UseCases;
 
-public sealed class MemberDirectory(IInternalMembershipService memberships, IInternalAccountService accounts)
+public sealed class MemberDirectory(
+    IInternalMembershipDirectoryService memberships,
+    IInternalAccountService accounts)
 {
-    public MembershipContextDto? Context(Guid membershipId) =>
-        memberships.GetContexts([membershipId]).SingleOrDefault();
+    public Guid? AccountId(Guid membershipId) =>
+        memberships.GetAccounts([membershipId]).SingleOrDefault()?.AccountId;
 
-    public IReadOnlyList<MembershipContextDto> Contexts(IReadOnlyCollection<Guid> membershipIds) =>
-        membershipIds.Count == 0 ? [] : memberships.GetContexts(membershipIds.Distinct().ToList());
+    public IReadOnlyList<MemberAccountDto> Accounts(IReadOnlyCollection<Guid> membershipIds) =>
+        membershipIds.Count == 0 ? [] : memberships.GetAccounts(membershipIds.Distinct().ToList());
 
     public IReadOnlyDictionary<Guid, AccountProfileDto> Profiles(IReadOnlyCollection<Guid> membershipIds)
     {
@@ -19,15 +21,15 @@ public sealed class MemberDirectory(IInternalMembershipService memberships, IInt
         if (membershipIds.Count == 0)
             return empty;
 
-        var contexts = memberships.GetContexts(membershipIds.Distinct().ToList());
-        if (contexts.Count == 0)
+        var members = memberships.GetAccounts(membershipIds.Distinct().ToList());
+        if (members.Count == 0)
             return empty;
 
-        var profiles = accounts.GetProfiles(contexts.Select(c => c.AccountId).Distinct().ToList())
+        var profiles = accounts.GetProfiles(members.Select(m => m.AccountId).Distinct().ToList())
             .ToDictionary(p => p.AccountId);
 
-        return contexts
-            .Where(c => profiles.ContainsKey(c.AccountId))
-            .ToDictionary(c => c.MembershipId, c => profiles[c.AccountId]);
+        return members
+            .Where(m => profiles.ContainsKey(m.AccountId))
+            .ToDictionary(m => m.MembershipId, m => profiles[m.AccountId]);
     }
 }

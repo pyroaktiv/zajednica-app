@@ -6,7 +6,7 @@ namespace Zajednica.Feed.Core.UseCases.Intents;
 
 public sealed class IntentClosing(
     IIntentRepository intents,
-    IInternalMembershipService memberships,
+    IInternalIntentOutcomeService outcome,
     IntentNotifier notifier)
 {
     public bool CloseIfDue(Intent intent, DateTime now)
@@ -18,7 +18,7 @@ public sealed class IntentClosing(
         intents.Update(intent);
 
         if (status == IntentStatus.Accepted)
-            Execute(intent);
+            Execute(intent, now);
 
         notifier.Closed(intent, status);
 
@@ -33,24 +33,23 @@ public sealed class IntentClosing(
             CloseIfDue(intent, now);
     }
 
-    private void Execute(Intent intent)
+    private void Execute(Intent intent, DateTime now)
     {
         switch (intent.Action)
         {
             case UserTargetingAction { Kind: UserActionKind.Ban } ban:
-                memberships.Ban(ban.TargetMembershipId, intent.Id);
-                SupersedeOthersAbout(intent, ban.TargetMembershipId);
+                outcome.Ban(ban.TargetMembershipId, intent.Id);
+                SupersedeOthersAbout(intent, ban.TargetMembershipId, now);
                 break;
 
             case UserTargetingAction { Kind: UserActionKind.ManagerElection } election:
-                memberships.ElectManager(election.TargetMembershipId);
+                outcome.ElectManager(election.TargetMembershipId);
                 break;
         }
     }
 
-    private void SupersedeOthersAbout(Intent ban, Guid targetMembershipId)
+    private void SupersedeOthersAbout(Intent ban, Guid targetMembershipId, DateTime now)
     {
-        var now = DateTime.UtcNow;
         var open = intents.GetOpenByTarget(ban.CommunityId, targetMembershipId);
 
         foreach (var other in open.Where(i => i.Id != ban.Id))

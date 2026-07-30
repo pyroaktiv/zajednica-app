@@ -29,6 +29,20 @@ internal sealed class MembershipEfRepository(CommunityDbContext db) : IMembershi
     public IReadOnlyList<Membership> GetByCommunity(Guid communityId) =>
         db.Memberships.Where(m => m.CommunityId == communityId).ToList();
 
+    public IReadOnlyList<Membership> GetConfirmedByCommunity(Guid communityId) =>
+        db.Memberships
+            .Where(m =>
+                m.CommunityId == communityId
+                && m.CertificationStatus == CertificationStatus.Confirmed
+                && m.State == MembershipState.Active)
+            .ToList();
+
+    public Membership? GetManager(Guid communityId) =>
+        db.Memberships.SingleOrDefault(m =>
+            m.CommunityId == communityId
+            && m.State == MembershipState.Active
+            && m.Roles.Any(r => r.Role == CommunityRole.Manager));
+
     public int CountConfirmed(Guid communityId) =>
         db.Memberships.Count(m =>
             m.CommunityId == communityId

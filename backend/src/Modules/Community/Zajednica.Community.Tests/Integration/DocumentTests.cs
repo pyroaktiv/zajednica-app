@@ -26,7 +26,7 @@ public class DocumentTests : BaseCommunityIntegrationTest
         var db = Db(scope);
         var managerMembership = db.Memberships.Single(m => m.AccountId == managerId && m.CommunityId == community.Id);
         db.ChangeTracker.Clear();
-        scope.ServiceProvider.GetRequiredService<IInternalMembershipService>()
+        scope.ServiceProvider.GetRequiredService<IInternalIntentOutcomeService>()
             .ElectManager(managerMembership.Id);
 
         Should.Throw<ForbiddenException>(() =>

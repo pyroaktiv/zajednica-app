@@ -54,15 +54,14 @@ public sealed class ChatNotifier(
             "Komšija se zahvalio na dobroj volji.");
     }
 
-    private IReadOnlyList<MembershipContextDto> Participants(ChatAggregate chat) =>
-        directory.Contexts(chat.Participants.Select(p => p.MembershipId).ToList());
+    private IReadOnlyList<MemberAccountDto> Participants(ChatAggregate chat) =>
+        directory.Accounts(chat.Participants.Select(p => p.MembershipId).ToList());
 
     private void Notify(Guid membershipId, string title, string body)
     {
-        var recipient = directory.Context(membershipId);
-        if (recipient is null)
+        if (directory.AccountId(membershipId) is not { } recipientAccountId)
             return;
 
-        notifications.Send(new NotificationRequest(recipient.AccountId, title, body, NotificationPriority.Default));
+        notifications.Send(new NotificationRequest(recipientAccountId, title, body, NotificationPriority.Default));
     }
 }

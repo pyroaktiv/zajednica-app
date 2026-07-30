@@ -4,7 +4,6 @@ using Zajednica.Chat.Api.Dto.Chats;
 using Zajednica.Chat.Api.Public;
 using Zajednica.Chat.Core.Domain;
 using Zajednica.Chat.Core.Domain.RepositoryInterfaces;
-using Zajednica.Community.Api.Internal.Dto;
 using ChatAggregate = Zajednica.Chat.Core.Domain.Chat;
 
 namespace Zajednica.Chat.Core.UseCases.Chats;
@@ -16,45 +15,40 @@ public sealed class ChatService(
 {
     public ChatDetailsDto OpenDirect(Guid accountId, Guid communityId, OpenDirectChatRequest request)
     {
-        var me = access.RequireConfirmed(accountId, communityId);
-        var target = access.RequireCounterpart(communityId, request.TargetMembershipId);
+        var myMembershipId = access.RequireConfirmed(accountId, communityId);
+        access.RequireCounterpart(communityId, request.TargetMembershipId);
 
-        var existing = chats.GetDirect(communityId, me.MembershipId, target.MembershipId);
+        var existing = chats.GetDirect(communityId, myMembershipId, request.TargetMembershipId);
         if (existing is not null)
-            return presenter.Details(existing, me.MembershipId);
+            return presenter.Details(existing, myMembershipId);
 
-        var chat = new DirectChat(communityId, me.MembershipId, target.MembershipId, DateTime.UtcNow);
+        var chat = new DirectChat(communityId, myMembershipId, request.TargetMembershipId, DateTime.UtcNow);
         chats.Add(chat);
 
-        return presenter.Details(chat, me.MembershipId);
+        return presenter.Details(chat, myMembershipId);
     }
 
     public ChatDetailsDto OpenTemporary(Guid accountId, Guid communityId, OpenTemporaryChatRequest request)
     {
-        var me = access.RequireMember(accountId, communityId);
-        if (me.IsConfirmed)
-            throw new ForbiddenException("A confirmed member opens a direct chat, not a temporary one.");
+        var myMembershipId = access.RequireUnconfirmed(accountId, communityId);
+        access.RequireIssuer(communityId, request.IssuerMembershipId);
 
-        var issuer = access.RequireCounterpart(communityId, request.IssuerMembershipId);
-        if (!issuer.Roles.Contains(CommunityRoleNames.Issuer))
-            throw new ForbiddenException("A temporary chat is opened only with a member who issues certifications.");
-
-        var existing = chats.GetTemporary(communityId, me.MembershipId, issuer.MembershipId);
+        var existing = chats.GetTemporary(communityId, myMembershipId, request.IssuerMembershipId);
         if (existing is not null)
-            return presenter.Details(existing, me.MembershipId);
+            return presenter.Details(existing, myMembershipId);
 
-        var chat = new TemporaryChat(communityId, me.MembershipId, issuer.MembershipId, DateTime.UtcNow);
+        var chat = new TemporaryChat(communityId, myMembershipId, request.IssuerMembershipId, DateTime.UtcNow);
         chats.Add(chat);
 
-        return presenter.Details(chat, me.MembershipId);
+        return presenter.Details(chat, myMembershipId);
     }
 
     public ChatDetailsDto Get(Guid accountId, Guid communityId, Guid chatId)
     {
-        var me = access.RequireMember(accountId, communityId);
-        var chat = access.RequireChat(communityId, chatId, me.MembershipId);
+        var myMembershipId = access.RequireMember(accountId, communityId);
+        var chat = access.RequireChat(communityId, chatId, myMembershipId);
 
-        return presenter.Details(chat, me.MembershipId);
+        return presenter.Details(chat, myMembershipId);
     }
 
     public CursorPage<ChatSummaryDto, DateTime> GetDirectPage(Guid accountId, Guid communityId, DateTime? before, int limit) =>
@@ -69,9 +63,9 @@ public sealed class ChatService(
     private CursorPage<ChatSummaryDto, DateTime> GetPage<TChat>(Guid accountId, Guid communityId, DateTime? before, int limit)
         where TChat : ChatAggregate
     {
-        var me = access.RequireMember(accountId, communityId);
-        var page = chats.GetPage<TChat>(communityId, me.MembershipId, before, Paging.Clamp(limit));
+        var myMembershipId = access.RequireMember(accountId, communityId);
+        var page = chats.GetPage<TChat>(communityId, myMembershipId, before, Paging.Clamp(limit));
 
-        return presenter.Summaries(page, me.MembershipId);
+        return presenter.Summaries(page, myMembershipId);
     }
 }

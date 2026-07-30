@@ -40,10 +40,9 @@ public sealed class IntentNotifier(
         if (intent.Action is not UserTargetingAction targeting)
             return;
 
-        var target = directory.Context(targeting.TargetMembershipId);
-        if (target is null)
+        if (directory.AccountId(targeting.TargetMembershipId) is not { } targetAccountId)
             return;
 
-        notifications.Send(new NotificationRequest(target.AccountId, title, body, priority));
+        notifications.Send(new NotificationRequest(targetAccountId, title, body, priority));
     }
 }

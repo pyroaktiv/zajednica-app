@@ -13,6 +13,14 @@ public class HelpRequest : Post
 
     public override bool AllowsComments() => false;
 
+    public void EnsureRespondableBy(Guid helperMembershipId)
+    {
+        if (Closed)
+            throw new EntityValidationException("This help request is closed for further responses.");
+        if (helperMembershipId == AuthorMembershipId)
+            throw new EntityValidationException("The author of a help request cannot respond to it.");
+    }
+
     public void Close(Guid actorMembershipId)
     {
         if (actorMembershipId != AuthorMembershipId)

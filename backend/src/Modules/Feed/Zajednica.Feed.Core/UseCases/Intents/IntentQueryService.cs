@@ -13,10 +13,10 @@ public sealed class IntentQueryService(
 {
     public IntentDetailsDto Get(Guid accountId, Guid communityId, Guid intentId)
     {
-        var reader = access.RequireConfirmed(accountId, communityId);
+        var readerMembershipId = access.RequireConfirmed(accountId, communityId);
         var view = lookup.RequireView(intentId, communityId);
 
-        return presenter.Details(view, intentQueries.GetVote(intentId, reader.MembershipId));
+        return presenter.Details(view, intentQueries.GetVote(intentId, readerMembershipId));
     }
 
     public IReadOnlyList<IntentVoterDto> GetVotes(Guid accountId, Guid communityId, Guid intentId)

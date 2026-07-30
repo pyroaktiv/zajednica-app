@@ -76,4 +76,17 @@ public class PostTests
         post.Closed.ShouldBeTrue();
         Should.Throw<EntityValidationException>(() => post.Close(Author));
     }
+
+    [Fact]
+    public void Neither_the_author_nor_a_closed_help_request_takes_a_response()
+    {
+        var post = Help();
+
+        post.EnsureRespondableBy(Guid.NewGuid());
+        Should.Throw<EntityValidationException>(() => post.EnsureRespondableBy(Author));
+
+        post.Close(Author);
+
+        Should.Throw<EntityValidationException>(() => post.EnsureRespondableBy(Guid.NewGuid()));
+    }
 }

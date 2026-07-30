@@ -46,6 +46,11 @@ public static class CommunityModule
         services.AddScoped<IMembershipService, MembershipService>();
         services.AddScoped<ICertificationService, Core.UseCases.CertificationService>();
         services.AddScoped<IDocumentService, DocumentService>();
-        services.AddScoped<IInternalMembershipService, InternalMembershipService>();
+        services.AddScoped<IInternalMembershipAccessService, MembershipAccessService>();
+        services.AddScoped<IInternalMembershipDirectoryService, MembershipDirectoryService>();
+        services.AddScoped<IInternalMembershipAudienceService, MembershipAudienceService>();
+        services.AddScoped<MembershipWriteService>();
+        services.AddScoped<IInternalIntentOutcomeService>(sp => sp.GetRequiredService<MembershipWriteService>());
+        services.AddScoped<IInternalStarAwardService>(sp => sp.GetRequiredService<MembershipWriteService>());
     }
 }

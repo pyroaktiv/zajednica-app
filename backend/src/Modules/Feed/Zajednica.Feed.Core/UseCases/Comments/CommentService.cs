@@ -18,13 +18,13 @@ public sealed class CommentService(
 {
     public CommentDto Add(Guid accountId, Guid communityId, Guid postId, AddCommentRequest request)
     {
-        var author = access.RequireConfirmed(accountId, communityId);
+        var authorMembershipId = access.RequireConfirmed(accountId, communityId);
         var post = Require(postId, communityId);
 
-        var comment = post.AddComment(author.MembershipId, request.Text, DateTime.UtcNow);
+        var comment = post.AddComment(authorMembershipId, request.Text, DateTime.UtcNow);
         posts.Update(post);
 
-        Notify(post.AuthorMembershipId, author.MembershipId, "Novi komentar",
+        Notify(post.AuthorMembershipId, authorMembershipId, "Novi komentar",
             "Neko je komentarisao vašu objavu.");
 
         return Single(comment);
@@ -33,13 +33,13 @@ public sealed class CommentService(
     public CommentDto Reply(Guid accountId, Guid communityId, Guid postId, Guid commentId,
         AddCommentRequest request)
     {
-        var author = access.RequireConfirmed(accountId, communityId);
+        var authorMembershipId = access.RequireConfirmed(accountId, communityId);
         var post = RequireWithComment(postId, communityId, commentId);
 
-        var reply = post.AddReply(commentId, author.MembershipId, request.Text, DateTime.UtcNow);
+        var reply = post.AddReply(commentId, authorMembershipId, request.Text, DateTime.UtcNow);
         posts.Update(post);
 
-        Notify(post.Comments.Single(c => c.Id == commentId).AuthorMembershipId, author.MembershipId,
+        Notify(post.Comments.Single(c => c.Id == commentId).AuthorMembershipId, authorMembershipId,
             "Novi odgovor", "Neko je odgovorio na vaš komentar.");
 
         return Single(reply);
@@ -102,11 +102,10 @@ public sealed class CommentService(
         if (recipientMembershipId == actorMembershipId)
             return;
 
-        var recipient = directory.Context(recipientMembershipId);
-        if (recipient is null)
+        if (directory.AccountId(recipientMembershipId) is not { } recipientAccountId)
             return;
 
         notifications.Send(
-            new NotificationRequest(recipient.AccountId, title, body, NotificationPriority.Default));
+            new NotificationRequest(recipientAccountId, title, body, NotificationPriority.Default));
     }
 }

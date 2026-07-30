@@ -32,7 +32,7 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
         if (eligibleVoterCount < 2)
             throw new EntityValidationException("An intent needs at least two eligible voters.");
 
-        var context = new ActionContext(communityId, authorMembershipId, eligibleVoterCount, now);
+        var context = new IntentContext(communityId, authorMembershipId, eligibleVoterCount, now);
         action.EnsureValidFor(context);
 
         var intent = new Intent();
