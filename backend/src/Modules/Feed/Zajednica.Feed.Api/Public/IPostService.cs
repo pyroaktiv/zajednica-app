@@ -10,5 +10,5 @@ public interface IPostService
     PostDto CloseHelpRequest(Guid accountId, Guid communityId, Guid postId);
 
     PostDto Get(Guid accountId, Guid communityId, Guid postId);
-    CursorPage<PostDto, DateTime> GetPage(Guid accountId, Guid communityId, DateTime? before, int limit);
+    CursorPage<PostDto, PageCursor> GetPage(Guid accountId, Guid communityId, PageCursor? before, int limit);
 }

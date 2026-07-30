@@ -1,6 +1,7 @@
 using Zajednica.BuildingBlocks.Core.Notifications;
 using Zajednica.BuildingBlocks.Core.Realtime;
 using Zajednica.Feed.Core.Domain.Intents;
+using Zajednica.Feed.Core.Domain.Intents.Actions;
 
 namespace Zajednica.Feed.Core.UseCases.Intents;
 

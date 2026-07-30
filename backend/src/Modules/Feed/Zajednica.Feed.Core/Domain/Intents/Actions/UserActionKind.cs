@@ -1,4 +1,4 @@
-namespace Zajednica.Feed.Core.Domain.Intents;
+namespace Zajednica.Feed.Core.Domain.Intents.Actions;
 
 public enum UserActionKind
 {

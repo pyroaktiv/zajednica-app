@@ -1,5 +1,6 @@
 using Zajednica.Community.Api.Internal;
 using Zajednica.Feed.Core.Domain.Intents;
+using Zajednica.Feed.Core.Domain.Intents.Actions;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 
 namespace Zajednica.Feed.Core.UseCases.Intents;

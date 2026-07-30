@@ -26,35 +26,41 @@ internal sealed class PostEfRepository(FeedDbContext db) : IPostRepository
     public bool Exists(Guid postId, Guid communityId) =>
         db.Posts.Any(p => p.Id == postId && p.CommunityId == communityId);
 
-    public CursorPage<Post, DateTime> GetPage(Guid communityId, DateTime? before, int limit)
+    public CursorPage<Post, PageCursor> GetPage(Guid communityId, PageCursor? before, int limit)
     {
         var query = db.Posts.AsNoTracking().Where(p => p.CommunityId == communityId);
 
-        if (before is not null)
-            query = query.Where(p => p.DateCreated < before);
+        if (before is { } cursor)
+            query = query.Where(p => p.DateCreated < cursor.At
+                                     || (p.DateCreated == cursor.At && p.Id.CompareTo(cursor.Id) < 0));
 
         var items = query
             .OrderByDescending(p => p.DateCreated)
+            .ThenByDescending(p => p.Id)
             .Take(limit)
             .ToList();
 
-        return new CursorPage<Post, DateTime>(items, items.Count < limit ? null : items[^1].DateCreated);
+        return new CursorPage<Post, PageCursor>(items,
+            items.Count < limit ? null : new PageCursor(items[^1].DateCreated, items[^1].Id));
     }
 
-    public CursorPage<Comment, DateTime> GetCommentPage(Guid postId, Guid? parentCommentId, DateTime? after, int limit)
+    public CursorPage<Comment, PageCursor> GetCommentPage(Guid postId, Guid? parentCommentId, PageCursor? after, int limit)
     {
         var query = parentCommentId is null
             ? db.Comments.AsNoTracking().Where(c => c.PostId == postId && c.ParentCommentId == null)
             : db.Comments.AsNoTracking().Where(c => c.PostId == postId && c.ParentCommentId == parentCommentId);
 
-        if (after is not null)
-            query = query.Where(c => c.Date > after);
+        if (after is { } cursor)
+            query = query.Where(c => c.Date > cursor.At
+                                     || (c.Date == cursor.At && c.Id.CompareTo(cursor.Id) > 0));
 
         var items = query
             .OrderBy(c => c.Date)
+            .ThenBy(c => c.Id)
             .Take(limit)
             .ToList();
 
-        return new CursorPage<Comment, DateTime>(items, items.Count < limit ? null : items[^1].Date);
+        return new CursorPage<Comment, PageCursor>(items,
+            items.Count < limit ? null : new PageCursor(items[^1].Date, items[^1].Id));
     }
 }

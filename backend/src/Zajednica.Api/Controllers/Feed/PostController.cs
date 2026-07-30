@@ -46,7 +46,7 @@ public sealed class PostController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<CursorPage<PostDto, DateTime>> GetPage(Guid communityId, [FromQuery] DateTime? before, [FromQuery] int limit)
+    public ActionResult<CursorPage<PostDto, PageCursor>> GetPage(Guid communityId, [FromQuery] PageCursor? before, [FromQuery] int limit)
     {
         return Ok(_posts.GetPage(User.AccountId(), communityId, before, limit));
     }

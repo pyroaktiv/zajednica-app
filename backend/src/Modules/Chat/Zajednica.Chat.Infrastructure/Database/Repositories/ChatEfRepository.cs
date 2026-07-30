@@ -19,7 +19,7 @@ internal sealed class ChatEfRepository(ChatDbContext db) : IChatRepository
     public ChatAggregate? Get(Guid id) =>
         db.Chats.Include(c => c.Participants).FirstOrDefault(c => c.Id == id);
 
-    public CursorPage<TChat, DateTime> GetPage<TChat>(Guid communityId, Guid membershipId, DateTime? before, int limit)
+    public CursorPage<TChat, PageCursor> GetPage<TChat>(Guid communityId, Guid membershipId, PageCursor? before, int limit)
         where TChat : ChatAggregate
     {
         var query = db.Chats
@@ -28,15 +28,18 @@ internal sealed class ChatEfRepository(ChatDbContext db) : IChatRepository
             .Include(c => c.Participants)
             .Where(c => c.CommunityId == communityId && c.Participants.Any(p => p.MembershipId == membershipId));
 
-        if (before is not null)
-            query = query.Where(c => c.LastActivityAt < before);
+        if (before is { } cursor)
+            query = query.Where(c => c.LastActivityAt < cursor.At
+                                     || (c.LastActivityAt == cursor.At && c.Id.CompareTo(cursor.Id) < 0));
 
         var items = query
             .OrderByDescending(c => c.LastActivityAt)
+            .ThenByDescending(c => c.Id)
             .Take(limit)
             .ToList();
 
-        return new CursorPage<TChat, DateTime>(items, items.Count < limit ? null : items[^1].LastActivityAt);
+        return new CursorPage<TChat, PageCursor>(items,
+            items.Count < limit ? null : new PageCursor(items[^1].LastActivityAt, items[^1].Id));
     }
 
     public DirectChat? GetDirect(Guid communityId, Guid membershipId, Guid otherMembershipId) =>
@@ -80,18 +83,21 @@ internal sealed class ChatEfRepository(ChatDbContext db) : IChatRepository
         db.SaveChanges();
     }
 
-    public CursorPage<Message, DateTime> GetMessagePage(Guid chatId, DateTime? after, int limit)
+    public CursorPage<Message, PageCursor> GetMessagePage(Guid chatId, PageCursor? after, int limit)
     {
         var query = db.Messages.AsNoTracking().Where(m => m.ChatId == chatId);
 
-        if (after is not null)
-            query = query.Where(m => m.Date > after);
+        if (after is { } cursor)
+            query = query.Where(m => m.Date > cursor.At
+                                     || (m.Date == cursor.At && m.Id.CompareTo(cursor.Id) > 0));
 
         var items = query
             .OrderBy(m => m.Date)
+            .ThenBy(m => m.Id)
             .Take(limit)
             .ToList();
 
-        return new CursorPage<Message, DateTime>(items, items.Count < limit ? null : items[^1].Date);
+        return new CursorPage<Message, PageCursor>(items,
+            items.Count < limit ? null : new PageCursor(items[^1].Date, items[^1].Id));
     }
 }

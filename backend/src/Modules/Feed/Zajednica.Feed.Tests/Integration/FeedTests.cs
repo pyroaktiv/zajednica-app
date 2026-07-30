@@ -4,6 +4,7 @@ using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Feed.Api.Dto.Comments;
 using Zajednica.Feed.Api.Dto.Posts;
+using Zajednica.Feed.Core.Domain.Posts;
 
 namespace Zajednica.Feed.Tests.Integration;
 
@@ -22,7 +23,7 @@ public class FeedTests : BaseFeedIntegrationTest
         var middle = CreateGeneral(scope, owner.AccountId, community.Id, "Puklo je", "Emergency");
         var newest = CreateGeneral(scope, owner.AccountId, community.Id, "Treca", "Plain");
 
-        var first = Value<CursorPage<PostDto, DateTime>>((Posts(scope, owner.AccountId).GetPage(community.Id, null, 2)).Result!);
+        var first = Value<CursorPage<PostDto, PageCursor>>((Posts(scope, owner.AccountId).GetPage(community.Id, null, 2)).Result!);
 
         first.Items.Select(p => p.Id).ShouldBe([newest.Id, middle.Id]);
         first.Items[1].Kind.ShouldBe("Emergency");
@@ -30,7 +31,7 @@ public class FeedTests : BaseFeedIntegrationTest
         first.Items[0].AuthorUsername.ShouldNotBeNullOrEmpty();
         first.NextCursor.ShouldNotBeNull();
 
-        var rest = Value<CursorPage<PostDto, DateTime>>((Posts(scope, owner.AccountId)
+        var rest = Value<CursorPage<PostDto, PageCursor>>((Posts(scope, owner.AccountId)
             .GetPage(community.Id, first.NextCursor, 2)).Result!);
 
         rest.Items.Select(p => p.Id).ShouldBe([oldest.Id]);
@@ -65,18 +66,18 @@ public class FeedTests : BaseFeedIntegrationTest
 
         Db(scope).ChangeTracker.Clear();
 
-        var page = Value<CursorPage<CommentDto, DateTime>>((Comments(scope, owner.AccountId)
+        var page = Value<CursorPage<CommentDto, PageCursor>>((Comments(scope, owner.AccountId)
             .GetRoots(community.Id, post.Id, null, 2)).Result!);
         page.Items.Select(c => c.Text).ShouldBe(["Prvi", "Drugi"]);
         page.Items.Select(c => c.HasReplies).ShouldBe([true, false]);
         page.NextCursor.ShouldNotBeNull();
 
-        var rest = Value<CursorPage<CommentDto, DateTime>>((Comments(scope, owner.AccountId)
+        var rest = Value<CursorPage<CommentDto, PageCursor>>((Comments(scope, owner.AccountId)
             .GetRoots(community.Id, post.Id, page.NextCursor, 2)).Result!);
         rest.Items.Select(c => c.Text).ShouldBe(["Treci"]);
         rest.NextCursor.ShouldBeNull();
 
-        var replies = Value<CursorPage<CommentDto, DateTime>>((Comments(scope, owner.AccountId)
+        var replies = Value<CursorPage<CommentDto, PageCursor>>((Comments(scope, owner.AccountId)
             .GetReplies(community.Id, post.Id, first.Id, null, 10)).Result!);
         replies.Items.Select(c => c.Text).ShouldBe(["Odgovor na prvi"]);
         replies.Items.Single().HasReplies.ShouldBeFalse();
@@ -120,6 +121,29 @@ public class FeedTests : BaseFeedIntegrationTest
         var closed = Value<PostDto>((Posts(scope, owner.AccountId)
             .CloseHelpRequest(community.Id, help.Id)).Result!);
         closed.Closed.ShouldBe(true);
+    }
+
+    [Fact]
+    public void Posts_written_in_the_same_instant_are_paged_without_losing_or_repeating_one()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var (community, owner) = CreateCommunity(scope);
+        var sameInstant = DateTime.UtcNow;
+
+        foreach (var text in new[] { "Prva", "Druga", "Treca" })
+            Db(scope).Posts.Add(new GeneralTopicPost(community.Id, owner.MembershipId, text,
+                GeneralPostKind.Plain, null, sameInstant));
+        Db(scope).SaveChanges();
+        Db(scope).ChangeTracker.Clear();
+
+        var first = Value<CursorPage<PostDto, PageCursor>>(
+            (Posts(scope, owner.AccountId).GetPage(community.Id, null, 2)).Result!);
+        var rest = Value<CursorPage<PostDto, PageCursor>>(
+            (Posts(scope, owner.AccountId).GetPage(community.Id, first.NextCursor, 2)).Result!);
+
+        first.Items.Count.ShouldBe(2);
+        rest.Items.Count.ShouldBe(1);
+        first.Items.Concat(rest.Items).Select(p => p.Text).ShouldBe(["Prva", "Druga", "Treca"], ignoreOrder: true);
     }
 
     private static PostDto CreateGeneral(IServiceScope scope, Guid accountId, Guid communityId,

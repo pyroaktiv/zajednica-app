@@ -1,6 +1,9 @@
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
+using Zajednica.Feed.Core.Domain;
 using Zajednica.Feed.Core.Domain.Intents;
+using Zajednica.Feed.Core.Domain.Intents.Actions;
+using Zajednica.Feed.Core.Domain.Intents.Events;
 
 namespace Zajednica.Feed.Tests.Unit;
 
@@ -11,9 +14,21 @@ public class IntentTests
     private static readonly Guid Author = Guid.NewGuid();
     private static readonly Guid Target = Guid.NewGuid();
 
+    private static IntentContext ContextOf(Guid author, int eligibleVoterCount,
+        MembershipStatus targetStatus = MembershipStatus.Confirmed) =>
+        new IntentContext.Builder()
+            .WithCommunityId(Community)
+            .WithAuthorMembershipId(author)
+            .WithEligibleVoterCount(eligibleVoterCount)
+            .WithTargetMembershipStatus(targetStatus)
+            .At(Now)
+            .Build();
+
+    private static UserTargetingAction BanOf(Guid author, int eligibleVoterCount) =>
+        new(UserActionKind.Ban, Target, ContextOf(author, eligibleVoterCount));
+
     private static Intent Ban(int eligibleVoterCount = 10) =>
-        Intent.Open(UserTargetingAction.For(UserActionKind.Ban, Target, true), Community, Author,
-            "Ne postuje kucni red.", eligibleVoterCount, Now);
+        Intent.Open(BanOf(Author, eligibleVoterCount), "Ne postuje kucni red.");
 
     private static Intent Replay(Intent intent) => Intent.Load(intent.NewEvents);
 
@@ -21,15 +36,42 @@ public class IntentTests
     public void An_intent_can_only_be_opened_about_a_confirmed_member()
     {
         Should.Throw<EntityValidationException>(() =>
-            UserTargetingAction.For(UserActionKind.Ban, Target, false));
+            new UserTargetingAction(UserActionKind.Ban, Target,
+                ContextOf(Author, 10, MembershipStatus.Unconfirmed)));
+    }
+
+    [Fact]
+    public void An_action_refuses_a_context_that_is_silent_about_what_its_own_rules_need()
+    {
+        Should.Throw<EntityValidationException>(() =>
+            new UserTargetingAction(UserActionKind.Ban, Target, ContextOf(Author, 10, MembershipStatus.Unknown)));
+
+        Should.Throw<EntityValidationException>(() =>
+            new UserTargetingAction(UserActionKind.Ban, Target, ContextOf(Guid.Empty, 10)));
     }
 
     [Fact]
     public void An_intent_cannot_be_opened_by_the_member_it_is_about()
     {
-        Should.Throw<EntityValidationException>(() =>
-            Intent.Open(UserTargetingAction.For(UserActionKind.Ban, Target, true), Community, Target,
-                "Ne postuje kucni red.", 10, Now));
+        Should.Throw<EntityValidationException>(() => BanOf(Target, 10));
+    }
+
+    [Fact]
+    public void A_context_carries_only_what_it_was_given()
+    {
+        var context = new IntentContext.Builder().WithCommunityId(Community).Build();
+
+        context.CommunityId.ShouldBe(Community);
+        context.AuthorMembershipId.ShouldBe(Guid.Empty);
+        context.EligibleVoterCount.ShouldBe(0);
+        context.TargetMembershipStatus.ShouldBe(MembershipStatus.Unknown);
+    }
+
+    [Fact]
+    public void Two_actions_on_the_same_target_in_the_same_context_are_the_same_value()
+    {
+        BanOf(Author, 10).ShouldBe(BanOf(Author, 10));
+        BanOf(Author, 10).ShouldNotBe(BanOf(Author, 11));
     }
 
     [Fact]
@@ -66,12 +108,15 @@ public class IntentTests
     [Fact]
     public void Replaying_the_stream_reconstructs_the_action_the_intent_was_opened_with()
     {
-        var replayed = Replay(Ban());
+        var intent = Ban();
+
+        var replayed = Replay(intent);
 
         var action = replayed.Action.ShouldBeOfType<UserTargetingAction>();
         action.Kind.ShouldBe(UserActionKind.Ban);
         action.TargetMembershipId.ShouldBe(Target);
-        replayed.Action.Name.ShouldBe("Ban");
+        action.Name.ShouldBe("Ban");
+        action.ShouldBe(intent.Action);
     }
 
     [Fact]

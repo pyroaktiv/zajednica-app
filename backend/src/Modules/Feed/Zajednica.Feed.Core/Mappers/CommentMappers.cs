@@ -18,8 +18,8 @@ public static class CommentMappers
             comment.HasReplies,
             comment.Date);
 
-    public static CursorPage<CommentDto, DateTime> ToDtoPage(
-        this CursorPage<Comment, DateTime> cursorPage, IReadOnlyDictionary<Guid, AccountProfileDto> authors) =>
+    public static CursorPage<CommentDto, PageCursor> ToDtoPage(
+        this CursorPage<Comment, PageCursor> cursorPage, IReadOnlyDictionary<Guid, AccountProfileDto> authors) =>
         new(cursorPage.Items.Select(c => c.ToDto(authors.GetValueOrDefault(c.AuthorMembershipId))).ToList(),
             cursorPage.NextCursor);
 }

@@ -46,7 +46,7 @@ public static class ChatMappers
             HasUnread: chat.HasUnread(viewerMembershipId));
     }
 
-    public static CursorPage<ChatSummaryDto, DateTime> ToSummaryPage<TChat>(this CursorPage<TChat, DateTime> page,
+    public static CursorPage<ChatSummaryDto, PageCursor> ToSummaryPage<TChat>(this CursorPage<TChat, PageCursor> page,
         Guid viewerMembershipId, IReadOnlyDictionary<Guid, AccountProfileDto> profiles)
         where TChat : ChatAggregate =>
         new(page.Items.Select(c => c.ToSummaryDto(viewerMembershipId, profiles)).ToList(),

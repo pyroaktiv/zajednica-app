@@ -1,10 +1,15 @@
-namespace Zajednica.Feed.Core.Domain.Intents;
+using Zajednica.BuildingBlocks.Core.Domain;
+using Zajednica.Feed.Core.Domain.Intents.Events;
 
-public abstract class IntentAction
+namespace Zajednica.Feed.Core.Domain.Intents.Actions;
+
+public abstract class IntentAction : ValueObject
 {
+    public IntentContext Context { get; }
+    
     public abstract string Name { get; }
 
-    public abstract void EnsureValidFor(IntentContext context);
+    protected IntentAction(IntentContext context) => Context = context;
 
-    public abstract IntentOpened ToOpenedEvent(IntentContext context, string text);
+    public abstract IntentOpened ToOpenedEvent(string text);
 }

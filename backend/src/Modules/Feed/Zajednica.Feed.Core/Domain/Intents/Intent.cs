@@ -1,5 +1,7 @@
 using Zajednica.BuildingBlocks.Core.Domain.EventSourcing;
 using Zajednica.BuildingBlocks.Core.Exceptions;
+using Zajednica.Feed.Core.Domain.Intents.Actions;
+using Zajednica.Feed.Core.Domain.Intents.Events;
 
 namespace Zajednica.Feed.Core.Domain.Intents;
 
@@ -10,13 +12,14 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
     private readonly Dictionary<Guid, bool> _votes = [];
 
     public IntentAction Action { get; private set; }
-    public Guid CommunityId { get; private set; }
-    public Guid AuthorMembershipId { get; private set; }
     public string Text { get; private set; } = string.Empty;
-    public DateTime DateCreated { get; private set; }
     public DateTime? DateOfClosure { get; private set; }
-    public int EligibleVoterCount { get; private set; }
     public IntentStatus Status { get; private set; }
+
+    public Guid CommunityId => Action.Context.CommunityId;
+    public Guid AuthorMembershipId => Action.Context.AuthorMembershipId;
+    public DateTime DateCreated => Action.Context.Now;
+    public int EligibleVoterCount => Action.Context.EligibleVoterCount;
 
     public DateTime Deadline => DateCreated.Add(VotingWindow);
     public int VotesFor => _votes.Count(v => v.Value);
@@ -24,19 +27,15 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
 
     private Intent() { }
 
-    public static Intent Open(IntentAction action, Guid communityId, Guid authorMembershipId, string text,
-        int eligibleVoterCount, DateTime now)
+    public static Intent Open(IntentAction action, string text)
     {
         if (string.IsNullOrWhiteSpace(text))
             throw new EntityValidationException("Text is required.");
-        if (eligibleVoterCount < 2)
+        if (action.Context.EligibleVoterCount < 2)
             throw new EntityValidationException("An intent needs at least two eligible voters.");
 
-        var context = new IntentContext(communityId, authorMembershipId, eligibleVoterCount, now);
-        action.EnsureValidFor(context);
-
         var intent = new Intent();
-        intent.RegisterEvent(action.ToOpenedEvent(context, text));
+        intent.RegisterEvent(action.ToOpenedEvent(text));
 
         return intent;
     }
@@ -97,11 +96,7 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
         {
             case IntentOpened opened:
                 Action = opened.ToAction();
-                CommunityId = opened.CommunityId;
-                AuthorMembershipId = opened.AuthorMembershipId;
                 Text = opened.Text;
-                DateCreated = opened.OccurredAt;
-                EligibleVoterCount = opened.EligibleVoterCount;
                 Status = IntentStatus.Open;
                 break;
 

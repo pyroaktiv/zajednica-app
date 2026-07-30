@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Feed.Core.Domain.Intents;
+using Zajednica.Feed.Core.Domain.Intents.Events;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 using Zajednica.Feed.Core.UseCases.Queries;
 
@@ -23,19 +24,22 @@ internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRe
         return stream.Count == 0 ? null : Intent.Load(stream);
     }
 
-    public CursorPage<IntentView, DateTime> GetPage(Guid communityId, DateTime? before, int limit)
+    public CursorPage<IntentView, PageCursor> GetPage(Guid communityId, PageCursor? before, int limit)
     {
         var query = db.IntentViews.AsNoTracking().Where(v => v.CommunityId == communityId);
 
-        if (before is not null)
-            query = query.Where(v => v.DateCreated < before);
+        if (before is { } cursor)
+            query = query.Where(v => v.DateCreated < cursor.At
+                                     || (v.DateCreated == cursor.At && v.Id.CompareTo(cursor.Id) < 0));
 
         var items = query
             .OrderByDescending(v => v.DateCreated)
+            .ThenByDescending(v => v.Id)
             .Take(limit)
             .ToList();
 
-        return new CursorPage<IntentView, DateTime>(items, items.Count < limit ? null : items[^1].DateCreated);
+        return new CursorPage<IntentView, PageCursor>(items,
+            items.Count < limit ? null : new PageCursor(items[^1].DateCreated, items[^1].Id));
     }
 
     public IntentView? GetView(Guid intentId) =>

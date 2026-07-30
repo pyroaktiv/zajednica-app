@@ -27,7 +27,7 @@ public sealed class IntentQueryService(
         return presenter.Voters(intentQueries.GetVotes(intentId));
     }
 
-    public CursorPage<IntentSummaryDto, DateTime> GetPage(Guid accountId, Guid communityId, DateTime? before, int limit)
+    public CursorPage<IntentSummaryDto, PageCursor> GetPage(Guid accountId, Guid communityId, PageCursor? before, int limit)
     {
         access.RequireConfirmed(accountId, communityId);
 

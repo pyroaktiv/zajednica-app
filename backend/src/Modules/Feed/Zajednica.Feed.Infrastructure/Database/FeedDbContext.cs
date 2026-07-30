@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Zajednica.Feed.Core.Domain.Intents;
+using Zajednica.Feed.Core.Domain.Intents.Events;
 using Zajednica.Feed.Core.UseCases.Queries;
 using Zajednica.Feed.Core.Domain.Posts;
 

@@ -2,6 +2,7 @@ using Zajednica.Community.Api.Internal;
 using Zajednica.Feed.Api.Dto.Intents;
 using Zajednica.Feed.Api.Public;
 using Zajednica.Feed.Core.Domain.Intents;
+using Zajednica.Feed.Core.Domain.Intents.Actions;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 
 namespace Zajednica.Feed.Core.UseCases.Intents;
@@ -51,11 +52,15 @@ public sealed class IntentService(
     private IntentDetailsDto Open(
         UserActionKind kind, Guid communityId, Guid authorMembershipId, Guid targetMembershipId, string text)
     {
-        var action = UserTargetingAction.For(kind, targetMembershipId,
-            access.IsConfirmedMember(communityId, targetMembershipId));
+        var context = new IntentContext.Builder()
+            .WithCommunityId(communityId)
+            .WithAuthorMembershipId(authorMembershipId)
+            .WithEligibleVoterCount(audience.GetConfirmedCount(communityId))
+            .WithTargetMembershipStatus(access.StatusOf(communityId, targetMembershipId))
+            .At(DateTime.UtcNow)
+            .Build();
 
-        var intent = Intent.Open(action, communityId, authorMembershipId, text,
-            audience.GetConfirmedCount(communityId), DateTime.UtcNow);
+        var intent = Intent.Open(new UserTargetingAction(kind, targetMembershipId, context), text);
 
         intents.Add(intent);
         notifier.Opened(intent);

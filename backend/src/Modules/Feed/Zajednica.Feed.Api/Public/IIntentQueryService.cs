@@ -7,5 +7,5 @@ public interface IIntentQueryService
 {
     IntentDetailsDto Get(Guid accountId, Guid communityId, Guid intentId);
     IReadOnlyList<IntentVoterDto> GetVotes(Guid accountId, Guid communityId, Guid intentId);
-    CursorPage<IntentSummaryDto, DateTime> GetPage(Guid accountId, Guid communityId, DateTime? before, int limit);
+    CursorPage<IntentSummaryDto, PageCursor> GetPage(Guid accountId, Guid communityId, PageCursor? before, int limit);
 }

@@ -1,4 +1,6 @@
-namespace Zajednica.Feed.Core.Domain.Intents;
+using Zajednica.Feed.Core.Domain.Intents.Actions;
+
+namespace Zajednica.Feed.Core.Domain.Intents.Events;
 
 public abstract class IntentOpened : IntentEvent
 {
@@ -8,15 +10,21 @@ public abstract class IntentOpened : IntentEvent
     public int EligibleVoterCount { get; private set; }
 
     protected IntentOpened() { }
-
-    protected IntentOpened(Guid communityId, Guid authorMembershipId, string text, int eligibleVoterCount, DateTime at)
-        : base(at)
+    
+    protected IntentOpened(IntentContext context, string text) : base(context.Now)
     {
-        CommunityId = communityId;
-        AuthorMembershipId = authorMembershipId;
+        CommunityId = context.CommunityId;
+        AuthorMembershipId = context.AuthorMembershipId;
         Text = text.Trim();
-        EligibleVoterCount = eligibleVoterCount;
+        EligibleVoterCount = context.EligibleVoterCount;
     }
 
     public abstract IntentAction ToAction();
+
+    protected IntentContext.Builder ToContextBuilder() =>
+        new IntentContext.Builder()
+            .WithCommunityId(CommunityId)
+            .WithAuthorMembershipId(AuthorMembershipId)
+            .WithEligibleVoterCount(EligibleVoterCount)
+            .At(OccurredAt);
 }

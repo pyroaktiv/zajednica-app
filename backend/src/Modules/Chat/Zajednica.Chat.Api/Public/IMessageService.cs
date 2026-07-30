@@ -9,5 +9,5 @@ public interface IMessageService
     MessageDto SendVoice(Guid accountId, Guid communityId, Guid chatId, SendVoiceRequest request);
     void MarkRead(Guid accountId, Guid communityId, Guid chatId);
 
-    CursorPage<MessageDto, DateTime> GetPage(Guid accountId, Guid communityId, Guid chatId, DateTime? after, int limit);
+    CursorPage<MessageDto, PageCursor> GetPage(Guid accountId, Guid communityId, Guid chatId, PageCursor? after, int limit);
 }

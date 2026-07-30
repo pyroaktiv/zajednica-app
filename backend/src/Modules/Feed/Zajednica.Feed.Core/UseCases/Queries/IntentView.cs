@@ -1,4 +1,5 @@
 using Zajednica.Feed.Core.Domain.Intents;
+using Zajednica.Feed.Core.Domain.Intents.Actions;
 
 namespace Zajednica.Feed.Core.UseCases.Queries;
 
