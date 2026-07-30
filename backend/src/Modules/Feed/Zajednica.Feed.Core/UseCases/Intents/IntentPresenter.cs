@@ -30,14 +30,14 @@ public sealed class IntentPresenter(MemberDirectory directory)
             .ToList();
     }
 
-    public CursorPage<IntentSummaryDto> Summaries(CursorPage<IntentView> page)
+    public CursorPage<IntentSummaryDto, DateTime> Summaries(CursorPage<IntentView, DateTime> page)
     {
         var profiles = directory.Profiles(page.Items
             .Where(v => v.TargetMembershipId is not null)
             .Select(v => v.TargetMembershipId!.Value)
             .ToList());
 
-        return new CursorPage<IntentSummaryDto>(
+        return new CursorPage<IntentSummaryDto, DateTime>(
             page.Items
                 .Select(v => v.ToSummaryDto(
                     v.TargetMembershipId is { } target ? profiles.GetValueOrDefault(target) : null))

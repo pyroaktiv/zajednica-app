@@ -4,7 +4,7 @@ namespace Zajednica.Community.Core.Domain;
 
 public class CertificationService
 {
-    public Certificate Certify(Membership issuer, Membership candidate, DateTime now)
+    public void Certify(Membership issuer, Membership candidate, DateTime now)
     {
         if (!issuer.HasRole(CommunityRole.Issuer))
             throw new EntityValidationException("Issuer does not have the right to certify members.");
@@ -13,8 +13,6 @@ public class CertificationService
         if (issuer.CommunityId != candidate.CommunityId)
             throw new EntityValidationException("Issuer and candidate belong to different communities.");
 
-        var certificate = new Certificate(candidate.CommunityId, issuer.Id, candidate.Id, now);
-        candidate.Confirm();
-        return certificate;
+        candidate.CertifyBy(issuer.Id, now);
     }
 }

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.BuildingBlocks.Core.Storage;
@@ -13,11 +13,13 @@ public class LocalFileStorageTests : IDisposable
     [Fact]
     public void Saves_under_the_folder_of_its_kind_and_returns_a_public_url()
     {
-        var storage = new LocalFileStorage(Options.Create(new StorageOptions
-        {
-            LocalPath = _root,
-            PublicBaseUrl = "http://localhost:5265"
-        }));
+        var storage = new LocalFileStorage(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Storage:LocalPath"] = _root,
+                ["Storage:PublicBaseUrl"] = "http://localhost:5265"
+            })
+            .Build());
         var stored = FileKind.Image.AcceptUpload("balcony.PNG", 12);
 
         var url = storage.Save(new MemoryStream([1, 2, 3]), stored);

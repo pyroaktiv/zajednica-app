@@ -1,25 +1,31 @@
 using System.Net;
 using System.Net.Mail;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 using Zajednica.Identity.Core.UseCases;
 
 namespace Zajednica.Identity.Infrastructure.Email;
 
-public sealed class SmtpEmailSender(IOptions<SmtpOptions> options) : IEmailSender
+public sealed class SmtpEmailSender(IConfiguration configuration) : IEmailSender
 {
-    private readonly SmtpOptions _options = options.Value;
+    private readonly string? _host = configuration["Smtp:Host"];
+    private readonly int _port = configuration.GetValue("Smtp:Port", 587);
+    private readonly string? _username = configuration["Smtp:Username"];
+    private readonly string? _password = configuration["Smtp:Password"];
+    private readonly string _fromAddress = configuration["Smtp:FromAddress"] ?? "no-reply@zajednica.app";
+    private readonly string _fromName = configuration["Smtp:FromName"] ?? "zajednica.app";
+    private readonly bool _useSsl = configuration.GetValue("Smtp:UseSsl", true);
 
     public void Send(string toEmail, string subject, string body)
     {
-        using var client = new SmtpClient(_options.Host, _options.Port)
+        using var client = new SmtpClient(_host, _port)
         {
-            EnableSsl = _options.UseSsl,
-            Credentials = new NetworkCredential(_options.Username, _options.Password)
+            EnableSsl = _useSsl,
+            Credentials = new NetworkCredential(_username, _password)
         };
 
         using var message = new MailMessage
         {
-            From = new MailAddress(_options.FromAddress, _options.FromName),
+            From = new MailAddress(_fromAddress, _fromName),
             Subject = subject,
             Body = body,
             IsBodyHtml = true

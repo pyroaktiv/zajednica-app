@@ -10,10 +10,8 @@ namespace Zajednica.Community.Core.UseCases.Internal;
 
 public sealed class InternalMembershipService(
     IMembershipRepository memberships,
-    IBlacklistRepository blacklist,
     IRealtimePusher realtime,
-    ManagerElectionService election,
-    MembershipBanService ban) : IInternalMembershipService
+    ManagerElectionService election) : IInternalMembershipService
 {
     public MembershipContextDto? GetContext(Guid accountId, Guid communityId) =>
         (memberships.Get(accountId, communityId))?.ToContextDto();
@@ -36,23 +34,12 @@ public sealed class InternalMembershipService(
     public int GetConfirmedCount(Guid communityId) =>
         memberships.CountConfirmed(communityId);
 
-    public bool AreEligible(IReadOnlyCollection<Guid> membershipIds)
-    {
-        if (membershipIds.Count == 0)
-            return false;
-
-        var found = memberships.GetManyByIds(membershipIds);
-        return found.Count == membershipIds.Distinct().Count()
-               && found.All(m => m.IsActive() && m.IsConfirmed());
-    }
-
     public void Ban(Guid membershipId, Guid intentId)
     {
         var membership = Require(membershipId);
 
-        var entry = ban.Ban(membership, intentId, DateTime.UtcNow);
+        membership.Ban(intentId, DateTime.UtcNow);
         memberships.Update(membership);
-        blacklist.Add(entry);
 
         PushRolesChanged(membership);
     }

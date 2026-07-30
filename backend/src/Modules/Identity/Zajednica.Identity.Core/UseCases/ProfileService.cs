@@ -6,30 +6,22 @@ using Zajednica.Identity.Core.Mappers;
 
 namespace Zajednica.Identity.Core.UseCases;
 
-
-public sealed class ProfileService : IProfileService
+public sealed class ProfileService(IAccountRepository accounts) : IProfileService
 {
-    private readonly IAccountRepository _accounts;
-
-    public ProfileService(IAccountRepository accounts)
-    {
-        _accounts = accounts;
-    }
-
     public ProfileDto Get(Guid accountId)
     {
-        var account = _accounts.GetById(accountId)
+        var account = accounts.GetById(accountId)
             ?? throw new NotFoundException("Account not found.");
         return account.ToProfileDto();
     }
 
     public ProfileDto Update(Guid accountId, UpdateProfileRequest request)
     {
-        var account = _accounts.GetById(accountId)
+        var account = accounts.GetById(accountId)
             ?? throw new NotFoundException("Account not found.");
 
         account.UpdateProfile(request.FirstName, request.LastName, request.Phone, request.ContactEmail, request.ImageUrl);
-        _accounts.Update(account);
+        accounts.Update(account);
 
         return account.ToProfileDto();
     }

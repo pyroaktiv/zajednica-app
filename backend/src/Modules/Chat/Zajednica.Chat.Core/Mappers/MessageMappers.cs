@@ -15,7 +15,7 @@ public static class MessageMappers
         _ => throw new EntityValidationException("Unknown message type.")
     };
 
-    public static CursorPage<MessageDto> ToDtoPage(this CursorPage<Message> page,
+    public static CursorPage<MessageDto, DateTime> ToDtoPage(this CursorPage<Message, DateTime> page,
         IReadOnlyDictionary<Guid, AccountProfileDto> senders) =>
         new(page.Items.Select(m => m.ToDto(senders.GetValueOrDefault(m.SenderMembershipId))).ToList(),
             page.NextCursor);

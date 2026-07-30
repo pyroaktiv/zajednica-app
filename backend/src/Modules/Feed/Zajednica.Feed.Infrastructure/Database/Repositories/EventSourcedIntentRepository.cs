@@ -23,7 +23,7 @@ internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRe
         return stream.Count == 0 ? null : Intent.Load(stream);
     }
 
-    public CursorPage<IntentView> GetPage(Guid communityId, DateTime? before, int limit)
+    public CursorPage<IntentView, DateTime> GetPage(Guid communityId, DateTime? before, int limit)
     {
         var query = db.IntentViews.AsNoTracking().Where(v => v.CommunityId == communityId);
 
@@ -35,7 +35,7 @@ internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRe
             .Take(limit)
             .ToList();
 
-        return new CursorPage<IntentView>(items, items.Count < limit ? null : items[^1].DateCreated);
+        return new CursorPage<IntentView, DateTime>(items, items.Count < limit ? null : items[^1].DateCreated);
     }
 
     public IntentView? GetView(Guid intentId) =>

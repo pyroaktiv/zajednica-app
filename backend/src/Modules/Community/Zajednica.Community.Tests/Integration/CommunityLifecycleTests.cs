@@ -104,17 +104,18 @@ public class CommunityLifecycleTests : BaseCommunityIntegrationTest
     }
 
     [Fact]
-    public void A_blacklisted_account_cannot_join_again()
+    public void A_banned_account_cannot_join_again()
     {
         using var scope = Factory.Services.CreateScope();
         var creatorId = NewAccount(scope);
         var bannedId = NewAccount(scope);
         var community = CreateCommunity(scope, creatorId);
         var qrToken = QrToken(scope, creatorId, community.Id);
-        Join(scope, bannedId, qrToken);
+        var joined = Join(scope, bannedId, qrToken);
 
         var db = Db(scope);
-        db.BlacklistEntries.Add(new BlacklistEntry(community.Id, bannedId, DateTime.UtcNow));
+        var membership = db.Memberships.Single(m => m.Id == joined.MembershipId);
+        membership.Ban(null, DateTime.UtcNow);
         db.SaveChanges();
         db.ChangeTracker.Clear();
 

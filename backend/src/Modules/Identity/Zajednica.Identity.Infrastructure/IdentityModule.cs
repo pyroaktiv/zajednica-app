@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Zajednica.Identity.Api.Internal;
 using Zajednica.Identity.Api.Public;
+using Zajednica.Identity.Core.Domain;
 using Zajednica.Identity.Core.Domain.RepositoryInterfaces;
 using Zajednica.Identity.Core.Infrastructural.RepositoryInterfaces;
 using Zajednica.Identity.Core.UseCases;
@@ -19,10 +19,7 @@ public static class IdentityModule
 {
     public static IServiceCollection AddIdentityModule(this IServiceCollection services, string connectionString, IConfiguration configuration)
     {
-        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
-        services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
-        services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.SectionName));
-        services.AddSingleton<IAuthTokenSettings>(sp => sp.GetRequiredService<IOptions<AuthOptions>>().Value);
+        services.AddSingleton<IAuthTokenSettings, AuthTokenSettings>();
 
         services.AddDbContext<IdentityDbContext>(o =>
             o.UseNpgsql(connectionString, npg => npg.MigrationsHistoryTable("__EFMigrationsHistory", "identity")));
@@ -45,7 +42,7 @@ public static class IdentityModule
     private static void AddPersistence(IServiceCollection services)
     {
         services.AddScoped<IAccountRepository, AccountEfRepository>();
-        services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenEfRepository>();
+        services.AddScoped<IVerificationRepository, VerificationEfRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenEfRepository>();
     }
 
@@ -57,7 +54,7 @@ public static class IdentityModule
 
     private static void AddEmail(IServiceCollection services, IConfiguration configuration)
     {
-        if (configuration.GetValue<bool>($"{SmtpOptions.SectionName}:Enabled"))
+        if (configuration.GetValue<bool>("Smtp:Enabled"))
             services.AddSingleton<IEmailSender, SmtpEmailSender>();
         else
             services.AddSingleton<IEmailSender, LoggingEmailSender>();

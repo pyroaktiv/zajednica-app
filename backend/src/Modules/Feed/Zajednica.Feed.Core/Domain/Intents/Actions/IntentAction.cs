@@ -4,6 +4,7 @@ public abstract class IntentAction
 {
     public abstract string Name { get; }
 
-    public abstract IntentOpened ToOpenedEvent(Guid communityId, Guid authorMembershipId, string text,
-        int eligibleVoterCount, DateTime at);
+    public abstract void EnsureValidFor(ActionContext context);
+
+    public abstract IntentOpened ToOpenedEvent(ActionContext context, string text);
 }

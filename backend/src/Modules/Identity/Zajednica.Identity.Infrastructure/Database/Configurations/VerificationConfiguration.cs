@@ -4,11 +4,11 @@ using Zajednica.Identity.Core.Domain;
 
 namespace Zajednica.Identity.Infrastructure.Database.Configurations;
 
-public class EmailVerificationTokenConfiguration : IEntityTypeConfiguration<Verification>
+public class VerificationConfiguration : IEntityTypeConfiguration<Verification>
 {
     public void Configure(EntityTypeBuilder<Verification> builder)
     {
-        builder.ToTable("EmailVerificationTokens");
+        builder.ToTable("Verifications");
         builder.HasKey(t => t.Id);
 
         builder.Property(t => t.Token).IsRequired();

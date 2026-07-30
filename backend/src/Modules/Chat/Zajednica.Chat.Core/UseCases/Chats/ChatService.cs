@@ -57,16 +57,16 @@ public sealed class ChatService(
         return presenter.Details(chat, me.MembershipId);
     }
 
-    public CursorPage<ChatSummaryDto> GetDirectPage(Guid accountId, Guid communityId, DateTime? before, int limit) =>
+    public CursorPage<ChatSummaryDto, DateTime> GetDirectPage(Guid accountId, Guid communityId, DateTime? before, int limit) =>
         GetPage<DirectChat>(accountId, communityId, before, limit);
 
-    public CursorPage<ChatSummaryDto> GetHelpRequestPage(Guid accountId, Guid communityId, DateTime? before, int limit) =>
+    public CursorPage<ChatSummaryDto, DateTime> GetHelpRequestPage(Guid accountId, Guid communityId, DateTime? before, int limit) =>
         GetPage<HelpRequestChat>(accountId, communityId, before, limit);
 
-    public CursorPage<ChatSummaryDto> GetTemporaryPage(Guid accountId, Guid communityId, DateTime? before, int limit) =>
+    public CursorPage<ChatSummaryDto, DateTime> GetTemporaryPage(Guid accountId, Guid communityId, DateTime? before, int limit) =>
         GetPage<TemporaryChat>(accountId, communityId, before, limit);
 
-    private CursorPage<ChatSummaryDto> GetPage<TChat>(Guid accountId, Guid communityId, DateTime? before, int limit)
+    private CursorPage<ChatSummaryDto, DateTime> GetPage<TChat>(Guid accountId, Guid communityId, DateTime? before, int limit)
         where TChat : ChatAggregate
     {
         var me = access.RequireMember(accountId, communityId);

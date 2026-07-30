@@ -107,14 +107,16 @@ public class MembershipTests
     }
 
     [Fact]
-    public void Ban_marks_the_membership_banned_and_keeps_its_roles()
+    public void Ban_marks_the_membership_banned_and_records_the_intent()
     {
+        var intentId = Guid.NewGuid();
         var member = ConfirmedMember();
         member.Grant(CommunityRole.Manager, null, Now);
 
-        member.Ban(Now);
+        member.Ban(intentId, Now);
 
         member.State.ShouldBe(MembershipState.Banned);
+        member.BannedByIntentId.ShouldBe(intentId);
         member.HasRole(CommunityRole.Manager).ShouldBeTrue();
     }
 
@@ -136,9 +138,39 @@ public class MembershipTests
     public void Rejoin_is_rejected_for_a_banned_membership()
     {
         var member = ConfirmedMember();
-        member.Ban(Now);
+        member.Ban(null, Now);
+
+        Should.Throw<ForbiddenException>(() => member.Rejoin());
+    }
+
+    [Fact]
+    public void Rejoin_is_rejected_for_a_membership_that_is_still_active()
+    {
+        var member = ConfirmedMember();
 
         Should.Throw<EntityValidationException>(() => member.Rejoin());
+    }
+
+    [Fact]
+    public void CertifyBy_confirms_the_member_and_records_the_certificate()
+    {
+        var issuerId = Guid.NewGuid();
+        var member = NewMember();
+
+        member.CertifyBy(issuerId, Now);
+
+        member.CertificationStatus.ShouldBe(CertificationStatus.Confirmed);
+        member.Certificate.ShouldNotBeNull();
+        member.Certificate.IssuerMembershipId.ShouldBe(issuerId);
+        member.Certificate.Date.ShouldBe(Now);
+    }
+
+    [Fact]
+    public void CertifyBy_rejects_self_certification()
+    {
+        var member = NewMember();
+
+        Should.Throw<EntityValidationException>(() => member.CertifyBy(member.Id, Now));
     }
 
     [Fact]

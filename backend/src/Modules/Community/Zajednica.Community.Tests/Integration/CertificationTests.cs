@@ -28,9 +28,9 @@ public class CertificationTests : BaseCommunityIntegrationTest
         var db = Db(scope);
         db.ChangeTracker.Clear();
         var issuerMembership = db.Memberships.Single(m => m.AccountId == issuerId && m.CommunityId == community.Id);
-        var certificate = db.Certificates.Single(c => c.CandidateMembershipId == confirmed.MembershipId);
-        certificate.IssuerMembershipId.ShouldBe(issuerMembership.Id);
-        certificate.CommunityId.ShouldBe(community.Id);
+        var candidateMembership = db.Memberships.Single(m => m.Id == confirmed.MembershipId);
+        candidateMembership.Certificate.ShouldNotBeNull();
+        candidateMembership.Certificate.IssuerMembershipId.ShouldBe(issuerMembership.Id);
 
         db.CertificationChallenges.Count(c => c.CommunityId == community.Id).ShouldBe(0);
     }

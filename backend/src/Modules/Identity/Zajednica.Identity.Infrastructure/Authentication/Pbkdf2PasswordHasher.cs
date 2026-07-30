@@ -1,5 +1,5 @@
 using System.Security.Cryptography;
-using Zajednica.Identity.Core.UseCases;
+using Zajednica.Identity.Core.Domain;
 
 namespace Zajednica.Identity.Infrastructure.Authentication;
 

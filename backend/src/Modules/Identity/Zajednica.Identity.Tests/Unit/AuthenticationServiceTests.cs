@@ -13,7 +13,7 @@ namespace Zajednica.Identity.Tests.Unit;
 public class AuthenticationServiceTests
 {
     private readonly Mock<IAccountRepository> _accounts = new();
-    private readonly Mock<IEmailVerificationTokenRepository> _emailTokens = new();
+    private readonly Mock<IVerificationRepository> _verifications = new();
     private readonly Mock<IRefreshTokenRepository> _refreshTokens = new();
     private readonly Mock<IPasswordHasher> _passwordHasher = new();
     private readonly Mock<IAccessTokenGenerator> _accessTokens = new();
@@ -24,13 +24,13 @@ public class AuthenticationServiceTests
     public AuthenticationServiceTests()
     {
         _passwordHasher.Setup(h => h.Hash(It.IsAny<string>())).Returns("salt.hash");
-        _secureTokens.Setup(t => t.Generate()).Returns("verification-token");
+        _secureTokens.Setup(t => t.GenerateShort()).Returns("verification-token");
         _accounts.Setup(r => r.ExistsByUsername(It.IsAny<string>())).Returns(false);
         _accounts.Setup(r => r.ExistsByEmail(It.IsAny<string>())).Returns(false);
     }
 
     private AuthenticationService Sut() => new(
-        _accounts.Object, _emailTokens.Object, _refreshTokens.Object,
+        _accounts.Object, _verifications.Object, _refreshTokens.Object,
         _passwordHasher.Object, _accessTokens.Object, _secureTokens.Object,
         _email.Object, _settings.Object);
 
@@ -43,7 +43,10 @@ public class AuthenticationServiceTests
         Sut().Register(Registration());
 
         _accounts.Verify(r => r.Add(It.IsAny<Account>()), Times.Once);
-        _email.Verify(e => e.Send("pera@example.com", It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        _email.Verify(e => e.Send(
+            "pera@example.com",
+            It.IsAny<string>(),
+            It.Is<string>(body => body.Contains("verification-token"))), Times.Once);
     }
 
     [Fact]

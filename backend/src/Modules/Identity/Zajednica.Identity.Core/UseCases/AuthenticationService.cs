@@ -9,88 +9,61 @@ using Zajednica.Identity.Core.Infrastructural.RepositoryInterfaces;
 
 namespace Zajednica.Identity.Core.UseCases;
 
-
-public sealed class AuthenticationService : IAuthenticationService
+public sealed class AuthenticationService(
+    IAccountRepository accounts,
+    IVerificationRepository verifications,
+    IRefreshTokenRepository refreshTokens,
+    IPasswordHasher passwordHasher,
+    IAccessTokenGenerator accessTokens,
+    ISecureTokenGenerator secureTokens,
+    IEmailSender email,
+    IAuthTokenSettings settings) : IAuthenticationService
 {
-    private const int MinPasswordLength = 8;
-
-    private readonly IAccountRepository _accounts;
-    private readonly IEmailVerificationTokenRepository _emailTokens;
-    private readonly IRefreshTokenRepository _refreshTokens;
-    private readonly IPasswordHasher _passwordHasher;
-    private readonly IAccessTokenGenerator _accessTokens;
-    private readonly ISecureTokenGenerator _secureTokens;
-    private readonly IEmailSender _email;
-    private readonly IAuthTokenSettings _settings;
-
-    public AuthenticationService(
-        IAccountRepository accounts,
-        IEmailVerificationTokenRepository emailTokens,
-        IRefreshTokenRepository refreshTokens,
-        IPasswordHasher passwordHasher,
-        IAccessTokenGenerator accessTokens,
-        ISecureTokenGenerator secureTokens,
-        IEmailSender email,
-        IAuthTokenSettings settings)
-    {
-        _accounts = accounts;
-        _emailTokens = emailTokens;
-        _refreshTokens = refreshTokens;
-        _passwordHasher = passwordHasher;
-        _accessTokens = accessTokens;
-        _secureTokens = secureTokens;
-        _email = email;
-        _settings = settings;
-    }
-
     public void Register(RegisterAccountRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < MinPasswordLength)
-            throw new EntityValidationException($"Password must be at least {MinPasswordLength} characters.");
-
         var now = DateTime.UtcNow;
-        var account = new Account(request.Username, request.Email, _passwordHasher.Hash(request.Password), now);
+        var account = Account.Register(request.Username, request.Email, request.Password, passwordHasher, now);
 
-        if (_accounts.ExistsByUsername(account.Username))
+        if (accounts.ExistsByUsername(account.Username))
             throw new EntityValidationException("Username is already taken.");
-        if (_accounts.ExistsByEmail(account.Email))
+        if (accounts.ExistsByEmail(account.Email))
             throw new EntityValidationException("Email is already registered.");
 
         if (HasProfileData(request))
             account.UpdateProfile(request.FirstName, request.LastName, request.Phone, request.ContactEmail, imageUrl: null);
 
-        _accounts.Add(account);
+        accounts.Add(account);
 
-        var verificationToken = new Verification(
-            account.Id, _secureTokens.Generate(), now.AddHours(_settings.EmailVerificationTokenHours));
-        _emailTokens.Add(verificationToken);
+        var verification = new Verification(
+            account.Id, secureTokens.GenerateShort(), now.AddHours(settings.EmailVerificationTokenHours));
+        verifications.Add(verification);
 
-        SendActivationEmail(account.Email, verificationToken.Token);
+        SendActivationEmail(account.Email, verification.Token);
     }
 
     public void VerifyEmail(VerifyEmailRequest request)
     {
         var now = DateTime.UtcNow;
 
-        var token = _emailTokens.GetByToken(request.Token)
+        var verification = verifications.GetByToken(request.Token)
             ?? throw new EntityValidationException("Invalid verification token.");
-        var account = _accounts.GetById(token.AccountId)
+        var account = accounts.GetById(verification.AccountId)
             ?? throw new NotFoundException("Account not found.");
 
-        _emailTokens.Remove(token);
+        verifications.Remove(verification);
 
-        if (!token.IsValid(now))
+        if (!verification.IsValid(now))
             throw new EntityValidationException("Verification token has expired.");
 
         account.VerifyEmail();
-        _accounts.Update(account);
+        accounts.Update(account);
     }
 
     public AuthTokens Login(LoginRequest request)
     {
-        var account = _accounts.GetByUsernameOrEmail(request.UsernameOrEmail);
+        var account = accounts.GetByUsernameOrEmail(request.UsernameOrEmail);
 
-        if (account is null || !_passwordHasher.Verify(request.Password, account.Password))
+        if (account is null || !passwordHasher.Verify(request.Password, account.Password))
             throw new EntityValidationException("Invalid username/email or password.");
 
         if (!account.IsEmailVerified)
@@ -103,15 +76,15 @@ public sealed class AuthenticationService : IAuthenticationService
     {
         var now = DateTime.UtcNow;
 
-        var current = _refreshTokens.GetByToken(request.RefreshToken)
+        var current = refreshTokens.GetByToken(request.RefreshToken)
             ?? throw new EntityValidationException("Invalid refresh token.");
 
-        _refreshTokens.Remove(current);
+        refreshTokens.Remove(current);
 
         if (!current.IsValid(now))
             throw new EntityValidationException("Refresh token has expired.");
 
-        var account = _accounts.GetById(current.AccountId)
+        var account = accounts.GetById(current.AccountId)
             ?? throw new EntityValidationException("Invalid refresh token.");
 
         return IssueTokens(account, now);
@@ -119,28 +92,25 @@ public sealed class AuthenticationService : IAuthenticationService
 
     public void Logout(LogoutRequest request)
     {
-        var token = _refreshTokens.GetByToken(request.RefreshToken);
+        var token = refreshTokens.GetByToken(request.RefreshToken);
         if (token is null)
             return;
 
-        _refreshTokens.Remove(token);
+        refreshTokens.Remove(token);
     }
 
     private AuthTokens IssueTokens(Account account, DateTime now)
     {
-        var accessToken = _accessTokens.Generate(account.Id, account.Username);
-        var refreshToken = new RefreshToken(account.Id, _secureTokens.Generate(), now.AddDays(_settings.RefreshTokenDays));
-        _refreshTokens.Add(refreshToken);
+        var accessToken = accessTokens.Generate(account.Id, account.Username);
+        var refreshToken = new RefreshToken(account.Id, secureTokens.Generate(), now.AddDays(settings.RefreshTokenDays));
+        refreshTokens.Add(refreshToken);
         return new AuthTokens(accessToken, refreshToken.Token);
     }
 
-    private void SendActivationEmail(string email, string token)
+    private void SendActivationEmail(string address, string token)
     {
-        var link = string.IsNullOrWhiteSpace(_settings.EmailActivationUrl)
-            ? token
-            : $"{_settings.EmailActivationUrl}?token={Uri.EscapeDataString(token)}";
-        var body = $"Welcome to zajednica.app! Activate your account: {link}";
-        _email.Send(email, "Activate your zajednica.app account", body);
+        var body = $"Welcome to zajednica.app! Your activation code: {token}";
+        email.Send(address, "Activate your zajednica.app account", body);
     }
 
     private static bool HasProfileData(RegisterAccountRequest r) =>

@@ -21,4 +21,14 @@ public class SecureTokenGeneratorTests
     [Fact]
     public void Generate_is_unique_per_call() =>
         _generator.Generate().ShouldNotBe(_generator.Generate());
+
+    [Fact]
+    public void GenerateShort_returns_a_readable_code_unique_per_call()
+    {
+        var token = _generator.GenerateShort();
+
+        token.Length.ShouldBe(8);
+        token.ShouldAllBe(c => char.IsAsciiLetterOrDigit(c));
+        token.ShouldNotBe(_generator.GenerateShort());
+    }
 }

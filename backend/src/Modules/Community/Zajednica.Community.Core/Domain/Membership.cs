@@ -11,8 +11,10 @@ public class Membership : AggregateRoot
     public Guid CommunityId { get; private set; }
     public string? UnitNumber { get; private set; }
     public CertificationStatus CertificationStatus { get; private set; }
+    public Certificate? Certificate { get; private set; }
     public MembershipState State { get; private set; }
     public DateTime? LeftAt { get; private set; }
+    public Guid? BannedByIntentId { get; private set; }
     public int Stars { get; private set; }
     public DateTime DateJoined { get; private set; }
     public IReadOnlyList<RoleGrant> Roles => _roles;
@@ -53,6 +55,15 @@ public class Membership : AggregateRoot
         CertificationStatus = CertificationStatus.Confirmed;
     }
 
+    public void CertifyBy(Guid issuerMembershipId, DateTime now)
+    {
+        if (issuerMembershipId == Id)
+            throw new EntityValidationException("A member cannot certify themselves.");
+
+        Confirm();
+        Certificate = new Certificate(issuerMembershipId, now);
+    }
+
     public void Leave(DateTime now)
     {
         if (State != MembershipState.Active)
@@ -64,20 +75,23 @@ public class Membership : AggregateRoot
 
     public void Rejoin()
     {
-        if (State != MembershipState.Left)
-            throw new EntityValidationException("Only a membership that was left can be rejoined.");
+        if (State == MembershipState.Banned)
+            throw new ForbiddenException("This account is banned from the community.");
+        if (State == MembershipState.Active)
+            throw new EntityValidationException("Already a member of this community.");
 
         State = MembershipState.Active;
         LeftAt = null;
     }
 
-    public void Ban(DateTime now)
+    public void Ban(Guid? intentId, DateTime now)
     {
         if (State == MembershipState.Banned)
             throw new EntityValidationException("Membership is already banned.");
 
         State = MembershipState.Banned;
         LeftAt = now;
+        BannedByIntentId = intentId;
     }
 
     public void AddStars(int amount)

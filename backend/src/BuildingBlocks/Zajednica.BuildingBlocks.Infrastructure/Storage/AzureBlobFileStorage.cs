@@ -1,6 +1,6 @@
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 using Zajednica.BuildingBlocks.Core.Storage;
 
 namespace Zajednica.BuildingBlocks.Infrastructure.Storage;
@@ -9,10 +9,13 @@ public sealed class AzureBlobFileStorage : IFileStorage
 {
     private readonly BlobContainerClient _container;
 
-    public AzureBlobFileStorage(IOptions<StorageOptions> options)
+    public AzureBlobFileStorage(IConfiguration configuration)
     {
-        var settings = options.Value;
-        _container = new BlobContainerClient(settings.ConnectionString, settings.ContainerName);
+        var container = configuration["Storage:ContainerName"];
+
+        _container = new BlobContainerClient(
+            configuration["Storage:ConnectionString"],
+            string.IsNullOrWhiteSpace(container) ? "uploads" : container);
         _container.CreateIfNotExists(PublicAccessType.Blob);
     }
 

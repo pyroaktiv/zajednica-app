@@ -25,6 +25,23 @@ public class IntentTests
     }
 
     [Fact]
+    public void An_intent_cannot_be_opened_by_the_member_it_is_about()
+    {
+        Should.Throw<EntityValidationException>(() =>
+            Intent.Open(UserTargetingAction.For(UserActionKind.Ban, Target, true), Community, Target,
+                "Ne postuje kucni red.", 10, Now));
+    }
+
+    [Fact]
+    public void A_vote_after_the_deadline_is_rejected_even_while_the_intent_is_still_open()
+    {
+        var intent = Ban();
+
+        Should.Throw<EntityValidationException>(() => intent.CastVote(Guid.NewGuid(), true, intent.Deadline));
+        intent.Status.ShouldBe(IntentStatus.Open);
+    }
+
+    [Fact]
     public void Replaying_the_stream_reproduces_the_state_the_events_were_raised_on()
     {
         var intent = Ban();

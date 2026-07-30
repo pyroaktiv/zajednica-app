@@ -40,7 +40,7 @@ public class LoginTests : BaseIdentityIntegrationTest
         Controller(scope).Register(new RegisterAccountRequest(username, email, ValidPassword, null, null, null, null));
         var db = Db(scope);
         var accountId = db.Accounts.Single(a => a.Email == email).Id;
-        var token = db.EmailVerificationTokens.Single(t => t.AccountId == accountId).Token;
+        var token = db.Verifications.Single(t => t.AccountId == accountId).Token;
         Controller(scope).VerifyEmail(new VerifyEmailRequest(token));
 
         var tokens = Login(scope, username);

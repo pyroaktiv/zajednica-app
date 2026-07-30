@@ -12,7 +12,7 @@ public class Community : AggregateRoot
     public string? BankAccountNumber { get; private set; }
     public string QrToken { get; private set; } = null!;
     public DateTime DateCreated { get; private set; }
-    
+
     private Community() { }
 
     public Community(string name, Address address, string qrToken, DateTime now,
@@ -26,25 +26,15 @@ public class Community : AggregateRoot
         BankAccountNumber = Clean(bankAccountNumber);
         DateCreated = now;
     }
-    
-    public void UpdateDetails(Membership actor, string name, Address address,
+
+    public void UpdateDetails(string name, Address address,
         RegistrationNumber? registrationNumber, TaxId? taxId, string? bankAccountNumber)
     {
-        RequireManager(actor);
-
         Name = RequireName(name);
         Address = address ?? throw new EntityValidationException("Address is required.");
         RegistrationNumber = registrationNumber;
         TaxId = taxId;
         BankAccountNumber = Clean(bankAccountNumber);
-    }
-
-    private void RequireManager(Membership actor)
-    {
-        if (actor.CommunityId != Id)
-            throw new ForbiddenException("Membership belongs to another community.");
-        if (!actor.IsActive() || !actor.HasRole(CommunityRole.Manager))
-            throw new ForbiddenException("Only the community manager can change community details.");
     }
 
     private static string RequireName(string name)

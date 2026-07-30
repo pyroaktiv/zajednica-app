@@ -4,20 +4,20 @@ using Zajednica.Identity.Core.Domain.RepositoryInterfaces;
 
 namespace Zajednica.Identity.Infrastructure.Database.Repositories;
 
-internal sealed class EmailVerificationTokenEfRepository(IdentityDbContext db) : IEmailVerificationTokenRepository
+internal sealed class VerificationEfRepository(IdentityDbContext db) : IVerificationRepository
 {
     public void Add(Verification token)
     {
-        db.EmailVerificationTokens.Add(token);
+        db.Verifications.Add(token);
         db.SaveChanges();
     }
 
     public void Remove(Verification token)
     {
-        db.EmailVerificationTokens.Remove(token);
+        db.Verifications.Remove(token);
         db.SaveChanges();
     }
 
     public Verification? GetByToken(string token) =>
-        db.EmailVerificationTokens.FirstOrDefault(t => t.Token == token);
+        db.Verifications.FirstOrDefault(t => t.Token == token);
 }

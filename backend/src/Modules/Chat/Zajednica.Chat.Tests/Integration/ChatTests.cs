@@ -142,17 +142,17 @@ public class ChatTests : BaseChatIntegrationTest
         Should.Throw<NotFoundException>(() => Chats(scope, outsider.AccountId).Get(community.Id, chat.Id));
     }
 
-    private static CursorPage<MessageDto> Page(IServiceScope scope, Guid accountId, Guid communityId, Guid chatId,
+    private static CursorPage<MessageDto, DateTime> Page(IServiceScope scope, Guid accountId, Guid communityId, Guid chatId,
         DateTime? after, int limit) =>
-        Value<CursorPage<MessageDto>>(Messages(scope, accountId)
+        Value<CursorPage<MessageDto, DateTime>>(Messages(scope, accountId)
             .GetPage(communityId, chatId, after, limit).Result!);
 
-    private static CursorPage<ChatSummaryDto> Direct(IServiceScope scope, Guid accountId, Guid communityId) =>
-        Value<CursorPage<ChatSummaryDto>>(Chats(scope, accountId).GetDirectPage(communityId, null, 10).Result!);
+    private static CursorPage<ChatSummaryDto, DateTime> Direct(IServiceScope scope, Guid accountId, Guid communityId) =>
+        Value<CursorPage<ChatSummaryDto, DateTime>>(Chats(scope, accountId).GetDirectPage(communityId, null, 10).Result!);
 
-    private static CursorPage<ChatSummaryDto> HelpRequests(IServiceScope scope, Guid accountId, Guid communityId) =>
-        Value<CursorPage<ChatSummaryDto>>(Chats(scope, accountId).GetHelpRequestPage(communityId, null, 10).Result!);
+    private static CursorPage<ChatSummaryDto, DateTime> HelpRequests(IServiceScope scope, Guid accountId, Guid communityId) =>
+        Value<CursorPage<ChatSummaryDto, DateTime>>(Chats(scope, accountId).GetHelpRequestPage(communityId, null, 10).Result!);
 
-    private static CursorPage<ChatSummaryDto> Temporary(IServiceScope scope, Guid accountId, Guid communityId) =>
-        Value<CursorPage<ChatSummaryDto>>(Chats(scope, accountId).GetTemporaryPage(communityId, null, 10).Result!);
+    private static CursorPage<ChatSummaryDto, DateTime> Temporary(IServiceScope scope, Guid accountId, Guid communityId) =>
+        Value<CursorPage<ChatSummaryDto, DateTime>>(Chats(scope, accountId).GetTemporaryPage(communityId, null, 10).Result!);
 }

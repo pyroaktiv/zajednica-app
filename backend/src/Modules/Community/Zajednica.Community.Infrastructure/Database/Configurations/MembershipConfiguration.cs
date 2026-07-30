@@ -27,5 +27,14 @@ public class MembershipConfiguration : IEntityTypeConfiguration<Membership>
             role.HasIndex("MembershipId", "Role").IsUnique();
         });
         builder.Navigation(m => m.Roles).AutoInclude();
+
+        builder.OwnsOne(m => m.Certificate, certificate =>
+        {
+            certificate.ToTable("Certificates");
+            certificate.WithOwner().HasForeignKey("MembershipId");
+            certificate.HasKey(c => c.Id);
+            certificate.Property(c => c.Id).ValueGeneratedNever();
+        });
+        builder.Navigation(m => m.Certificate).AutoInclude();
     }
 }

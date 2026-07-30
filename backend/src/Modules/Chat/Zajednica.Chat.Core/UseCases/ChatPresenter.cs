@@ -14,7 +14,7 @@ public sealed class ChatPresenter(MemberDirectory directory)
         return chat.ToDetailsDto(viewerMembershipId, profiles);
     }
 
-    public CursorPage<ChatSummaryDto> Summaries<TChat>(CursorPage<TChat> page, Guid viewerMembershipId)
+    public CursorPage<ChatSummaryDto, DateTime> Summaries<TChat>(CursorPage<TChat, DateTime> page, Guid viewerMembershipId)
         where TChat : ChatAggregate
     {
         var otherMembershipIds = page.Items

@@ -32,8 +32,11 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
         if (eligibleVoterCount < 2)
             throw new EntityValidationException("An intent needs at least two eligible voters.");
 
+        var context = new ActionContext(communityId, authorMembershipId, eligibleVoterCount, now);
+        action.EnsureValidFor(context);
+
         var intent = new Intent();
-        intent.RegisterEvent(action.ToOpenedEvent(communityId, authorMembershipId, text, eligibleVoterCount, now));
+        intent.RegisterEvent(action.ToOpenedEvent(context, text));
 
         return intent;
     }
@@ -53,7 +56,7 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
 
     public void CastVote(Guid voterMembershipId, bool inFavor, DateTime now)
     {
-        if (Status != IntentStatus.Open)
+        if (Status != IntentStatus.Open || now >= Deadline)
             throw new EntityValidationException("Voting on this intent is closed.");
         if (_votes.ContainsKey(voterMembershipId))
             throw new EntityValidationException("This member has already voted on this intent.");

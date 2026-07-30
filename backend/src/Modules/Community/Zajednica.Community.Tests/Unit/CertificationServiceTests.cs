@@ -13,18 +13,18 @@ public class CertificationServiceTests
     private static Membership Candidate(Guid communityId) => new(Guid.NewGuid(), communityId, Now);
 
     [Fact]
-    public void Certify_confirms_the_candidate_and_records_a_certificate()
+    public void Certify_confirms_the_candidate_and_records_the_certificate()
     {
         var communityId = Guid.NewGuid();
         var issuer = Issuer(communityId);
         var candidate = Candidate(communityId);
 
-        var certificate = _service.Certify(issuer, candidate, Now);
+        _service.Certify(issuer, candidate, Now);
 
         candidate.CertificationStatus.ShouldBe(CertificationStatus.Confirmed);
-        certificate.CommunityId.ShouldBe(communityId);
-        certificate.IssuerMembershipId.ShouldBe(issuer.Id);
-        certificate.CandidateMembershipId.ShouldBe(candidate.Id);
+        candidate.Certificate.ShouldNotBeNull();
+        candidate.Certificate.IssuerMembershipId.ShouldBe(issuer.Id);
+        candidate.Certificate.Date.ShouldBe(Now);
     }
 
     [Fact]

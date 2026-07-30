@@ -14,7 +14,6 @@ namespace Zajednica.Community.Core.UseCases;
 
 public sealed class CertificationService(
     ICertificationChallengeRepository challenges,
-    ICertificateRepository certificates,
     IMembershipRepository memberships,
     ISecureTokenGenerator tokens,
     IInternalChatService chats,
@@ -66,10 +65,9 @@ public sealed class CertificationService(
         var issuer = memberships.GetById(challenge.IssuerMembershipId)
             ?? throw new NotFoundException("Issuer membership not found.");
 
-        var certificate = certification.Certify(issuer, candidate, now);
+        certification.Certify(issuer, candidate, now);
 
         memberships.Update(candidate);
-        certificates.Add(certificate);
         challenges.Remove(challenge);
         chats.DeleteTemporaryChats(challenge.CommunityId, candidate.Id);
 
@@ -80,6 +78,6 @@ public sealed class CertificationService(
         notifications.Send(new NotificationRequest(
             accountId, "Potvrda članstva", "Vaše članstvo u zajednici je potvrđeno.", NotificationPriority.Default));
 
-        return candidate.ToCertificationResultDto(certificate.Date);
+        return candidate.ToCertificationResultDto();
     }
 }

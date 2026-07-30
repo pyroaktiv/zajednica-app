@@ -43,7 +43,7 @@ public sealed class MessageService(
         chats.Update(chat);
     }
 
-    public CursorPage<MessageDto> GetPage(Guid accountId, Guid communityId, Guid chatId, DateTime? after, int limit)
+    public CursorPage<MessageDto, DateTime> GetPage(Guid accountId, Guid communityId, Guid chatId, DateTime? after, int limit)
     {
         Require(accountId, communityId, chatId);
 

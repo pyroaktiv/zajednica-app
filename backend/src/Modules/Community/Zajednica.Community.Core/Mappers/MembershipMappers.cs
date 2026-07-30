@@ -43,10 +43,10 @@ public static class MembershipMappers
     public static UnitNumberDto ToUnitNumberDto(this Membership membership) =>
         new(membership.Id, membership.UnitNumber);
 
-    public static CertificationResultDto ToCertificationResultDto(this Membership membership, DateTime certifiedAt) =>
+    public static CertificationResultDto ToCertificationResultDto(this Membership membership) =>
         new(membership.Id,
             membership.CommunityId,
-            certifiedAt);
+            membership.Certificate!.Date);
 
     public static MembershipContextDto ToContextDto(this Membership membership) =>
         new(membership.Id,

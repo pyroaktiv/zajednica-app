@@ -54,7 +54,7 @@ public sealed class IntentController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<CursorPage<IntentSummaryDto>> GetPage(Guid communityId, [FromQuery] DateTime? before, [FromQuery] int limit)
+    public ActionResult<CursorPage<IntentSummaryDto, DateTime>> GetPage(Guid communityId, [FromQuery] DateTime? before, [FromQuery] int limit)
     {
         return Ok(_queries.GetPage(User.AccountId(), communityId, before, limit));
     }

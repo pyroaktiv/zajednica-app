@@ -64,14 +64,14 @@ public sealed class PostService(
         return Single(Require(postId, communityId));
     }
 
-    public CursorPage<PostDto> GetPage(Guid accountId, Guid communityId, DateTime? before, int limit)
+    public CursorPage<PostDto, DateTime> GetPage(Guid accountId, Guid communityId, DateTime? before, int limit)
     {
         access.RequireConfirmed(accountId, communityId);
 
         var page = posts.GetPage(communityId, before, Paging.Clamp(limit));
         var profiles = directory.Profiles(page.Items.Select(p => p.AuthorMembershipId).ToList());
 
-        return new CursorPage<PostDto>(page.Items.ToDtos(profiles), page.NextCursor);
+        return new CursorPage<PostDto, DateTime>(page.Items.ToDtos(profiles), page.NextCursor);
     }
 
     private Post Require(Guid postId, Guid communityId)

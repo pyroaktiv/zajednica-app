@@ -7,5 +7,4 @@ public interface IAuthTokenSettings
     
     int EmailVerificationTokenHours { get; }
     
-    string EmailActivationUrl { get; }
 }

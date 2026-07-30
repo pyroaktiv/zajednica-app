@@ -1,15 +1,18 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Zajednica.Identity.Core.UseCases;
 
 namespace Zajednica.Identity.Infrastructure.Authentication;
 
-public sealed class JwtAccessTokenGenerator(IOptions<JwtOptions> options) : IAccessTokenGenerator
+public sealed class JwtAccessTokenGenerator(IConfiguration configuration) : IAccessTokenGenerator
 {
-    private readonly JwtOptions _options = options.Value;
+    private readonly string _key = configuration["Jwt:Key"] ?? "";
+    private readonly string? _issuer = configuration["Jwt:Issuer"];
+    private readonly string? _audience = configuration["Jwt:Audience"];
+    private readonly int _accessTokenMinutes = configuration.GetValue("Jwt:AccessTokenMinutes", 15);
 
     public string Generate(Guid accountId, string username)
     {
@@ -20,14 +23,14 @@ public sealed class JwtAccessTokenGenerator(IOptions<JwtOptions> options) : IAcc
             new("username", username)
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: _options.Issuer,
-            audience: _options.Audience,
+            issuer: _issuer,
+            audience: _audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(_options.AccessTokenMinutes),
+            expires: DateTime.UtcNow.AddMinutes(_accessTokenMinutes),
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);

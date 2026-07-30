@@ -25,7 +25,7 @@ public class RegistrationTests : BaseIdentityIntegrationTest
         account.Profile.ShouldBeNull();
         account.Password.ShouldNotBe(ValidPassword);
         account.Password.ShouldContain(".");
-        db.EmailVerificationTokens.Count(t => t.AccountId == account.Id).ShouldBe(1);
+        db.Verifications.Count(t => t.AccountId == account.Id).ShouldBe(1);
     }
 
     [Fact]

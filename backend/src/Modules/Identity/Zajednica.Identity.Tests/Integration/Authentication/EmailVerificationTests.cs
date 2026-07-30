@@ -17,13 +17,13 @@ public class EmailVerificationTests : BaseIdentityIntegrationTest
         using var scope = Factory.Services.CreateScope();
         var (_, accountId) = Register(scope);
         var db = Db(scope);
-        var token = db.EmailVerificationTokens.Single(t => t.AccountId == accountId).Token;
+        var token = db.Verifications.Single(t => t.AccountId == accountId).Token;
 
         Controller(scope).VerifyEmail(new VerifyEmailRequest(token));
 
         db.ChangeTracker.Clear();
         db.Accounts.Single(a => a.Id == accountId).IsEmailVerified.ShouldBeTrue();
-        db.EmailVerificationTokens.Any(t => t.AccountId == accountId).ShouldBeFalse();
+        db.Verifications.Any(t => t.AccountId == accountId).ShouldBeFalse();
     }
 
     [Fact]
@@ -42,9 +42,9 @@ public class EmailVerificationTests : BaseIdentityIntegrationTest
         var (_, accountId) = Register(scope);
         var db = Db(scope);
         var tokenValue = $"expired-{Guid.NewGuid():N}";
-        db.EmailVerificationTokens.RemoveRange(db.EmailVerificationTokens.Where(t => t.AccountId == accountId));
+        db.Verifications.RemoveRange(db.Verifications.Where(t => t.AccountId == accountId));
         var expired = new Verification(accountId, tokenValue, DateTime.UtcNow.AddHours(-1));
-        db.EmailVerificationTokens.Add(expired);
+        db.Verifications.Add(expired);
         db.SaveChanges();
         db.ChangeTracker.Clear();
 
@@ -52,7 +52,7 @@ public class EmailVerificationTests : BaseIdentityIntegrationTest
             Controller(scope).VerifyEmail(new VerifyEmailRequest(tokenValue)));
 
         db.ChangeTracker.Clear();
-        db.EmailVerificationTokens.Any(t => t.Token == tokenValue).ShouldBeFalse();
+        db.Verifications.Any(t => t.Token == tokenValue).ShouldBeFalse();
         db.Accounts.Single(a => a.Id == accountId).IsEmailVerified.ShouldBeFalse();
     }
 
@@ -64,7 +64,7 @@ public class EmailVerificationTests : BaseIdentityIntegrationTest
         var db = Db(scope);
         var tokenValue = $"second-{Guid.NewGuid():N}";
         var second = new Verification(accountId, tokenValue, DateTime.UtcNow.AddHours(24));
-        db.EmailVerificationTokens.Add(second);
+        db.Verifications.Add(second);
         db.SaveChanges();
         db.ChangeTracker.Clear();
 

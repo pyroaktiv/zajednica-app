@@ -11,57 +11,26 @@ public class CommunityTests
     private static Core.Domain.Community NewCommunity()
         => new("Zgrada 1", new Address("Bulevar", "12", new Coordinates(45.25m, 19.83m)), "qr-token", Now);
 
-    private static Membership MemberOf(Core.Domain.Community community)
-    {
-        var member = new Membership(Guid.NewGuid(), community.Id, Now);
-        member.Confirm();
-        return member;
-    }
-
     [Fact]
-    public void UpdateDetails_is_allowed_for_the_manager()
+    public void UpdateDetails_replaces_the_community_details()
     {
         var community = NewCommunity();
-        var manager = MemberOf(community);
-        manager.Grant(CommunityRole.Manager, null, Now);
 
-        community.UpdateDetails(manager, "Zgrada 2", community.Address, null, null, "160-1234-56");
+        community.UpdateDetails("  Zgrada 2  ", community.Address, new RegistrationNumber("12345678"),
+            new TaxId("123456789"), "160-1234-56");
 
         community.Name.ShouldBe("Zgrada 2");
+        community.RegistrationNumber!.Value.ShouldBe("12345678");
+        community.TaxId!.Value.ShouldBe("123456789");
         community.BankAccountNumber.ShouldBe("160-1234-56");
     }
 
     [Fact]
-    public void UpdateDetails_is_forbidden_for_the_creator_who_only_holds_the_issuer_role()
+    public void UpdateDetails_requires_a_name()
     {
         var community = NewCommunity();
-        var creator = Membership.MakeCreator(Guid.NewGuid(), community.Id, Now);
 
-        Should.Throw<ForbiddenException>(() =>
-            community.UpdateDetails(creator, "Zgrada 2", community.Address, null, null, null));
-    }
-
-    [Fact]
-    public void UpdateDetails_is_forbidden_for_a_manager_of_another_community()
-    {
-        var community = NewCommunity();
-        var foreignManager = new Membership(Guid.NewGuid(), Guid.NewGuid(), Now);
-        foreignManager.Confirm();
-        foreignManager.Grant(CommunityRole.Manager, null, Now);
-
-        Should.Throw<ForbiddenException>(() =>
-            community.UpdateDetails(foreignManager, "Zgrada 2", community.Address, null, null, null));
-    }
-
-    [Fact]
-    public void UpdateDetails_is_forbidden_once_the_manager_leaves()
-    {
-        var community = NewCommunity();
-        var manager = MemberOf(community);
-        manager.Grant(CommunityRole.Manager, null, Now);
-        manager.Leave(Now);
-
-        Should.Throw<ForbiddenException>(() =>
-            community.UpdateDetails(manager, "Zgrada 2", community.Address, null, null, null));
+        Should.Throw<EntityValidationException>(() =>
+            community.UpdateDetails("  ", community.Address, null, null, null));
     }
 }

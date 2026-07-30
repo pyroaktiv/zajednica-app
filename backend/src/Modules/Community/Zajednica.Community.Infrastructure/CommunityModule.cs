@@ -29,17 +29,14 @@ public static class CommunityModule
     {
         services.AddScoped<ICommunityRepository, CommunityEfRepository>();
         services.AddScoped<IMembershipRepository, MembershipEfRepository>();
-        services.AddScoped<ICertificateRepository, CertificateEfRepository>();
         services.AddScoped<ICertificationChallengeRepository, CertificationChallengeEfRepository>();
         services.AddScoped<IDocumentRepository, DocumentEfRepository>();
-        services.AddScoped<IBlacklistRepository, BlacklistEfRepository>();
     }
 
     private static void AddDomainServices(IServiceCollection services)
     {
         services.AddSingleton<Core.Domain.CertificationService>();
         services.AddSingleton<ManagerElectionService>();
-        services.AddSingleton<MembershipBanService>();
     }
 
     private static void AddApplicationServices(IServiceCollection services)

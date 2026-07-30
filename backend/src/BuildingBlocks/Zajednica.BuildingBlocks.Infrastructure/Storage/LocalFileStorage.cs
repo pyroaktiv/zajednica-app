@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 using Zajednica.BuildingBlocks.Core.Storage;
 
 namespace Zajednica.BuildingBlocks.Infrastructure.Storage;
@@ -9,13 +9,12 @@ public sealed class LocalFileStorage : IFileStorage
 
     private readonly string _publicBaseUrl;
 
-    public LocalFileStorage(IOptions<StorageOptions> options)
+    public LocalFileStorage(IConfiguration configuration)
     {
-        var settings = options.Value;
-        var path = string.IsNullOrWhiteSpace(settings.LocalPath) ? "uploads" : settings.LocalPath;
+        var path = configuration["Storage:LocalPath"];
 
-        Root = Path.GetFullPath(path);
-        _publicBaseUrl = settings.PublicBaseUrl.TrimEnd('/');
+        Root = Path.GetFullPath(string.IsNullOrWhiteSpace(path) ? "uploads" : path);
+        _publicBaseUrl = (configuration["Storage:PublicBaseUrl"] ?? "").TrimEnd('/');
     }
 
     public string Root { get; }

@@ -9,7 +9,7 @@ public interface IChatService
     ChatDetailsDto OpenTemporary(Guid accountId, Guid communityId, OpenTemporaryChatRequest request);
 
     ChatDetailsDto Get(Guid accountId, Guid communityId, Guid chatId);
-    CursorPage<ChatSummaryDto> GetDirectPage(Guid accountId, Guid communityId, DateTime? before, int limit);
-    CursorPage<ChatSummaryDto> GetHelpRequestPage(Guid accountId, Guid communityId, DateTime? before, int limit);
-    CursorPage<ChatSummaryDto> GetTemporaryPage(Guid accountId, Guid communityId, DateTime? before, int limit);
+    CursorPage<ChatSummaryDto, DateTime> GetDirectPage(Guid accountId, Guid communityId, DateTime? before, int limit);
+    CursorPage<ChatSummaryDto, DateTime> GetHelpRequestPage(Guid accountId, Guid communityId, DateTime? before, int limit);
+    CursorPage<ChatSummaryDto, DateTime> GetTemporaryPage(Guid accountId, Guid communityId, DateTime? before, int limit);
 }

@@ -11,9 +11,7 @@ public static class StorageInstaller
 {
     public static IServiceCollection AddStorage(this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<StorageOptions>(configuration.GetSection(StorageOptions.SectionName));
-
-        var provider = configuration[$"{StorageOptions.SectionName}:{nameof(StorageOptions.Provider)}"];
+        var provider = configuration["Storage:Provider"];
         if (string.Equals(provider, "Azure", StringComparison.OrdinalIgnoreCase))
             services.AddSingleton<IFileStorage, AzureBlobFileStorage>();
         else

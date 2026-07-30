@@ -23,8 +23,13 @@ public sealed class UserTargetingAction : IntentAction
         return new UserTargetingAction(kind, targetMembershipId);
     }
 
-    public override IntentOpened ToOpenedEvent(Guid communityId, Guid authorMembershipId, string text,
-        int eligibleVoterCount, DateTime at) =>
-        new UserTargetingIntentOpened(Kind, TargetMembershipId, communityId, authorMembershipId, text,
-            eligibleVoterCount, at);
+    public override void EnsureValidFor(ActionContext context)
+    {
+        if (context.AuthorMembershipId == TargetMembershipId)
+            throw new EntityValidationException("An intent cannot be opened by the member it is about.");
+    }
+
+    public override IntentOpened ToOpenedEvent(ActionContext context, string text) =>
+        new UserTargetingIntentOpened(Kind, TargetMembershipId, context.CommunityId, context.AuthorMembershipId, text,
+            context.EligibleVoterCount, context.Now);
 }

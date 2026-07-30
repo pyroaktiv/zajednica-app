@@ -5,6 +5,8 @@ namespace Zajednica.Identity.Core.Domain;
 
 public class Account : AggregateRoot
 {
+    private const int MinPasswordLength = 8;
+
     public string Username { get; private set; } = null!;
     public string Email { get; private set; } = null!;
     public string Password { get; private set; } = null!;
@@ -21,6 +23,15 @@ public class Account : AggregateRoot
         Password = RequirePassword(password);
         IsEmailVerified = false;
         DateCreated = now;
+    }
+
+    public static Account Register(string username, string email, string rawPassword, IPasswordHasher hasher,
+        DateTime now)
+    {
+        if (string.IsNullOrWhiteSpace(rawPassword) || rawPassword.Length < MinPasswordLength)
+            throw new EntityValidationException($"Password must be at least {MinPasswordLength} characters.");
+
+        return new Account(username, email, hasher.Hash(rawPassword), now);
     }
 
     public void VerifyEmail()

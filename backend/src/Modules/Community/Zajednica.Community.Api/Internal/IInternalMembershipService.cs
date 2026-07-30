@@ -8,7 +8,6 @@ public interface IInternalMembershipService
     IReadOnlyList<MembershipContextDto> GetContexts(IReadOnlyCollection<Guid> membershipIds);
     IReadOnlyList<MembershipContextDto> GetConfirmed(Guid communityId);
     int GetConfirmedCount(Guid communityId);
-    bool AreEligible(IReadOnlyCollection<Guid> membershipIds);
 
     void Ban(Guid membershipId, Guid intentId);
     void ElectManager(Guid membershipId);

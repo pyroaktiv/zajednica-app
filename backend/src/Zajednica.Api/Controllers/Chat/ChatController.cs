@@ -40,19 +40,19 @@ public sealed class ChatController : ControllerBase
     }
 
     [HttpGet("direct")]
-    public ActionResult<CursorPage<ChatSummaryDto>> GetDirectPage(Guid communityId, [FromQuery] DateTime? before, [FromQuery] int limit)
+    public ActionResult<CursorPage<ChatSummaryDto, DateTime>> GetDirectPage(Guid communityId, [FromQuery] DateTime? before, [FromQuery] int limit)
     {
         return Ok(_chats.GetDirectPage(User.AccountId(), communityId, before, limit));
     }
 
     [HttpGet("help-requests")]
-    public ActionResult<CursorPage<ChatSummaryDto>> GetHelpRequestPage(Guid communityId, [FromQuery] DateTime? before, [FromQuery] int limit)
+    public ActionResult<CursorPage<ChatSummaryDto, DateTime>> GetHelpRequestPage(Guid communityId, [FromQuery] DateTime? before, [FromQuery] int limit)
     {
         return Ok(_chats.GetHelpRequestPage(User.AccountId(), communityId, before, limit));
     }
 
     [HttpGet("temporary")]
-    public ActionResult<CursorPage<ChatSummaryDto>> GetTemporaryPage(Guid communityId, [FromQuery] DateTime? before, [FromQuery] int limit)
+    public ActionResult<CursorPage<ChatSummaryDto, DateTime>> GetTemporaryPage(Guid communityId, [FromQuery] DateTime? before, [FromQuery] int limit)
     {
         return Ok(_chats.GetTemporaryPage(User.AccountId(), communityId, before, limit));
     }

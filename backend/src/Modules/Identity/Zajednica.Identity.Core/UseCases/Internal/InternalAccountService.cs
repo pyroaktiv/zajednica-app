@@ -5,28 +5,23 @@ using Zajednica.Identity.Core.Mappers;
 
 namespace Zajednica.Identity.Core.UseCases.Internal;
 
-
-public sealed class InternalAccountService : IInternalAccountService
+public sealed class InternalAccountService(IAccountRepository accounts) : IInternalAccountService
 {
-    private readonly IAccountRepository _accounts;
-
-    public InternalAccountService(IAccountRepository accounts) => _accounts = accounts;
-
     public string? GetUsername(Guid accountId) =>
-        (_accounts.GetById(accountId))?.Username;
+        (accounts.GetById(accountId))?.Username;
 
     public IReadOnlyList<AccountUsernameDto> GetUsernames(
         IReadOnlyCollection<Guid> accountIds)
     {
         if (accountIds.Count == 0)
             return [];
-        var accounts = _accounts.GetManyByIds(accountIds);
-        return accounts.Select(a => a.ToUsernameDto()).ToList();
+        var found = accounts.GetManyByIds(accountIds);
+        return found.Select(a => a.ToUsernameDto()).ToList();
     }
 
     public AccountProfileDto? GetProfile(Guid accountId)
     {
-        var account = _accounts.GetById(accountId);
+        var account = accounts.GetById(accountId);
         return account?.ToAccountProfileDto();
     }
 
@@ -35,7 +30,7 @@ public sealed class InternalAccountService : IInternalAccountService
     {
         if (accountIds.Count == 0)
             return [];
-        var accounts = _accounts.GetManyByIds(accountIds);
-        return accounts.Select(a => a.ToAccountProfileDto()).ToList();
+        var found = accounts.GetManyByIds(accountIds);
+        return found.Select(a => a.ToAccountProfileDto()).ToList();
     }
 }

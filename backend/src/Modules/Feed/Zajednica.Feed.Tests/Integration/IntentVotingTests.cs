@@ -40,9 +40,9 @@ public class IntentVotingTests : BaseFeedIntegrationTest
 
         var communityDb = CommunityDb(scope);
         communityDb.ChangeTracker.Clear();
-        communityDb.Memberships.Single(m => m.Id == target.MembershipId).State.ShouldBe(MembershipState.Banned);
-        communityDb.BlacklistEntries.Single(b => b.AccountId == target.AccountId && b.CommunityId == community.Id)
-            .IntentId.ShouldBe(ban.Id);
+        var banned = communityDb.Memberships.Single(m => m.Id == target.MembershipId);
+        banned.State.ShouldBe(MembershipState.Banned);
+        banned.BannedByIntentId.ShouldBe(ban.Id);
 
         var db = Db(scope);
         db.ChangeTracker.Clear();

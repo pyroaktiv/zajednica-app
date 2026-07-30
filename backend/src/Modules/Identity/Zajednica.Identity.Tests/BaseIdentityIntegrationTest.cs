@@ -39,7 +39,7 @@ public class BaseIdentityIntegrationTest : BaseWebIntegrationTest<IdentityTestFa
         var (registeredEmail, accountId) = Register(scope, email);
 
         var db = Db(scope);
-        var token = db.EmailVerificationTokens.Single(t => t.AccountId == accountId);
+        var token = db.Verifications.Single(t => t.AccountId == accountId);
         Controller(scope).VerifyEmail(new VerifyEmailRequest(token.Token));
 
         return (registeredEmail, accountId);

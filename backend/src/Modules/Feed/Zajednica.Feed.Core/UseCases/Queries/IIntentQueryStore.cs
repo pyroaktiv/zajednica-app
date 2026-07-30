@@ -4,7 +4,7 @@ namespace Zajednica.Feed.Core.UseCases.Queries;
 
 public interface IIntentQueryStore
 {
-    CursorPage<IntentView> GetPage(Guid communityId, DateTime? before, int limit);
+    CursorPage<IntentView, DateTime> GetPage(Guid communityId, DateTime? before, int limit);
 
     IntentView? GetView(Guid intentId);
 

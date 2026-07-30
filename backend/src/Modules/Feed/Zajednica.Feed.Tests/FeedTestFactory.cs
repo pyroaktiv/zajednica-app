@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Zajednica.BuildingBlocks.Tests;
+using Zajednica.Chat.Infrastructure.Database;
 using Zajednica.Community.Infrastructure.Database;
 using Zajednica.Feed.Infrastructure.Database;
 using Zajednica.Identity.Infrastructure.Database;
@@ -9,12 +10,14 @@ namespace Zajednica.Feed.Tests;
 
 public class FeedTestFactory : BaseTestFactory<FeedDbContext>
 {
-    protected override IEnumerable<Type> CollaboratingDbContexts => [typeof(CommunityDbContext), typeof(IdentityDbContext)];
+    protected override IEnumerable<Type> CollaboratingDbContexts =>
+        [typeof(CommunityDbContext), typeof(ChatDbContext), typeof(IdentityDbContext)];
 
     protected override IServiceCollection ReplaceNeededDbContexts(IServiceCollection services)
     {
         Replace<FeedDbContext>(services);
         Replace<CommunityDbContext>(services);
+        Replace<ChatDbContext>(services);
         Replace<IdentityDbContext>(services);
         return services;
     }

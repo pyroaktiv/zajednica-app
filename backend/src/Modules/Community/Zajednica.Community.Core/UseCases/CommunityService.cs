@@ -13,7 +13,6 @@ namespace Zajednica.Community.Core.UseCases;
 public sealed class CommunityService(
     ICommunityRepository communities,
     IMembershipRepository memberships,
-    IBlacklistRepository blacklist,
     ISecureTokenGenerator tokens,
     IRealtimePusher realtime,
     MembershipAccess access) : ICommunityService
@@ -61,10 +60,9 @@ public sealed class CommunityService(
 
     public CommunityDetailsDto Update(Guid accountId, Guid communityId, UpdateCommunityRequest request)
     {
-        var (community, actor) = access.RequireRole(accountId, communityId, CommunityRole.Manager);
+        var (community, _) = access.RequireRole(accountId, communityId, CommunityRole.Manager);
 
         community.UpdateDetails(
-            actor,
             request.Name,
             request.Address.ToAddress(),
             CommunityMappers.ToRegistrationNumber(request.RegistrationNumber),
@@ -87,24 +85,18 @@ public sealed class CommunityService(
         var community = communities.GetByQrToken(request.QrToken)
             ?? throw new NotFoundException("No community matches this QR code.");
 
-        if (blacklist.Exists(accountId, community.Id))
-            throw new ForbiddenException("This account is banned from the community.");
-
         var existing = memberships.Get(accountId, community.Id);
-        if (existing is not null && existing.IsActive())
-            throw new EntityValidationException("Already a member of this community.");
-
-        var membership = existing ?? new Membership(accountId, community.Id, DateTime.UtcNow);
-
         if (existing is null)
-            memberships.Add(membership);
-        else
         {
-            membership.Rejoin();
-            memberships.Update(membership);
+            var membership = new Membership(accountId, community.Id, DateTime.UtcNow);
+            memberships.Add(membership);
+            return membership.ToJoinedDto(community.Name);
         }
 
-        return membership.ToJoinedDto(community.Name);
+        existing.Rejoin();
+        memberships.Update(existing);
+
+        return existing.ToJoinedDto(community.Name);
     }
 
     public void Leave(Guid accountId, Guid communityId)
