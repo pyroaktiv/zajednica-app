@@ -12,6 +12,7 @@ public interface IMembershipRepository
     IReadOnlyList<Membership> GetByCommunity(Guid communityId);
     IReadOnlyList<Membership> GetConfirmedByCommunity(Guid communityId);
     Membership? GetManager(Guid communityId);
+    IReadOnlyList<Membership> GetWithExpiredMute(DateTime now);
 
     int CountConfirmed(Guid communityId);
 }

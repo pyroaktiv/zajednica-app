@@ -7,6 +7,7 @@ export function postKindLabel(kind: string | null): { text: string; color: strin
 export function intentKindLabel(kind: string) {
   if (kind === "Ban") return "Izbacivanje člana";
   if (kind === "ManagerElection") return "Izbor upravnika";
+  if (kind === "Mute") return "Utišavanje člana";
   return kind;
 }
 

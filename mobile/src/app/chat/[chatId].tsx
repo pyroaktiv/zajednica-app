@@ -23,6 +23,7 @@ import type { ChatDetailsDto, MessageDto } from "../../api/types";
 import { useChannel } from "../../realtime/connection";
 import { useCommunity } from "../../state/CommunityContext";
 import { Button, ErrorText, Loading, Screen } from "../../ui/Basics";
+import { MutedNotice } from "../../ui/MutedNotice";
 import { helpStatusLabel } from "../../ui/labels";
 import { colors, spacing } from "../../ui/theme";
 
@@ -75,7 +76,7 @@ function MessageBubble({ message, mine }: { message: MessageDto; mine: boolean }
 
 export default function ChatScreen() {
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
-  const { activeCommunityId, me, status: myStatus } = useCommunity();
+  const { activeCommunityId, me, status: myStatus, isMuted } = useCommunity();
   const [chat, setChat] = useState<ChatDetailsDto | null>(null);
   const [messages, setMessages] = useState<MessageDto[]>([]);
   const [text, setText] = useState("");
@@ -327,7 +328,11 @@ export default function ChatScreen() {
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
         />
 
-        {chat.canSend ? (
+        {isMuted ? (
+          <View style={{ padding: spacing.m }}>
+            <MutedNotice />
+          </View>
+        ) : chat.canSend ? (
           <View
             style={{
               flexDirection: "row",

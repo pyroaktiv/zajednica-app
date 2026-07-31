@@ -16,6 +16,12 @@ public sealed class ChatAccess(IInternalMembershipAccessService memberships, ICh
     public Guid RequireUnconfirmed(Guid accountId, Guid communityId) =>
         memberships.RequireUnconfirmedMembershipId(accountId, communityId);
 
+    public Guid RequireUnmutedMember(Guid accountId, Guid communityId) =>
+        memberships.RequireUnmutedActiveMembershipId(accountId, communityId);
+
+    public Guid RequireUnmutedConfirmed(Guid accountId, Guid communityId) =>
+        memberships.RequireUnmutedConfirmedMembershipId(accountId, communityId);
+
     public void RequireCounterpart(Guid communityId, Guid membershipId)
     {
         if (!memberships.IsConfirmedMemberOf(communityId, membershipId))

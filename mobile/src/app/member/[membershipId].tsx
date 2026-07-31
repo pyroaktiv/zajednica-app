@@ -7,7 +7,9 @@ import type { MemberProfileDto } from "../../api/types";
 import { RoleNames } from "../../api/types";
 import { useCommunity } from "../../state/CommunityContext";
 import { Button, Card, ErrorText, Loading, Screen, SectionTitle } from "../../ui/Basics";
+import { formatDateTime } from "../../ui/labels";
 import { roleLabel } from "../../ui/MemberRow";
+import { MutedNotice } from "../../ui/MutedNotice";
 import { colors, spacing } from "../../ui/theme";
 
 function Row({ label, value }: { label: string; value: string | null }) {
@@ -21,7 +23,7 @@ function Row({ label, value }: { label: string; value: string | null }) {
 
 export default function MemberProfile() {
   const { membershipId } = useLocalSearchParams<{ membershipId: string }>();
-  const { activeCommunityId, me, isIssuer } = useCommunity();
+  const { activeCommunityId, me, isIssuer, isMuted } = useCommunity();
   const [member, setMember] = useState<MemberProfileDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -115,6 +117,11 @@ export default function MemberProfile() {
                 : "nepotvrđen član"}
             {member.state !== "Active" ? " · istupio iz zajednice" : ""}
           </Text>
+          {member.mutedUntil && (
+            <Text style={{ color: colors.warning, marginTop: spacing.xs, fontWeight: "600" }}>
+              utišan do {formatDateTime(member.mutedUntil)}
+            </Text>
+          )}
         </Card>
 
         <Card>
@@ -130,8 +137,9 @@ export default function MemberProfile() {
 
         {!isMe && member.state === "Active" && (
           <>
-            <Button title="Pošalji poruku" onPress={openChat} loading={busy} />
-            {member.isConfirmed && (
+            <MutedNotice />
+            {!isMuted && <Button title="Pošalji poruku" onPress={openChat} loading={busy} />}
+            {member.isConfirmed && !isMuted && (
               <Button
                 title="Otvori nameru"
                 variant="secondary"

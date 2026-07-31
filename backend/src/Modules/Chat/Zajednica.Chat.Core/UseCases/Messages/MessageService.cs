@@ -16,7 +16,7 @@ public sealed class MessageService(
 {
     public MessageDto SendText(Guid accountId, Guid communityId, Guid chatId, SendTextRequest request)
     {
-        var (myMembershipId, chat) = Require(accountId, communityId, chatId);
+        var (myMembershipId, chat) = RequireForWriting(accountId, communityId, chatId);
 
         var message = chat.SendText(myMembershipId, request.Text, DateTime.UtcNow);
         chats.Update(chat);
@@ -26,7 +26,7 @@ public sealed class MessageService(
 
     public MessageDto SendVoice(Guid accountId, Guid communityId, Guid chatId, SendVoiceRequest request)
     {
-        var (myMembershipId, chat) = Require(accountId, communityId, chatId);
+        var (myMembershipId, chat) = RequireForWriting(accountId, communityId, chatId);
 
         var message = chat.SendVoice(myMembershipId, request.AudioUrl, request.DurationSeconds, DateTime.UtcNow);
         chats.Update(chat);
@@ -55,6 +55,13 @@ public sealed class MessageService(
     private (Guid MyMembershipId, ChatAggregate Chat) Require(Guid accountId, Guid communityId, Guid chatId)
     {
         var myMembershipId = access.RequireMember(accountId, communityId);
+
+        return (myMembershipId, access.RequireChat(communityId, chatId, myMembershipId));
+    }
+
+    private (Guid MyMembershipId, ChatAggregate Chat) RequireForWriting(Guid accountId, Guid communityId, Guid chatId)
+    {
+        var myMembershipId = access.RequireUnmutedMember(accountId, communityId);
 
         return (myMembershipId, access.RequireChat(communityId, chatId, myMembershipId));
     }

@@ -1,6 +1,6 @@
 using Zajednica.BuildingBlocks.Core.Domain;
 
-namespace Zajednica.Feed.Core.Domain.Intents.Actions;
+namespace Zajednica.Feed.Core.Domain.Intents;
 
 public sealed class IntentContext : ValueObject
 {

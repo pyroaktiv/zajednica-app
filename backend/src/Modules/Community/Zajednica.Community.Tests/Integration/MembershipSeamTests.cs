@@ -101,6 +101,29 @@ public class MembershipSeamTests : BaseCommunityIntegrationTest
     }
 
     [Fact]
+    public void A_muted_member_may_still_read_and_vote_but_fails_every_requirement_that_writes()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var issuerId = NewAccount(scope);
+        var memberId = NewAccount(scope);
+        var community = CreateCommunity(scope, issuerId);
+        Join(scope, memberId, QrToken(scope, issuerId, community.Id));
+        var member = Certify(scope, issuerId, memberId, community.Id);
+
+        Outcome(scope).Mute(member.MembershipId);
+        Db(scope).ChangeTracker.Clear();
+
+        var access = Access(scope);
+
+        access.RequireConfirmedMembershipId(memberId, community.Id).ShouldBe(member.MembershipId);
+        access.RequireActiveMembershipId(memberId, community.Id).ShouldBe(member.MembershipId);
+        Should.Throw<ForbiddenException>(() => access.RequireUnmutedConfirmedMembershipId(memberId, community.Id));
+        Should.Throw<ForbiddenException>(() => access.RequireUnmutedActiveMembershipId(memberId, community.Id));
+
+        access.RequireUnmutedConfirmedMembershipId(issuerId, community.Id).ShouldNotBe(Guid.Empty);
+    }
+
+    [Fact]
     public void The_manager_is_found_by_role_and_moves_with_the_election()
     {
         using var scope = Factory.Services.CreateScope();

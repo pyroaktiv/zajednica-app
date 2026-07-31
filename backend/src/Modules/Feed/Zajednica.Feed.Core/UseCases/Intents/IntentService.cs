@@ -18,17 +18,24 @@ public sealed class IntentService(
 {
     public IntentDetailsDto OpenBan(Guid accountId, Guid communityId, OpenUserTargetingIntentRequest request)
     {
-        var authorMembershipId = access.RequireConfirmed(accountId, communityId);
+        var authorMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
 
         return Open(UserActionKind.Ban, communityId, authorMembershipId, request.TargetMembershipId, request.Text);
     }
 
     public IntentDetailsDto OpenManagerElection(Guid accountId, Guid communityId, OpenUserTargetingIntentRequest request)
     {
-        var authorMembershipId = access.RequireConfirmed(accountId, communityId);
+        var authorMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
 
         return Open(UserActionKind.ManagerElection, communityId, authorMembershipId, request.TargetMembershipId,
             request.Text);
+    }
+
+    public IntentDetailsDto OpenMute(Guid accountId, Guid communityId, OpenUserTargetingIntentRequest request)
+    {
+        var authorMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
+
+        return Open(UserActionKind.Mute, communityId, authorMembershipId, request.TargetMembershipId, request.Text);
     }
 
     public IntentDetailsDto Vote(Guid accountId, Guid communityId, Guid intentId, CastVoteRequest request)

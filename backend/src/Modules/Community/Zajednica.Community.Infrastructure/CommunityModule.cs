@@ -42,6 +42,8 @@ public static class CommunityModule
     private static void AddApplicationServices(IServiceCollection services)
     {
         services.AddScoped<MembershipAccess>();
+        services.AddScoped<MembershipNotifier>();
+        services.AddScoped<MuteExpiry>();
         services.AddScoped<ICommunityService, CommunityService>();
         services.AddScoped<IMembershipService, MembershipService>();
         services.AddScoped<ICertificationService, Core.UseCases.CertificationService>();
@@ -52,5 +54,7 @@ public static class CommunityModule
         services.AddScoped<MembershipWriteService>();
         services.AddScoped<IInternalIntentOutcomeService>(sp => sp.GetRequiredService<MembershipWriteService>());
         services.AddScoped<IInternalStarAwardService>(sp => sp.GetRequiredService<MembershipWriteService>());
+
+        services.AddHostedService<MembershipMuteExpiryWorker>();
     }
 }

@@ -19,7 +19,7 @@ public sealed class HelpRequestChatService(
 {
     public ChatDetailsDto Respond(Guid accountId, Guid communityId, Guid helpRequestId)
     {
-        var helperMembershipId = access.RequireConfirmed(accountId, communityId);
+        var helperMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
 
         var existing = chats.GetActiveHelp(helpRequestId, helperMembershipId);
         if (existing is not null)

@@ -18,7 +18,8 @@ public static class MembershipMappers
             membership.IsConfirmed() ? membership.Stars : null,
             membership.Roles.Select(r => r.Role.ToString()).ToList());
 
-    public static MemberProfileDto ToProfileDto(this Membership membership, AccountProfileDto? profile) =>
+    public static MemberProfileDto ToProfileDto(this Membership membership, AccountProfileDto? profile,
+        DateTime now) =>
         new(membership.Id,
             membership.AccountId,
             profile?.Username ?? string.Empty,
@@ -32,7 +33,8 @@ public static class MembershipMappers
             membership.IsConfirmed() ? membership.Stars : null,
             membership.Roles.Select(r => r.Role.ToString()).ToList(),
             membership.DateJoined,
-            membership.State.ToString());
+            membership.State.ToString(),
+            membership.IsMuted(now) ? membership.MutedUntil : null);
 
     public static JoinedCommunityDto ToJoinedDto(this Membership membership, string communityName) =>
         new(membership.Id,

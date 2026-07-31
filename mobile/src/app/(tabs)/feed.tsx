@@ -7,6 +7,7 @@ import { useCommunity } from "../../state/CommunityContext";
 import { Button, Card, EmptyState, ErrorText, Screen } from "../../ui/Basics";
 import { formatDateTime, intentKindLabel, intentStatusLabel } from "../../ui/labels";
 import { PostCard } from "../../ui/PostCard";
+import { MutedNotice } from "../../ui/MutedNotice";
 import { CertificationShortcut, JoinCommunityShortcut } from "../../ui/Shortcuts";
 import { colors, spacing } from "../../ui/theme";
 
@@ -44,7 +45,7 @@ function IntentCard({ intent }: { intent: IntentSummaryDto }) {
 }
 
 export default function Feed() {
-  const { activeCommunityId, status } = useCommunity();
+  const { activeCommunityId, status, isMuted } = useCommunity();
   const [segment, setSegment] = useState<Segment>("general");
   const [posts, setPosts] = useState<PostDto[]>([]);
   const [postsCursor, setPostsCursor] = useState<string | null>(null);
@@ -128,11 +129,14 @@ export default function Feed() {
             onEndReachedThreshold={0.4}
             ListEmptyComponent={<EmptyState text="Još nema objava." />}
           />
-          <Button
-            title="Kreiraj novu objavu"
-            onPress={() => router.push("/post-create")}
-            style={{ marginTop: spacing.s }}
-          />
+          <MutedNotice />
+          {!isMuted && (
+            <Button
+              title="Kreiraj novu objavu"
+              onPress={() => router.push("/post-create")}
+              style={{ marginTop: spacing.s }}
+            />
+          )}
         </>
       ) : (
         <FlatList

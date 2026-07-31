@@ -31,6 +31,19 @@ public sealed class MembershipAccessService(IMembershipRepository memberships)
         return membership.Id;
     }
 
+    public Guid RequireUnmutedActiveMembershipId(Guid accountId, Guid communityId) =>
+        RequireUnmuted(RequireActive(accountId, communityId)).Id;
+
+    public Guid RequireUnmutedConfirmedMembershipId(Guid accountId, Guid communityId)
+    {
+        var membership = RequireActive(accountId, communityId);
+
+        if (!membership.IsConfirmed())
+            throw new ForbiddenException("Only a confirmed member can do this.");
+
+        return RequireUnmuted(membership).Id;
+    }
+
     public bool IsConfirmedMemberOf(Guid communityId, Guid membershipId) =>
         FindIn(communityId, membershipId) is { } membership
         && membership.IsActive()
@@ -49,6 +62,14 @@ public sealed class MembershipAccessService(IMembershipRepository memberships)
 
         if (!membership.IsActive())
             throw new ForbiddenException("Membership is not active.");
+
+        return membership;
+    }
+
+    private static Membership RequireUnmuted(Membership membership)
+    {
+        if (membership.IsMuted(DateTime.UtcNow))
+            throw new ForbiddenException("You are muted in this community.");
 
         return membership;
     }

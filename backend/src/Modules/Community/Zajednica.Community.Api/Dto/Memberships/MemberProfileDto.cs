@@ -14,4 +14,5 @@ public record MemberProfileDto(
     int? Stars,
     IReadOnlyList<string> Roles,
     DateTime DateJoined,
-    string State);
+    string State,
+    DateTime? MutedUntil);

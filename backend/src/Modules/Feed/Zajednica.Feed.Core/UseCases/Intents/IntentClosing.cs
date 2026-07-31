@@ -30,8 +30,11 @@ public sealed class IntentClosing(
     {
         var now = DateTime.UtcNow;
 
-        foreach (var intent in intents.GetDue(now))
-            CloseIfDue(intent, now);
+        foreach (var intentId in intents.GetDueIds(now))
+        {
+            if (intents.Get(intentId) is { } intent)
+                CloseIfDue(intent, now);
+        }
     }
 
     private void Execute(Intent intent, DateTime now)
@@ -45,6 +48,10 @@ public sealed class IntentClosing(
 
             case UserTargetingAction { Kind: UserActionKind.ManagerElection } election:
                 outcome.ElectManager(election.TargetMembershipId);
+                break;
+
+            case UserTargetingAction { Kind: UserActionKind.Mute } mute:
+                outcome.Mute(mute.TargetMembershipId);
                 break;
         }
     }

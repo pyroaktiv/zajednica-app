@@ -8,6 +8,9 @@ public sealed class CommunityAccess(IInternalMembershipAccessService memberships
     public Guid RequireConfirmed(Guid accountId, Guid communityId) =>
         memberships.RequireConfirmedMembershipId(accountId, communityId);
 
+    public Guid RequireUnmutedConfirmed(Guid accountId, Guid communityId) =>
+        memberships.RequireUnmutedConfirmedMembershipId(accountId, communityId);
+
     public MembershipStatus StatusOf(Guid communityId, Guid membershipId) =>
         memberships.IsConfirmedMemberOf(communityId, membershipId)
             ? MembershipStatus.Confirmed

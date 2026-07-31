@@ -9,9 +9,20 @@ namespace Zajednica.Feed.Infrastructure.Database.Repositories;
 
 internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRepository, IIntentQueryStore
 {
-    public void Add(Intent intent) => Append(intent);
+    public void Add(Intent intent)
+    {
+        db.IntentViews.Add(new IntentView(intent));
+        Append(intent);
+    }
 
-    public void Update(Intent intent) => Append(intent);
+    public void Update(Intent intent)
+    {
+        if (intent.NewEvents.Count == 0)
+            return;
+
+        Reproject(intent);
+        Append(intent);
+    }
 
     public Intent? Get(Guid id)
     {
@@ -62,8 +73,12 @@ internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRe
             .Select(e => (bool?)e.InFavor)
             .FirstOrDefault();
 
-    public IReadOnlyList<Intent> GetDue(DateTime now) =>
-        LoadStreams(OpenViews().Where(v => v.Deadline <= now).Select(v => v.Id));
+    public IReadOnlyList<Guid> GetDueIds(DateTime now) =>
+        OpenViews()
+            .Where(v => v.Deadline <= now)
+            .OrderBy(v => v.Deadline)
+            .Select(v => v.Id)
+            .ToList();
 
     public IReadOnlyList<Intent> GetOpenByTarget(Guid communityId, Guid targetMembershipId) =>
         LoadStreams(OpenViews()
@@ -83,19 +98,17 @@ internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRe
             .Select(stream => Intent.Load(stream.ToList()))
             .ToList();
 
+    private void Reproject(Intent intent)
+    {
+        if (db.IntentViews.Local.FirstOrDefault(v => v.Id == intent.Id) is { } tracked)
+            tracked.Update(intent);
+        else
+            db.IntentViews.Update(new IntentView(intent));
+    }
+
     private void Append(Intent intent)
     {
-        if (intent.NewEvents.Count == 0)
-            return;
-
         db.IntentEvents.AddRange(intent.NewEvents);
-
-        var view = db.IntentViews.FirstOrDefault(v => v.Id == intent.Id);
-        if (view is null)
-            db.IntentViews.Add(new IntentView(intent));
-        else
-            view.Update(intent);
-
         db.SaveChanges();
         intent.ClearNewEvents();
     }

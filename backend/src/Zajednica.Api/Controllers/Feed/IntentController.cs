@@ -35,6 +35,13 @@ public sealed class IntentController : ControllerBase
         return CreatedAtAction(nameof(Get), new { communityId, intentId = opened.Id }, opened);
     }
 
+    [HttpPost("mute")]
+    public ActionResult<IntentDetailsDto> OpenMute(Guid communityId, [FromBody] OpenUserTargetingIntentRequest request)
+    {
+        var opened = _intents.OpenMute(User.AccountId(), communityId, request);
+        return CreatedAtAction(nameof(Get), new { communityId, intentId = opened.Id }, opened);
+    }
+
     [HttpPost("{intentId:guid}/votes")]
     public ActionResult<IntentDetailsDto> Vote(Guid communityId, Guid intentId, [FromBody] CastVoteRequest request)
     {

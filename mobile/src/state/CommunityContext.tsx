@@ -18,6 +18,8 @@ type CommunityContextValue = {
   status: MembershipStatus;
   isIssuer: boolean;
   isManager: boolean;
+  isMuted: boolean;
+  mutedUntil: string | null;
   setActiveCommunity: (communityId: string | null) => void;
   refresh: () => Promise<void>;
 };
@@ -69,10 +71,12 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
 
   useChannel(activeCommunityId ? `community:${activeCommunityId}` : null, {
     "membership.roles.changed": refresh,
+    "membership.mute.changed": refresh,
     "certification.confirmed": refresh,
   });
 
   const status: MembershipStatus = !me ? "none" : me.isConfirmed ? "confirmed" : "unconfirmed";
+  const mutedUntil = me?.mutedUntil ?? null;
 
   return (
     <CommunityContext.Provider
@@ -84,6 +88,8 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
         status,
         isIssuer: me?.roles.includes(RoleNames.Issuer) ?? false,
         isManager: me?.roles.includes(RoleNames.Manager) ?? false,
+        isMuted: mutedUntil !== null && new Date(mutedUntil) > new Date(),
+        mutedUntil,
         setActiveCommunity,
         refresh,
       }}

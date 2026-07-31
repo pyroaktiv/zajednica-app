@@ -4,6 +4,7 @@ using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Chat.Api.Dto.Chats;
 using Zajednica.Chat.Api.Dto.Messages;
+using Zajednica.Community.Api.Internal;
 
 namespace Zajednica.Chat.Tests.Integration;
 
@@ -127,6 +128,30 @@ public class ChatTests : BaseChatIntegrationTest
         Confirm(scope, owner.AccountId, newcomer.AccountId, community.Id);
 
         Db(scope).Chats.Any(c => c.Id == chat.Id).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void A_muted_member_reads_their_chats_but_cannot_write_anywhere()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var (community, owner) = CreateCommunity(scope);
+        var muted = AddConfirmedMember(scope, owner.AccountId, community.Id);
+        var neighbour = AddConfirmedMember(scope, owner.AccountId, community.Id);
+        var post = CreateHelpRequest(scope, owner.AccountId, community.Id, "Treba mi pomoc.");
+
+        var chat = OpenDirect(scope, muted.AccountId, community.Id, owner.MembershipId);
+        SendText(scope, muted.AccountId, community.Id, chat.Id, "Pre utisavanja");
+
+        scope.ServiceProvider.GetRequiredService<IInternalIntentOutcomeService>().Mute(muted.MembershipId);
+        CommunityDb(scope).ChangeTracker.Clear();
+
+        Should.Throw<ForbiddenException>(() => SendText(scope, muted.AccountId, community.Id, chat.Id, "Posle"));
+        Should.Throw<ForbiddenException>(() =>
+            OpenDirect(scope, muted.AccountId, community.Id, neighbour.MembershipId));
+        Should.Throw<ForbiddenException>(() => Respond(scope, muted.AccountId, community.Id, post.Id));
+
+        Page(scope, muted.AccountId, community.Id, chat.Id, null, 10)
+            .Items.Select(m => m.Text).ShouldBe(["Pre utisavanja"]);
     }
 
     [Fact]

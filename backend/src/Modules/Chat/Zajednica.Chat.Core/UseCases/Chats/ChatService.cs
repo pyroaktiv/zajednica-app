@@ -15,7 +15,7 @@ public sealed class ChatService(
 {
     public ChatDetailsDto OpenDirect(Guid accountId, Guid communityId, OpenDirectChatRequest request)
     {
-        var myMembershipId = access.RequireConfirmed(accountId, communityId);
+        var myMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
         access.RequireCounterpart(communityId, request.TargetMembershipId);
 
         var existing = chats.GetDirect(communityId, myMembershipId, request.TargetMembershipId);

@@ -4,4 +4,5 @@ public interface IInternalIntentOutcomeService
 {
     void Ban(Guid membershipId, Guid intentId);
     void ElectManager(Guid membershipId);
+    void Mute(Guid membershipId);
 }

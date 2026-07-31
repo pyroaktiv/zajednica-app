@@ -5,6 +5,8 @@ namespace Zajednica.Community.Core.Domain;
 
 public class Membership : AggregateRoot
 {
+    private static readonly TimeSpan MuteDuration = TimeSpan.FromDays(3);
+
     private readonly List<RoleGrant> _roles = [];
 
     public Guid AccountId { get; private set; }
@@ -15,6 +17,7 @@ public class Membership : AggregateRoot
     public MembershipState State { get; private set; }
     public DateTime? LeftAt { get; private set; }
     public Guid? BannedByIntentId { get; private set; }
+    public DateTime? MutedUntil { get; private set; }
     public int Stars { get; private set; }
     public DateTime DateJoined { get; private set; }
     public IReadOnlyList<RoleGrant> Roles => _roles;
@@ -94,6 +97,18 @@ public class Membership : AggregateRoot
         BannedByIntentId = intentId;
     }
 
+    public void Mute(DateTime now) => MutedUntil = now.Add(MuteDuration);
+
+    public bool EndMuteIfExpired(DateTime now)
+    {
+        if (MutedUntil is null || IsMuted(now))
+            return false;
+
+        MutedUntil = null;
+
+        return true;
+    }
+
     public void AddStars(int amount)
     {
         if (amount < 0)
@@ -127,4 +142,6 @@ public class Membership : AggregateRoot
     public bool IsActive() => State == MembershipState.Active;
 
     public bool IsConfirmed() => CertificationStatus == CertificationStatus.Confirmed;
+
+    public bool IsMuted(DateTime now) => MutedUntil > now;
 }

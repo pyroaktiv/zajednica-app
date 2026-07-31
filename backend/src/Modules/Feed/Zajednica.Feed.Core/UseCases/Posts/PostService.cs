@@ -20,7 +20,7 @@ public sealed class PostService(
 {
     public PostDto CreateGeneral(Guid accountId, Guid communityId, CreateGeneralPostRequest request)
     {
-        var authorMembershipId = access.RequireConfirmed(accountId, communityId);
+        var authorMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
 
         var post = new GeneralTopicPost(communityId, authorMembershipId, request.Text,
             PostMappers.ToKind(request.Kind), request.ImageUrls, DateTime.UtcNow);
@@ -33,7 +33,7 @@ public sealed class PostService(
 
     public PostDto CreateHelpRequest(Guid accountId, Guid communityId, CreateHelpRequestRequest request)
     {
-        var authorMembershipId = access.RequireConfirmed(accountId, communityId);
+        var authorMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
 
         var post = new HelpRequest(communityId, authorMembershipId, request.Text, request.ImageUrls, DateTime.UtcNow);
         posts.Add(post);
@@ -45,7 +45,7 @@ public sealed class PostService(
 
     public PostDto CloseHelpRequest(Guid accountId, Guid communityId, Guid postId)
     {
-        var actorMembershipId = access.RequireConfirmed(accountId, communityId);
+        var actorMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
 
         if (Require(postId, communityId) is not HelpRequest help)
             throw new EntityValidationException("Only a help request can be closed for further responses.");

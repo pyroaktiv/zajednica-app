@@ -4,7 +4,11 @@ using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.Community.Core.Domain;
 using Zajednica.Feed.Api.Dto.Intents;
+using Zajednica.Feed.Api.Dto.Posts;
 using Zajednica.Feed.Core.Domain.Intents;
+using Zajednica.Feed.Core.Domain.Intents.Events;
+using Zajednica.Feed.Core.Domain.Posts;
+using Zajednica.Feed.Core.UseCases.Intents;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 
 namespace Zajednica.Feed.Tests.Integration;
@@ -89,6 +93,93 @@ public class IntentVotingTests : BaseFeedIntegrationTest
 
         Should.Throw<NotFoundException>(() => Intents(scope, otherOwner.AccountId)
             .GetVotes(other.Id, intent.Id));
+    }
+
+    [Fact]
+    public void Closing_due_intents_survives_one_of_them_being_superseded_earlier_in_the_same_pass()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var (community, owner) = CreateCommunity(scope);
+        var second = AddConfirmedMember(scope, owner.AccountId, community.Id);
+        var third = AddConfirmedMember(scope, owner.AccountId, community.Id);
+        var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
+
+        var ban = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
+            .OpenBan(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Razlog"))).Result!);
+        var election = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
+            .OpenManagerElection(community.Id,
+                new OpenUserTargetingIntentRequest(target.MembershipId, "Predlog"))).Result!);
+
+        Intents(scope, owner.AccountId).Vote(community.Id, ban.Id, new CastVoteRequest(true));
+        Intents(scope, second.AccountId).Vote(community.Id, ban.Id, new CastVoteRequest(true));
+        Intents(scope, third.AccountId).Vote(community.Id, ban.Id, new CastVoteRequest(false));
+
+        MakeDue(scope, ban.Id, TimeSpan.FromDays(4));
+        MakeDue(scope, election.Id, TimeSpan.FromDays(3));
+
+        Should.NotThrow(() => scope.ServiceProvider.GetRequiredService<IntentClosing>().CloseDue());
+
+        var db = Db(scope);
+        db.ChangeTracker.Clear();
+        db.IntentViews.Single(v => v.Id == ban.Id).Status.ShouldBe(IntentStatus.Accepted);
+        db.IntentViews.Single(v => v.Id == election.Id).Status.ShouldBe(IntentStatus.Rejected);
+        db.IntentEvents.Count(e => e.StreamId == election.Id && e is IntentClosed).ShouldBe(1);
+    }
+
+    private static void MakeDue(IServiceScope scope, Guid intentId, TimeSpan by)
+    {
+        var db = Db(scope);
+        db.Database.ExecuteSqlRaw(
+            """UPDATE feed."IntentEvents" SET "OccurredAt" = "OccurredAt" - {0} WHERE "StreamId" = {1}""",
+            by, intentId);
+        db.Database.ExecuteSqlRaw(
+            """
+            UPDATE feed."IntentViews"
+            SET "DateCreated" = "DateCreated" - {0}, "Deadline" = "Deadline" - {0}
+            WHERE "Id" = {1}
+            """,
+            by, intentId);
+        db.ChangeTracker.Clear();
+    }
+
+    [Fact]
+    public void An_accepted_mute_intent_silences_the_member_for_three_days_but_leaves_their_vote()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var (community, owner) = CreateCommunity(scope);
+        var second = AddConfirmedMember(scope, owner.AccountId, community.Id);
+        var third = AddConfirmedMember(scope, owner.AccountId, community.Id);
+        var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
+
+        var election = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
+            .OpenManagerElection(community.Id, new OpenUserTargetingIntentRequest(second.MembershipId, "Predlog"))).Result!);
+
+        var mute = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
+            .OpenMute(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Vredja komsije"))).Result!);
+
+        Intents(scope, owner.AccountId).Vote(community.Id, mute.Id, new CastVoteRequest(true));
+        Intents(scope, second.AccountId).Vote(community.Id, mute.Id, new CastVoteRequest(true));
+        var closed = Value<IntentDetailsDto>((Intents(scope, third.AccountId)
+            .Vote(community.Id, mute.Id, new CastVoteRequest(true))).Result!);
+
+        closed.Status.ShouldBe(nameof(IntentStatus.Accepted));
+
+        var communityDb = CommunityDb(scope);
+        communityDb.ChangeTracker.Clear();
+        var muted = communityDb.Memberships.Single(m => m.Id == target.MembershipId);
+        muted.State.ShouldBe(MembershipState.Active);
+        muted.MutedUntil!.Value.ShouldBe(DateTime.UtcNow.AddDays(3), TimeSpan.FromMinutes(1));
+
+        Should.Throw<ForbiddenException>(() => Posts(scope, target.AccountId)
+            .CreateGeneral(community.Id, new CreateGeneralPostRequest("Nesto", nameof(GeneralPostKind.Plain), [])));
+        Should.Throw<ForbiddenException>(() => Intents(scope, target.AccountId)
+            .OpenBan(community.Id, new OpenUserTargetingIntentRequest(second.MembershipId, "Razlog")));
+
+        Intents(scope, target.AccountId).Vote(community.Id, election.Id, new CastVoteRequest(false));
+
+        var db = Db(scope);
+        db.ChangeTracker.Clear();
+        db.IntentViews.Single(v => v.Id == election.Id).VotesAgainst.ShouldBe(1);
     }
 
     [Fact]

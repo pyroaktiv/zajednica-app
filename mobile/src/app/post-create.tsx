@@ -6,6 +6,7 @@ import { postApi } from "../api/feed";
 import { fileApi } from "../api/files";
 import { useCommunity } from "../state/CommunityContext";
 import { Button, ErrorText, Screen, SectionTitle } from "../ui/Basics";
+import { MutedNotice } from "../ui/MutedNotice";
 import { colors, spacing } from "../ui/theme";
 
 type PostType = "general" | "help";
@@ -51,7 +52,7 @@ function Option({
 }
 
 export default function PostCreate() {
-  const { activeCommunityId } = useCommunity();
+  const { activeCommunityId, isMuted } = useCommunity();
   const [type, setType] = useState<PostType>("general");
   const [kind, setKind] = useState<Kind>("Plain");
   const [text, setText] = useState("");
@@ -96,6 +97,7 @@ export default function PostCreate() {
     <Screen style={{ padding: 0 }}>
       <Stack.Screen options={{ title: "Nova objava" }} />
       <ScrollView contentContainerStyle={{ padding: spacing.l }}>
+        <MutedNotice />
         <SectionTitle>Tip objave</SectionTitle>
         <Option label="Opšta objava" selected={type === "general"} onPress={() => setType("general")} />
         <Option label="Komšijska ispomoć" selected={type === "help"} onPress={() => setType("help")} />
@@ -146,7 +148,9 @@ export default function PostCreate() {
         )}
         <Button title="Dodaj sliku" variant="secondary" onPress={addImage} loading={busy} />
         <ErrorText error={error} />
-        <Button title="Objavi" onPress={submit} loading={busy} style={{ marginTop: spacing.l }} />
+        {!isMuted && (
+          <Button title="Objavi" onPress={submit} loading={busy} style={{ marginTop: spacing.l }} />
+        )}
       </ScrollView>
     </Screen>
   );

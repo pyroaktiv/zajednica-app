@@ -16,6 +16,7 @@ import { commentApi, postApi } from "../../api/feed";
 import type { CommentDto, PostDto } from "../../api/types";
 import { useCommunity } from "../../state/CommunityContext";
 import { Button, Card, EmptyState, ErrorText, Loading, Screen, SectionTitle } from "../../ui/Basics";
+import { MutedNotice } from "../../ui/MutedNotice";
 import { formatDateTime, postKindLabel } from "../../ui/labels";
 import { colors, spacing } from "../../ui/theme";
 
@@ -81,7 +82,7 @@ function CommentView({
 
 export default function PostDetails() {
   const { postId } = useLocalSearchParams<{ postId: string }>();
-  const { activeCommunityId, me } = useCommunity();
+  const { activeCommunityId, me, isMuted } = useCommunity();
   const [post, setPost] = useState<PostDto | null>(null);
   const [comments, setComments] = useState<CommentDto[]>([]);
   const [replies, setReplies] = useState<Record<string, CommentDto[]>>({});
@@ -216,7 +217,8 @@ export default function PostDetails() {
             ))}
           </Card>
 
-          {isHelp && !post.closed && !isAuthor && (
+          <MutedNotice />
+          {isHelp && !post.closed && !isAuthor && !isMuted && (
             <Button title="Priskoči u pomoć" onPress={respond} loading={busy} />
           )}
           {isHelp && !post.closed && isAuthor && (
@@ -240,7 +242,7 @@ export default function PostDetails() {
           )}
         </ScrollView>
 
-        {isGeneral && (
+        {isGeneral && !isMuted && (
           <View
             style={{
               flexDirection: "row",

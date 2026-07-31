@@ -6,7 +6,13 @@ import { useCommunity } from "../state/CommunityContext";
 import { Button, ErrorText, Screen, SectionTitle } from "../ui/Basics";
 import { colors, spacing } from "../ui/theme";
 
-type Kind = "ban" | "managerElection";
+type Kind = "ban" | "managerElection" | "mute";
+
+const openers = {
+  ban: intentApi.openBan,
+  managerElection: intentApi.openManagerElection,
+  mute: intentApi.openMute,
+};
 
 export default function IntentCreate() {
   const { targetMembershipId, username } = useLocalSearchParams<{
@@ -24,10 +30,7 @@ export default function IntentCreate() {
     setError(null);
     setBusy(true);
     try {
-      const opened =
-        kind === "ban"
-          ? await intentApi.openBan(activeCommunityId, targetMembershipId, text.trim())
-          : await intentApi.openManagerElection(activeCommunityId, targetMembershipId, text.trim());
+      const opened = await openers[kind](activeCommunityId, targetMembershipId, text.trim());
       router.replace({ pathname: "/intent/[intentId]", params: { intentId: opened.id } });
     } catch (e: any) {
       setError(e.message);
@@ -39,7 +42,6 @@ export default function IntentCreate() {
     <Pressable
       onPress={() => setKind(value)}
       style={{
-        flex: 1,
         padding: spacing.m,
         borderRadius: 8,
         borderWidth: 1,
@@ -64,8 +66,9 @@ export default function IntentCreate() {
           svi potvrđeni članovi zajednice.
         </Text>
         <SectionTitle>Akcija</SectionTitle>
-        <View style={{ flexDirection: "row", gap: spacing.m, marginBottom: spacing.l }}>
+        <View style={{ gap: spacing.s, marginBottom: spacing.l }}>
           {option("managerElection", "Postavljanje za upravnika")}
+          {option("mute", "Utišavanje na 3 dana")}
           {option("ban", "Izbacivanje iz zajednice")}
         </View>
         <SectionTitle>Obrazloženje</SectionTitle>

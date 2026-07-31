@@ -1,5 +1,4 @@
 using Zajednica.BuildingBlocks.Core.Exceptions;
-using Zajednica.BuildingBlocks.Core.Realtime;
 using Zajednica.Community.Api.Dto.Memberships;
 using Zajednica.Community.Api.Public;
 using Zajednica.Community.Core.Domain;
@@ -13,13 +12,13 @@ namespace Zajednica.Community.Core.UseCases;
 public sealed class MembershipService(
     IMembershipRepository memberships,
     IInternalAccountService accounts,
-    IRealtimePusher realtime,
+    MembershipNotifier notifier,
     MembershipAccess access) : IMembershipService
 {
     public MemberProfileDto GetMine(Guid accountId, Guid communityId)
     {
         var (_, membership) = access.RequireMember(accountId, communityId);
-        return membership.ToProfileDto(accounts.GetProfile(accountId));
+        return membership.ToProfileDto(accounts.GetProfile(accountId), DateTime.UtcNow);
     }
 
     public UnitNumberDto SetUnitNumber(Guid accountId, Guid communityId, SetUnitNumberRequest request)
@@ -40,7 +39,7 @@ public sealed class MembershipService(
         if (target is null || target.CommunityId != communityId)
             throw new NotFoundException("Membership not found in this community.");
 
-        return target.ToProfileDto(accounts.GetProfile(target.AccountId));
+        return target.ToProfileDto(accounts.GetProfile(target.AccountId), DateTime.UtcNow);
     }
 
     public IReadOnlyList<MemberSummaryDto> GetConfirmed(Guid accountId, Guid communityId)
@@ -91,8 +90,7 @@ public sealed class MembershipService(
         target.Grant(CommunityRole.Issuer, actor.Id, DateTime.UtcNow);
         memberships.Update(target);
 
-        realtime.PushToUser(target.AccountId,
-            new RealtimeMessage("membership.roles.changed", new { communityId }));
+        notifier.RolesChanged(target);
     }
 
     private IReadOnlyList<MemberSummaryDto> Cards(

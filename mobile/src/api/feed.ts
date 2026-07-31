@@ -58,6 +58,11 @@ export const intentApi = {
       targetMembershipId,
       text,
     }),
+  openMute: (communityId: string, targetMembershipId: string, text: string) =>
+    api.post<IntentDetailsDto>(`/api/communities/${communityId}/intents/mute`, {
+      targetMembershipId,
+      text,
+    }),
   vote: (communityId: string, intentId: string, value: boolean) =>
     api.post<IntentDetailsDto>(`/api/communities/${communityId}/intents/${intentId}/votes`, {
       value,

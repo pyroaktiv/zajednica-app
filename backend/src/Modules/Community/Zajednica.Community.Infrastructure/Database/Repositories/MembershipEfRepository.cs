@@ -43,6 +43,9 @@ internal sealed class MembershipEfRepository(CommunityDbContext db) : IMembershi
             && m.State == MembershipState.Active
             && m.Roles.Any(r => r.Role == CommunityRole.Manager));
 
+    public IReadOnlyList<Membership> GetWithExpiredMute(DateTime now) =>
+        db.Memberships.Where(m => m.MutedUntil != null && m.MutedUntil <= now).ToList();
+
     public int CountConfirmed(Guid communityId) =>
         db.Memberships.Count(m =>
             m.CommunityId == communityId

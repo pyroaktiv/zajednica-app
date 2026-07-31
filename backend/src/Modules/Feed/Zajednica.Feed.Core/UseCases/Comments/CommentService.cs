@@ -18,7 +18,7 @@ public sealed class CommentService(
 {
     public CommentDto Add(Guid accountId, Guid communityId, Guid postId, AddCommentRequest request)
     {
-        var authorMembershipId = access.RequireConfirmed(accountId, communityId);
+        var authorMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
         var post = Require(postId, communityId);
 
         var comment = post.AddComment(authorMembershipId, request.Text, DateTime.UtcNow);
@@ -33,7 +33,7 @@ public sealed class CommentService(
     public CommentDto Reply(Guid accountId, Guid communityId, Guid postId, Guid commentId,
         AddCommentRequest request)
     {
-        var authorMembershipId = access.RequireConfirmed(accountId, communityId);
+        var authorMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
         var post = RequireWithComment(postId, communityId, commentId);
 
         var reply = post.AddReply(commentId, authorMembershipId, request.Text, DateTime.UtcNow);

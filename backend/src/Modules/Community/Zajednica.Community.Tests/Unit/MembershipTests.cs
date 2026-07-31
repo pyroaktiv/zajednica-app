@@ -183,6 +183,43 @@ public class MembershipTests
     }
 
     [Fact]
+    public void Mute_lasts_three_days_and_is_over_the_moment_it_expires()
+    {
+        var member = ConfirmedMember();
+
+        member.Mute(Now);
+
+        member.MutedUntil.ShouldBe(Now.AddDays(3));
+        member.IsMuted(Now.AddDays(3).AddSeconds(-1)).ShouldBeTrue();
+        member.IsMuted(Now.AddDays(3)).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Muting_a_member_who_is_already_muted_restarts_the_three_days()
+    {
+        var member = ConfirmedMember();
+        member.Mute(Now);
+
+        member.Mute(Now.AddDays(2));
+
+        member.MutedUntil.ShouldBe(Now.AddDays(5));
+    }
+
+    [Fact]
+    public void A_mute_is_only_ended_once_it_has_expired()
+    {
+        var member = ConfirmedMember();
+        member.Mute(Now);
+
+        member.EndMuteIfExpired(Now.AddDays(1)).ShouldBeFalse();
+        member.MutedUntil.ShouldBe(Now.AddDays(3));
+
+        member.EndMuteIfExpired(Now.AddDays(3)).ShouldBeTrue();
+        member.MutedUntil.ShouldBeNull();
+        member.EndMuteIfExpired(Now.AddDays(4)).ShouldBeFalse();
+    }
+
+    [Fact]
     public void AddStars_accumulates_and_rejects_negative()
     {
         var member = NewMember();

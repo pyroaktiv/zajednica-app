@@ -1,5 +1,4 @@
 using Zajednica.BuildingBlocks.Core.Exceptions;
-using Zajednica.BuildingBlocks.Core.Realtime;
 using Zajednica.Community.Api.Internal;
 using Zajednica.Community.Core.Domain;
 using Zajednica.Community.Core.Domain.RepositoryInterfaces;
@@ -8,7 +7,7 @@ namespace Zajednica.Community.Core.UseCases.Internal;
 
 public sealed class MembershipWriteService(
     IMembershipRepository memberships,
-    IRealtimePusher realtime,
+    MembershipNotifier notifier,
     ManagerElectionService election) : IInternalIntentOutcomeService, IInternalStarAwardService
 {
     public void Ban(Guid membershipId, Guid intentId)
@@ -18,7 +17,7 @@ public sealed class MembershipWriteService(
         membership.Ban(intentId, DateTime.UtcNow);
         memberships.Update(membership);
 
-        PushRolesChanged(membership);
+        notifier.RolesChanged(membership);
     }
 
     public void ElectManager(Guid membershipId)
@@ -32,9 +31,19 @@ public sealed class MembershipWriteService(
         if (currentManager is not null)
         {
             memberships.Update(currentManager);
-            PushRolesChanged(currentManager);
+            notifier.RolesChanged(currentManager);
         }
-        PushRolesChanged(newManager);
+        notifier.RolesChanged(newManager);
+    }
+
+    public void Mute(Guid membershipId)
+    {
+        var membership = Require(membershipId);
+
+        membership.Mute(DateTime.UtcNow);
+        memberships.Update(membership);
+
+        notifier.MuteChanged(membership);
     }
 
     public void AddStars(Guid membershipId, int stars)
@@ -47,8 +56,4 @@ public sealed class MembershipWriteService(
 
     private Membership Require(Guid membershipId) =>
         memberships.GetById(membershipId) ?? throw new NotFoundException("Membership not found.");
-
-    private void PushRolesChanged(Membership membership) =>
-        realtime.PushToUser(membership.AccountId,
-            new RealtimeMessage("membership.roles.changed", new { communityId = membership.CommunityId }));
 }

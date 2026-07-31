@@ -94,6 +94,7 @@ export type MemberProfileDto = {
   roles: string[];
   dateJoined: string;
   state: string;
+  mutedUntil: string | null;
 };
 
 export type UnitNumberDto = { membershipId: string; unitNumber: string | null };
