@@ -1,7 +1,7 @@
 using Zajednica.BuildingBlocks.Core.Domain.EventSourcing;
 using Zajednica.BuildingBlocks.Core.Exceptions;
-using Zajednica.Feed.Core.Domain.Intents.Actions;
 using Zajednica.Feed.Core.Domain.Intents.Events;
+using Zajednica.Feed.Core.Domain.Intents.Initiatives;
 
 namespace Zajednica.Feed.Core.Domain.Intents;
 
@@ -11,15 +11,10 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
 
     private readonly Dictionary<Guid, bool> _votes = [];
 
-    public IntentAction Action { get; private set; }
-    public string Text { get; private set; } = string.Empty;
+    public Initiative Initiative { get; private set; }
+    public DateTime DateCreated { get; private set; }
     public DateTime? DateOfClosure { get; private set; }
     public IntentStatus Status { get; private set; }
-
-    public Guid CommunityId => Action.Context.CommunityId;
-    public Guid AuthorMembershipId => Action.Context.AuthorMembershipId;
-    public DateTime DateCreated => Action.Context.Now;
-    public int EligibleVoterCount => Action.Context.EligibleVoterCount;
 
     public DateTime Deadline => DateCreated.Add(VotingWindow);
     public int VotesFor => _votes.Count(v => v.Value);
@@ -27,15 +22,10 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
 
     private Intent() { }
 
-    public static Intent Open(IntentAction action, string text)
+    public static Intent Open(Initiative initiative, DateTime now)
     {
-        if (string.IsNullOrWhiteSpace(text))
-            throw new EntityValidationException("Text is required.");
-        if (action.Context.EligibleVoterCount < 2)
-            throw new EntityValidationException("An intent needs at least two eligible voters.");
-
         var intent = new Intent();
-        intent.RegisterEvent(action.ToOpenedEvent(text));
+        intent.RegisterEvent(initiative.ToOpenedEvent(now));
 
         return intent;
     }
@@ -84,7 +74,7 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
 
     public bool? VoteOf(Guid membershipId) => _votes.TryGetValue(membershipId, out var vote) ? vote : null;
 
-    public bool QuorumReached() => _votes.Count >= EligibleVoterCount / 2 + 1;
+    public bool QuorumReached() => _votes.Count >= Initiative.EligibleVoterCount / 2 + 1;
 
     public bool HasDecisiveMajority() => IsThreeQuarters(VotesFor) || IsThreeQuarters(VotesAgainst);
 
@@ -95,8 +85,8 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
         switch (intentEvent)
         {
             case IntentOpened opened:
-                Action = opened.ToAction();
-                Text = opened.Text;
+                Initiative = opened.ToInitiative();
+                DateCreated = opened.OccurredAt;
                 Status = IntentStatus.Open;
                 break;
 
@@ -119,5 +109,5 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
         return VotesFor > VotesAgainst ? IntentStatus.Accepted : IntentStatus.Rejected;
     }
 
-    private bool IsThreeQuarters(int votes) => votes * 4 >= EligibleVoterCount * 3;
+    private bool IsThreeQuarters(int votes) => votes * 4 >= Initiative.EligibleVoterCount * 3;
 }

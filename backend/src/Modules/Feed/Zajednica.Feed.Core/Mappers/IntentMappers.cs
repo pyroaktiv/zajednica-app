@@ -37,7 +37,8 @@ public static class IntentMappers
             view.VotesFor,
             view.VotesAgainst,
             view.QuorumReached,
-            myVote);
+            myVote,
+            view.VotesAreVisible);
 
     public static IntentVoterDto ToVoterDto(this IntentVoteView vote, AccountProfileDto? voter) =>
         new(vote.VoterMembershipId,

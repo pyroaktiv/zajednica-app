@@ -29,12 +29,9 @@ export default function IntentDetails() {
   const load = useCallback(async () => {
     if (!activeCommunityId || !intentId) return;
     try {
-      const [details, votes] = await Promise.all([
-        intentApi.get(activeCommunityId, intentId),
-        intentApi.getVotes(activeCommunityId, intentId),
-      ]);
+      const details = await intentApi.get(activeCommunityId, intentId);
       setIntent(details);
-      setVoters(votes);
+      setVoters(details.areVotesPublic ? await intentApi.getVotes(activeCommunityId, intentId) : []);
     } catch (e: any) {
       setError(e.message);
     }
@@ -62,8 +59,9 @@ export default function IntentDetails() {
     if (!activeCommunityId) return;
     setBusy(true);
     try {
-      setIntent(await intentApi.vote(activeCommunityId, intent.id, value));
-      setVoters(await intentApi.getVotes(activeCommunityId, intent.id));
+      const updated = await intentApi.vote(activeCommunityId, intent.id, value);
+      setIntent(updated);
+      if (updated.areVotesPublic) setVoters(await intentApi.getVotes(activeCommunityId, intent.id));
     } catch (e: any) {
       Alert.alert("Greška", e.message);
     } finally {
@@ -131,8 +129,13 @@ export default function IntentDetails() {
 
         <Card>
           <SectionTitle>Glasači</SectionTitle>
-          {voters.length === 0 && <Text style={{ color: colors.muted }}>Još niko nije glasao.</Text>}
-          {voters.map((voter) => (
+          {!intent.areVotesPublic && (
+            <Text style={{ color: colors.muted }}>Glasovi za ovu vrstu namere nisu javni.</Text>
+          )}
+          {intent.areVotesPublic && voters.length === 0 && (
+            <Text style={{ color: colors.muted }}>Još niko nije glasao.</Text>
+          )}
+          {intent.areVotesPublic && voters.map((voter) => (
             <View
               key={voter.membershipId}
               style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: spacing.xs }}

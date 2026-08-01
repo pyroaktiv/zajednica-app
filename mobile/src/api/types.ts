@@ -176,6 +176,7 @@ export type IntentDetailsDto = {
   votesAgainst: number;
   quorumReached: boolean;
   myVote: boolean | null;
+  areVotesPublic: boolean;
 };
 
 export type IntentVoterDto = {

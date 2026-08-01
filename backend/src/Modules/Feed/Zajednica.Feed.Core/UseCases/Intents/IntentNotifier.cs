@@ -1,7 +1,7 @@
 using Zajednica.BuildingBlocks.Core.Notifications;
 using Zajednica.BuildingBlocks.Core.Realtime;
 using Zajednica.Feed.Core.Domain.Intents;
-using Zajednica.Feed.Core.Domain.Intents.Actions;
+using Zajednica.Feed.Core.Domain.Intents.Initiatives;
 
 namespace Zajednica.Feed.Core.UseCases.Intents;
 
@@ -38,7 +38,7 @@ public sealed class IntentNotifier(
 
     private void NotifyTarget(Intent intent, string title, string body, NotificationPriority priority)
     {
-        if (intent.Action is not UserTargetingAction targeting)
+        if (intent.Initiative is not UserTargetingInitiative targeting)
             return;
 
         if (directory.AccountId(targeting.TargetMembershipId) is not { } targetAccountId)

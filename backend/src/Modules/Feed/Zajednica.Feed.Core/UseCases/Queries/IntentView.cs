@@ -1,5 +1,5 @@
 using Zajednica.Feed.Core.Domain.Intents;
-using Zajednica.Feed.Core.Domain.Intents.Actions;
+using Zajednica.Feed.Core.Domain.Intents.Initiatives;
 
 namespace Zajednica.Feed.Core.UseCases.Queries;
 
@@ -15,6 +15,7 @@ public class IntentView
     public DateTime Deadline { get; private set; }
     public DateTime? DateOfClosure { get; private set; }
     public IntentStatus Status { get; private set; }
+    public bool VotesAreVisible { get; private set; }
     public int EligibleVoterCount { get; private set; }
     public int VotesFor { get; private set; }
     public int VotesAgainst { get; private set; }
@@ -25,14 +26,15 @@ public class IntentView
     public IntentView(Intent intent)
     {
         Id = intent.Id;
-        CommunityId = intent.CommunityId;
-        AuthorMembershipId = intent.AuthorMembershipId;
-        TargetMembershipId = (intent.Action as UserTargetingAction)?.TargetMembershipId;
-        Kind = intent.Action.Name;
-        Text = intent.Text;
+        CommunityId = intent.Initiative.CommunityId;
+        AuthorMembershipId = intent.Initiative.AuthorMembershipId;
+        TargetMembershipId = (intent.Initiative as UserTargetingInitiative)?.TargetMembershipId;
+        Kind = intent.Initiative.KindName;
+        Text = intent.Initiative.Description;
+        VotesAreVisible = intent.Initiative.AreVotesPublic;
         DateCreated = intent.DateCreated;
         Deadline = intent.Deadline;
-        EligibleVoterCount = intent.EligibleVoterCount;
+        EligibleVoterCount = intent.Initiative.EligibleVoterCount;
 
         Update(intent);
     }

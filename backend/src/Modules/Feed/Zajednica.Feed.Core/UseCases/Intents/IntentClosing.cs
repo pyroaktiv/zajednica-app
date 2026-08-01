@@ -1,6 +1,6 @@
 using Zajednica.Community.Api.Internal;
 using Zajednica.Feed.Core.Domain.Intents;
-using Zajednica.Feed.Core.Domain.Intents.Actions;
+using Zajednica.Feed.Core.Domain.Intents.Initiatives;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 
 namespace Zajednica.Feed.Core.UseCases.Intents;
@@ -39,18 +39,18 @@ public sealed class IntentClosing(
 
     private void Execute(Intent intent, DateTime now)
     {
-        switch (intent.Action)
+        switch (intent.Initiative)
         {
-            case UserTargetingAction { Kind: UserActionKind.Ban } ban:
+            case UserTargetingInitiative { Kind: UserActionKind.Ban } ban:
                 outcome.Ban(ban.TargetMembershipId, intent.Id);
                 SupersedeOthersAbout(intent, ban.TargetMembershipId, now);
                 break;
 
-            case UserTargetingAction { Kind: UserActionKind.ManagerElection } election:
+            case UserTargetingInitiative { Kind: UserActionKind.ManagerElection } election:
                 outcome.ElectManager(election.TargetMembershipId);
                 break;
 
-            case UserTargetingAction { Kind: UserActionKind.Mute } mute:
+            case UserTargetingInitiative { Kind: UserActionKind.Mute } mute:
                 outcome.Mute(mute.TargetMembershipId);
                 break;
         }
@@ -58,7 +58,7 @@ public sealed class IntentClosing(
 
     private void SupersedeOthersAbout(Intent ban, Guid targetMembershipId, DateTime now)
     {
-        var open = intents.GetOpenByTarget(ban.CommunityId, targetMembershipId);
+        var open = intents.GetOpenByTarget(ban.Initiative.CommunityId, targetMembershipId);
 
         foreach (var other in open.Where(i => i.Id != ban.Id))
         {

@@ -1,4 +1,4 @@
-using Zajednica.Feed.Core.Domain.Intents.Actions;
+using Zajednica.Feed.Core.Domain.Intents.Initiatives;
 
 namespace Zajednica.Feed.Core.Domain.Intents.Events;
 
@@ -10,15 +10,14 @@ public sealed class UserTargetingIntentOpened : IntentOpened
 
     private UserTargetingIntentOpened() { }
 
-    public UserTargetingIntentOpened(UserActionKind kind, Guid targetMembershipId, IntentContext context, string text)
-        : base(context, text)
+    public UserTargetingIntentOpened(UserTargetingInitiative initiative, DateTime now) : base(initiative, now)
     {
-        Kind = kind;
-        TargetMembershipId = targetMembershipId;
-        TargetMembershipStatus = context.TargetMembershipStatus;
+        Kind = initiative.Kind;
+        TargetMembershipId = initiative.TargetMembershipId;
+        TargetMembershipStatus = initiative.TargetMembershipStatus;
     }
 
-    public override IntentAction ToAction() =>
-        new UserTargetingAction(Kind, TargetMembershipId,
-            ToContextBuilder().WithTargetMembershipStatus(TargetMembershipStatus).Build());
+    public override Initiative ToInitiative() =>
+        new UserTargetingInitiative(Kind, TargetMembershipId, TargetMembershipStatus, CommunityId, AuthorMembershipId,
+            EligibleVoterCount, Description);
 }

@@ -1,3 +1,4 @@
+using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Feed.Api.Dto.Intents;
 using Zajednica.Feed.Api.Public;
@@ -22,7 +23,10 @@ public sealed class IntentQueryService(
     public IReadOnlyList<IntentVoterDto> GetVotes(Guid accountId, Guid communityId, Guid intentId)
     {
         access.RequireConfirmed(accountId, communityId);
-        lookup.RequireView(intentId, communityId);
+        var view = lookup.RequireView(intentId, communityId);
+
+        if (!view.VotesAreVisible)
+            throw new ForbiddenException("Votes on this intent are not open to members.");
 
         return presenter.Voters(intentQueries.GetVotes(intentId));
     }

@@ -2,8 +2,8 @@ using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.Feed.Core.Domain;
 using Zajednica.Feed.Core.Domain.Intents;
-using Zajednica.Feed.Core.Domain.Intents.Actions;
 using Zajednica.Feed.Core.Domain.Intents.Events;
+using Zajednica.Feed.Core.Domain.Intents.Initiatives;
 
 namespace Zajednica.Feed.Tests.Unit;
 
@@ -14,64 +14,56 @@ public class IntentTests
     private static readonly Guid Author = Guid.NewGuid();
     private static readonly Guid Target = Guid.NewGuid();
 
-    private static IntentContext ContextOf(Guid author, int eligibleVoterCount,
+    private static UserTargetingInitiative BanInitiative(Guid author, int eligibleVoterCount,
         MembershipStatus targetStatus = MembershipStatus.Confirmed) =>
-        new IntentContext.Builder()
-            .WithCommunityId(Community)
-            .WithAuthorMembershipId(author)
-            .WithEligibleVoterCount(eligibleVoterCount)
-            .WithTargetMembershipStatus(targetStatus)
-            .At(Now)
-            .Build();
-
-    private static UserTargetingAction BanOf(Guid author, int eligibleVoterCount) =>
-        new(UserActionKind.Ban, Target, ContextOf(author, eligibleVoterCount));
+        new(UserActionKind.Ban, Target, targetStatus, Community, author, eligibleVoterCount, "Ne postuje kucni red.");
 
     private static Intent Ban(int eligibleVoterCount = 10) =>
-        Intent.Open(BanOf(Author, eligibleVoterCount), "Ne postuje kucni red.");
+        Intent.Open(BanInitiative(Author, eligibleVoterCount), Now);
 
     private static Intent Replay(Intent intent) => Intent.Load(intent.NewEvents);
 
     [Fact]
     public void An_intent_can_only_be_opened_about_a_confirmed_member()
     {
-        Should.Throw<EntityValidationException>(() =>
-            new UserTargetingAction(UserActionKind.Ban, Target,
-                ContextOf(Author, 10, MembershipStatus.Unconfirmed)));
+        Should.Throw<EntityValidationException>(() => BanInitiative(Author, 10, MembershipStatus.Unconfirmed));
     }
 
     [Fact]
-    public void An_action_refuses_a_context_that_is_silent_about_what_its_own_rules_need()
+    public void An_initiative_refuses_the_data_that_is_silent_about_what_its_own_rules_need()
     {
-        Should.Throw<EntityValidationException>(() =>
-            new UserTargetingAction(UserActionKind.Ban, Target, ContextOf(Author, 10, MembershipStatus.Unknown)));
-
-        Should.Throw<EntityValidationException>(() =>
-            new UserTargetingAction(UserActionKind.Ban, Target, ContextOf(Guid.Empty, 10)));
+        Should.Throw<EntityValidationException>(() => BanInitiative(Author, 10, MembershipStatus.Unknown));
+        Should.Throw<EntityValidationException>(() => BanInitiative(Guid.Empty, 10));
     }
 
     [Fact]
     public void An_intent_cannot_be_opened_by_the_member_it_is_about()
     {
-        Should.Throw<EntityValidationException>(() => BanOf(Target, 10));
+        Should.Throw<EntityValidationException>(() => BanInitiative(Target, 10));
     }
 
     [Fact]
-    public void A_context_carries_only_what_it_was_given()
+    public void An_intent_needs_at_least_two_eligible_voters()
     {
-        var context = new IntentContext.Builder().WithCommunityId(Community).Build();
-
-        context.CommunityId.ShouldBe(Community);
-        context.AuthorMembershipId.ShouldBe(Guid.Empty);
-        context.EligibleVoterCount.ShouldBe(0);
-        context.TargetMembershipStatus.ShouldBe(MembershipStatus.Unknown);
+        Should.Throw<EntityValidationException>(() => BanInitiative(Author, 1));
     }
 
     [Fact]
-    public void Two_actions_on_the_same_target_in_the_same_context_are_the_same_value()
+    public void Votes_are_hidden_on_a_ban_or_a_mute_but_open_on_a_manager_election()
     {
-        BanOf(Author, 10).ShouldBe(BanOf(Author, 10));
-        BanOf(Author, 10).ShouldNotBe(BanOf(Author, 11));
+        UserTargetingInitiative Of(UserActionKind kind) =>
+            new(kind, Target, MembershipStatus.Confirmed, Community, Author, 10, "Razlog.");
+
+        Of(UserActionKind.Ban).AreVotesPublic.ShouldBeFalse();
+        Of(UserActionKind.Mute).AreVotesPublic.ShouldBeFalse();
+        Of(UserActionKind.ManagerElection).AreVotesPublic.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Two_initiatives_on_the_same_target_with_the_same_data_are_the_same_value()
+    {
+        BanInitiative(Author, 10).ShouldBe(BanInitiative(Author, 10));
+        BanInitiative(Author, 10).ShouldNotBe(BanInitiative(Author, 11));
     }
 
     [Fact]
@@ -94,11 +86,12 @@ public class IntentTests
         var replayed = Replay(intent);
 
         replayed.Id.ShouldBe(intent.Id);
-        replayed.CommunityId.ShouldBe(Community);
-        replayed.AuthorMembershipId.ShouldBe(Author);
-        replayed.Text.ShouldBe(intent.Text);
+        replayed.Initiative.CommunityId.ShouldBe(Community);
+        replayed.Initiative.AuthorMembershipId.ShouldBe(Author);
+        replayed.Initiative.Description.ShouldBe(intent.Initiative.Description);
+        replayed.DateCreated.ShouldBe(Now);
         replayed.Deadline.ShouldBe(intent.Deadline);
-        replayed.EligibleVoterCount.ShouldBe(10);
+        replayed.Initiative.EligibleVoterCount.ShouldBe(10);
         replayed.VotesFor.ShouldBe(5);
         replayed.Status.ShouldBe(status);
         replayed.DateOfClosure.ShouldBe(Now.AddHours(1));
@@ -106,17 +99,17 @@ public class IntentTests
     }
 
     [Fact]
-    public void Replaying_the_stream_reconstructs_the_action_the_intent_was_opened_with()
+    public void Replaying_the_stream_reconstructs_the_initiative_the_intent_was_opened_with()
     {
         var intent = Ban();
 
         var replayed = Replay(intent);
 
-        var action = replayed.Action.ShouldBeOfType<UserTargetingAction>();
-        action.Kind.ShouldBe(UserActionKind.Ban);
-        action.TargetMembershipId.ShouldBe(Target);
-        action.Name.ShouldBe("Ban");
-        action.ShouldBe(intent.Action);
+        var initiative = replayed.Initiative.ShouldBeOfType<UserTargetingInitiative>();
+        initiative.Kind.ShouldBe(UserActionKind.Ban);
+        initiative.TargetMembershipId.ShouldBe(Target);
+        initiative.KindName.ShouldBe("Ban");
+        initiative.ShouldBe(intent.Initiative);
     }
 
     [Fact]

@@ -64,7 +64,7 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
 
         var intent = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
-            .OpenBan(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Razlog"))).Result!);
+            .OpenManagerElection(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Razlog"))).Result!);
 
         Intents(scope, owner.AccountId).Vote(community.Id, intent.Id, new CastVoteRequest(true));
         Intents(scope, second.AccountId).Vote(community.Id, intent.Id, new CastVoteRequest(false));
@@ -78,6 +78,23 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         voters[0].Username.ShouldNotBeNull();
         voters[1].MembershipId.ShouldBe(second.MembershipId);
         voters[1].InFavor.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void The_voters_of_a_ban_intent_are_not_readable_by_members()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var (community, owner) = CreateCommunity(scope);
+        var second = AddConfirmedMember(scope, owner.AccountId, community.Id);
+        var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
+
+        var intent = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
+            .OpenBan(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Razlog"))).Result!);
+
+        Intents(scope, owner.AccountId).Vote(community.Id, intent.Id, new CastVoteRequest(true));
+
+        Should.Throw<ForbiddenException>(() => Intents(scope, second.AccountId)
+            .GetVotes(community.Id, intent.Id));
     }
 
     [Fact]
@@ -241,7 +258,7 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         using var reader = Factory.Services.CreateScope();
         var stored = Repository(reader).Get(intentId);
         stored!.VotesFor.ShouldBe(1);
-        stored.CommunityId.ShouldBe(communityId);
+        stored.Initiative.CommunityId.ShouldBe(communityId);
     }
 
     private static IIntentRepository Repository(IServiceScope scope) =>

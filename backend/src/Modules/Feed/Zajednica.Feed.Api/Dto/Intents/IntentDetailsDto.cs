@@ -16,4 +16,5 @@ public record IntentDetailsDto(
     int VotesFor,
     int VotesAgainst,
     bool QuorumReached,
-    bool? MyVote);
+    bool? MyVote,
+    bool AreVotesPublic);
