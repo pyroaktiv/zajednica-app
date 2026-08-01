@@ -7,14 +7,11 @@ public sealed class LocalFileStorage : IFileStorage
 {
     public const string PublicPath = "/uploads";
 
-    private readonly string _publicBaseUrl;
-
     public LocalFileStorage(IConfiguration configuration)
     {
         var path = configuration["Storage:LocalPath"];
 
         Root = Path.GetFullPath(string.IsNullOrWhiteSpace(path) ? "uploads" : path);
-        _publicBaseUrl = (configuration["Storage:PublicBaseUrl"] ?? "").TrimEnd('/');
     }
 
     public string Root { get; }
@@ -27,6 +24,6 @@ public sealed class LocalFileStorage : IFileStorage
         using var destination = File.Create(target);
         content.CopyTo(destination);
 
-        return $"{_publicBaseUrl}{PublicPath}/{file.ObjectName}";
+        return file.ObjectName;
     }
 }

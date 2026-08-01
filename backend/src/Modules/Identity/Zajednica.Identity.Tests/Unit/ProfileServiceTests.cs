@@ -1,6 +1,7 @@
 using Moq;
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
+using Zajednica.BuildingBlocks.Core.Storage;
 using Zajednica.Identity.Api.Dto;
 using Zajednica.Identity.Core.Domain;
 using Zajednica.Identity.Core.Domain.RepositoryInterfaces;
@@ -11,8 +12,9 @@ namespace Zajednica.Identity.Tests.Unit;
 public class ProfileServiceTests
 {
     private readonly Mock<IAccountRepository> _accounts = new();
+    private readonly Mock<IFileUrlMapper> _urls = new();
 
-    private ProfileService Sut() => new(_accounts.Object);
+    private ProfileService Sut() => new(_accounts.Object, _urls.Object);
 
     private static UpdateProfileRequest Update() => new("Pera", "Peric", "060123456", "pera@example.com", null);
 

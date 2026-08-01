@@ -1,5 +1,6 @@
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.Community.Api.Internal;
+using Zajednica.Community.Api.Internal.Dto;
 using Zajednica.Community.Core.Domain;
 using Zajednica.Community.Core.Domain.RepositoryInterfaces;
 
@@ -19,6 +20,16 @@ public sealed class MembershipAccessService(IMembershipRepository memberships)
             throw new ForbiddenException("Only a confirmed member can do this.");
 
         return membership.Id;
+    }
+
+    public ConfirmedVoterDto RequireConfirmedVoter(Guid accountId, Guid communityId)
+    {
+        var membership = RequireActive(accountId, communityId);
+
+        if (!membership.IsConfirmed())
+            throw new ForbiddenException("Only a confirmed member can do this.");
+
+        return new ConfirmedVoterDto(membership.Id, membership.CertifiedAt ?? membership.DateJoined);
     }
 
     public Guid RequireUnconfirmedMembershipId(Guid accountId, Guid communityId)

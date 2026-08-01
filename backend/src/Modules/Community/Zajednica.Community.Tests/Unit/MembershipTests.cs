@@ -48,6 +48,17 @@ public class MembershipTests
     }
 
     [Fact]
+    public void Creator_holds_a_self_signed_certificate_that_carries_a_date()
+    {
+        var creator = Membership.MakeCreator(Account, CommunityId, Now);
+
+        creator.Certificate.ShouldNotBeNull();
+        creator.Certificate.IssuerMembershipId.ShouldBe(creator.Id);
+        creator.Certificate.Date.ShouldBe(Now);
+        creator.CertifiedAt.ShouldBe(Now);
+    }
+
+    [Fact]
     public void Grant_requires_a_confirmed_member()
     {
         var member = NewMember();

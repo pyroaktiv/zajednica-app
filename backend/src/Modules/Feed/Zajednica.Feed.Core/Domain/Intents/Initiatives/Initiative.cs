@@ -30,6 +30,10 @@ public abstract class Initiative : ValueObject
         Description = description.Trim();
     }
 
+    public virtual int GetQuorum() => EligibleVoterCount / 2 + 1;
+    
+    public virtual int GetDecisiveThreshold() => EligibleVoterCount * 3 / 4 + 1;
+
     public abstract IntentOpened ToOpenedEvent(DateTime now);
 
     protected override IEnumerable<object> GetEqualityComponents()

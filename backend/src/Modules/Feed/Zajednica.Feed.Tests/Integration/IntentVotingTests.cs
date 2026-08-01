@@ -25,6 +25,7 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         var (community, owner) = CreateCommunity(scope);
         var second = AddConfirmedMember(scope, owner.AccountId, community.Id);
         var third = AddConfirmedMember(scope, owner.AccountId, community.Id);
+        var fourth = AddConfirmedMember(scope, owner.AccountId, community.Id);
         var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
 
         var election = Value<IntentDetailsDto>((Intents(scope, second.AccountId)
@@ -32,15 +33,16 @@ public class IntentVotingTests : BaseFeedIntegrationTest
 
         var ban = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
             .OpenBan(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Ne postuje kucni red"))).Result!);
-        ban.EligibleVoterCount.ShouldBe(4);
+        ban.EligibleVoterCount.ShouldBe(5);
 
         Intents(scope, owner.AccountId).Vote(community.Id, ban.Id, new CastVoteRequest(true));
         Intents(scope, second.AccountId).Vote(community.Id, ban.Id, new CastVoteRequest(true));
-        var closed = Value<IntentDetailsDto>((Intents(scope, third.AccountId)
+        Intents(scope, third.AccountId).Vote(community.Id, ban.Id, new CastVoteRequest(true));
+        var closed = Value<IntentDetailsDto>((Intents(scope, fourth.AccountId)
             .Vote(community.Id, ban.Id, new CastVoteRequest(true))).Result!);
 
         closed.Status.ShouldBe(nameof(IntentStatus.Accepted));
-        closed.VotesFor.ShouldBe(3);
+        closed.VotesFor.ShouldBe(4);
 
         var communityDb = CommunityDb(scope);
         communityDb.ChangeTracker.Clear();
@@ -166,6 +168,7 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         var (community, owner) = CreateCommunity(scope);
         var second = AddConfirmedMember(scope, owner.AccountId, community.Id);
         var third = AddConfirmedMember(scope, owner.AccountId, community.Id);
+        var fourth = AddConfirmedMember(scope, owner.AccountId, community.Id);
         var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
 
         var election = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
@@ -176,7 +179,8 @@ public class IntentVotingTests : BaseFeedIntegrationTest
 
         Intents(scope, owner.AccountId).Vote(community.Id, mute.Id, new CastVoteRequest(true));
         Intents(scope, second.AccountId).Vote(community.Id, mute.Id, new CastVoteRequest(true));
-        var closed = Value<IntentDetailsDto>((Intents(scope, third.AccountId)
+        Intents(scope, third.AccountId).Vote(community.Id, mute.Id, new CastVoteRequest(true));
+        var closed = Value<IntentDetailsDto>((Intents(scope, fourth.AccountId)
             .Vote(community.Id, mute.Id, new CastVoteRequest(true))).Result!);
 
         closed.Status.ShouldBe(nameof(IntentStatus.Accepted));
@@ -208,6 +212,22 @@ public class IntentVotingTests : BaseFeedIntegrationTest
 
         Should.Throw<EntityValidationException>(() => Intents(scope, owner.AccountId)
             .OpenBan(community.Id, new OpenUserTargetingIntentRequest(newcomer.MembershipId, "Ne poznajem ga")));
+    }
+
+    [Fact]
+    public void A_member_confirmed_after_the_intent_opened_may_not_vote()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var (community, owner) = CreateCommunity(scope);
+        var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
+
+        var intent = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
+            .OpenBan(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Razlog"))).Result!);
+
+        var latecomer = AddConfirmedMember(scope, owner.AccountId, community.Id);
+
+        Should.Throw<EntityValidationException>(() => Intents(scope, latecomer.AccountId)
+            .Vote(community.Id, intent.Id, new CastVoteRequest(true)));
     }
 
     [Fact]
@@ -249,8 +269,8 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         var one = Repository(first).Get(intentId);
         var other = Repository(second).Get(intentId);
 
-        one!.CastVote(Guid.NewGuid(), true, DateTime.UtcNow);
-        other!.CastVote(Guid.NewGuid(), true, DateTime.UtcNow);
+        one!.CastVote(new VoterContext(Guid.NewGuid(), DateTime.UtcNow.AddDays(-1)), true, DateTime.UtcNow);
+        other!.CastVote(new VoterContext(Guid.NewGuid(), DateTime.UtcNow.AddDays(-1)), true, DateTime.UtcNow);
 
         Repository(first).Update(one);
         Should.Throw<DbUpdateException>(() => Repository(second).Update(other));

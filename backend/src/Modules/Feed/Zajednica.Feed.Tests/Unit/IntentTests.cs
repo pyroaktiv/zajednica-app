@@ -23,6 +23,8 @@ public class IntentTests
 
     private static Intent Replay(Intent intent) => Intent.Load(intent.NewEvents);
 
+    private static VoterContext Voter(DateTime? certifiedAt = null) => new(Guid.NewGuid(), certifiedAt ?? Now);
+
     [Fact]
     public void An_intent_can_only_be_opened_about_a_confirmed_member()
     {
@@ -71,7 +73,7 @@ public class IntentTests
     {
         var intent = Ban();
 
-        Should.Throw<EntityValidationException>(() => intent.CastVote(Guid.NewGuid(), true, intent.Deadline));
+        Should.Throw<EntityValidationException>(() => intent.CastVote(Voter(), true, intent.Deadline));
         intent.Status.ShouldBe(IntentStatus.Open);
     }
 
@@ -80,7 +82,7 @@ public class IntentTests
     {
         var intent = Ban();
         foreach (var _ in Enumerable.Range(0, 5))
-            intent.CastVote(Guid.NewGuid(), true, Now.AddMinutes(1));
+            intent.CastVote(Voter(), true, Now.AddMinutes(1));
         var status = intent.Close(Now.AddHours(1));
 
         var replayed = Replay(intent);
@@ -115,7 +117,7 @@ public class IntentTests
     [Fact]
     public void One_vote_per_voter_still_holds_after_the_stream_is_replayed()
     {
-        var voter = Guid.NewGuid();
+        var voter = Voter();
         var intent = Ban();
         intent.CastVote(voter, true, Now);
 
@@ -126,16 +128,17 @@ public class IntentTests
     }
 
     [Fact]
-    public void Three_quarters_of_the_frozen_electorate_closes_the_intent_before_the_deadline()
+    public void More_than_three_quarters_of_the_frozen_electorate_closes_the_intent_before_the_deadline()
     {
-        var intent = Ban(4);
+        var intent = Ban(8);
 
-        intent.CastVote(Guid.NewGuid(), true, Now);
-        intent.CastVote(Guid.NewGuid(), true, Now);
+        foreach (var _ in Enumerable.Range(0, 6))
+            intent.CastVote(Voter(), true, Now);
         intent.HasDecisiveMajority().ShouldBeFalse();
 
-        intent.CastVote(Guid.NewGuid(), true, Now);
+        intent.CastVote(Voter(), true, Now);
 
+        intent.HasDecisiveMajority().ShouldBeTrue();
         intent.ShouldClose(Now).ShouldBeTrue();
         intent.Close(Now).ShouldBe(IntentStatus.Accepted);
     }
@@ -144,7 +147,7 @@ public class IntentTests
     public void An_intent_that_misses_the_quorum_expires_when_the_deadline_passes()
     {
         var intent = Ban();
-        intent.CastVote(Guid.NewGuid(), true, Now);
+        intent.CastVote(Voter(), true, Now);
 
         intent.ShouldClose(Now.AddHours(1)).ShouldBeFalse();
         intent.ShouldClose(intent.Deadline).ShouldBeTrue();
@@ -156,9 +159,9 @@ public class IntentTests
     public void A_quorum_that_votes_against_rejects_the_intent()
     {
         var intent = Ban(4);
-        intent.CastVote(Guid.NewGuid(), true, Now);
-        intent.CastVote(Guid.NewGuid(), false, Now);
-        intent.CastVote(Guid.NewGuid(), false, Now);
+        intent.CastVote(Voter(), true, Now);
+        intent.CastVote(Voter(), false, Now);
+        intent.CastVote(Voter(), false, Now);
 
         intent.Close(intent.Deadline).ShouldBe(IntentStatus.Rejected);
     }
@@ -167,7 +170,7 @@ public class IntentTests
     public void A_superseded_intent_is_rejected_and_the_stream_says_it_was_not_a_decision()
     {
         var intent = Ban();
-        intent.CastVote(Guid.NewGuid(), true, Now);
+        intent.CastVote(Voter(), true, Now);
 
         intent.Supersede(Now.AddHours(2));
 
@@ -181,7 +184,7 @@ public class IntentTests
     public void The_stream_of_an_intent_is_a_typed_sequence_of_what_happened_to_it()
     {
         var intent = Ban();
-        intent.CastVote(Guid.NewGuid(), true, Now);
+        intent.CastVote(Voter(), true, Now);
         intent.Close(intent.Deadline);
 
         intent.NewEvents.Select(e => e.GetType()).ShouldBe(
@@ -191,13 +194,34 @@ public class IntentTests
     }
 
     [Fact]
+    public void A_member_confirmed_after_the_intent_opened_cannot_vote_on_it()
+    {
+        var intent = Ban();
+
+        Should.Throw<EntityValidationException>(() =>
+            intent.CastVote(Voter(Now.AddMinutes(1)), true, Now.AddMinutes(2)));
+        intent.VotesFor.ShouldBe(0);
+    }
+
+    [Fact]
+    public void A_member_confirmed_no_later_than_the_intent_opened_may_vote()
+    {
+        var intent = Ban();
+
+        intent.CastVote(Voter(Now), true, Now.AddMinutes(1));
+        intent.CastVote(Voter(Now.AddSeconds(-1)), true, Now.AddMinutes(1));
+
+        intent.VotesFor.ShouldBe(2);
+    }
+
+    [Fact]
     public void A_closed_intent_takes_no_further_votes()
     {
         var intent = Ban(2);
-        intent.CastVote(Guid.NewGuid(), true, Now);
+        intent.CastVote(Voter(), true, Now);
         intent.Close(Now);
 
-        Should.Throw<EntityValidationException>(() => intent.CastVote(Guid.NewGuid(), true, Now));
+        Should.Throw<EntityValidationException>(() => intent.CastVote(Voter(), true, Now));
         Should.Throw<EntityValidationException>(() => intent.Supersede(Now));
     }
 }

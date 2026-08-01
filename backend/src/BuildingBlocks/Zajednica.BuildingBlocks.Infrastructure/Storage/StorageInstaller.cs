@@ -13,9 +13,15 @@ public static class StorageInstaller
     {
         var provider = configuration["Storage:Provider"];
         if (string.Equals(provider, "Azure", StringComparison.OrdinalIgnoreCase))
+        {
             services.AddSingleton<IFileStorage, AzureBlobFileStorage>();
+            services.AddSingleton<IFileUrlMapper, AzureFileUrlMapper>();
+        }
         else
+        {
             services.AddSingleton<IFileStorage, LocalFileStorage>();
+            services.AddSingleton<IFileUrlMapper, LocalFileUrlMapper>();
+        }
 
         return services;
     }

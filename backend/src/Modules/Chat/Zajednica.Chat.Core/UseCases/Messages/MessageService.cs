@@ -1,3 +1,4 @@
+using Zajednica.BuildingBlocks.Core.Storage;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Chat.Api.Dto.Messages;
 using Zajednica.Chat.Api.Public;
@@ -12,6 +13,7 @@ public sealed class MessageService(
     IChatRepository chats,
     MemberDirectory directory,
     ChatAccess access,
+    IFileUrlMapper urls,
     ChatNotifier notifier) : IMessageService
 {
     public MessageDto SendText(Guid accountId, Guid communityId, Guid chatId, SendTextRequest request)
@@ -28,7 +30,7 @@ public sealed class MessageService(
     {
         var (myMembershipId, chat) = RequireForWriting(accountId, communityId, chatId);
 
-        var message = chat.SendVoice(myMembershipId, request.AudioUrl, request.DurationSeconds, DateTime.UtcNow);
+        var message = chat.SendVoice(myMembershipId, urls.ToKey(request.AudioUrl)!, request.DurationSeconds, DateTime.UtcNow);
         chats.Update(chat);
 
         return Announce(chat, message, myMembershipId);
@@ -49,7 +51,7 @@ public sealed class MessageService(
         var page = chats.GetMessagePage(chatId, after, Paging.Clamp(limit));
         var senders = directory.Profiles(page.Items.Select(m => m.SenderMembershipId).ToList());
 
-        return page.ToDtoPage(senders);
+        return page.ToDtoPage(senders, urls);
     }
 
     private (Guid MyMembershipId, ChatAggregate Chat) Require(Guid accountId, Guid communityId, Guid chatId)
@@ -69,7 +71,7 @@ public sealed class MessageService(
     private MessageDto Announce(ChatAggregate chat, Message message, Guid senderMembershipId)
     {
         var profiles = directory.Profiles([senderMembershipId]);
-        var dto = message.ToDto(profiles.GetValueOrDefault(senderMembershipId));
+        var dto = message.ToDto(profiles.GetValueOrDefault(senderMembershipId), urls);
 
         notifier.MessageSent(chat, dto);
 

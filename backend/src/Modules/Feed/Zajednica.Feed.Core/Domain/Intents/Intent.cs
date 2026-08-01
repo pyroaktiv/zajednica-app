@@ -43,14 +43,16 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
         return intent;
     }
 
-    public void CastVote(Guid voterMembershipId, bool inFavor, DateTime now)
+    public void CastVote(VoterContext voter, bool inFavor, DateTime now)
     {
         if (Status != IntentStatus.Open || now >= Deadline)
             throw new EntityValidationException("Voting on this intent is closed.");
-        if (_votes.ContainsKey(voterMembershipId))
+        if (voter.CertificationDate > DateCreated)
+            throw new EntityValidationException("A member confirmed after this intent opened cannot vote on it.");
+        if (_votes.ContainsKey(voter.VoterMembershipId))
             throw new EntityValidationException("This member has already voted on this intent.");
 
-        RegisterEvent(new VoteCast(voterMembershipId, inFavor, now));
+        RegisterEvent(new VoteCast(voter.VoterMembershipId, inFavor, now));
     }
 
     public IntentStatus Close(DateTime now)
@@ -74,7 +76,7 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
 
     public bool? VoteOf(Guid membershipId) => _votes.TryGetValue(membershipId, out var vote) ? vote : null;
 
-    public bool QuorumReached() => _votes.Count >= Initiative.EligibleVoterCount / 2 + 1;
+    public bool QuorumReached() => _votes.Count >= Initiative.GetQuorum();
 
     public bool HasDecisiveMajority() => IsThreeQuarters(VotesFor) || IsThreeQuarters(VotesAgainst);
 
@@ -109,5 +111,5 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
         return VotesFor > VotesAgainst ? IntentStatus.Accepted : IntentStatus.Rejected;
     }
 
-    private bool IsThreeQuarters(int votes) => votes * 4 >= Initiative.EligibleVoterCount * 3;
+    private bool IsThreeQuarters(int votes) => votes >= Initiative.GetDecisiveThreshold();
 }

@@ -1,5 +1,6 @@
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.BuildingBlocks.Core.Notifications;
+using Zajednica.BuildingBlocks.Core.Storage;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Community.Api.Internal;
 using Zajednica.Feed.Api.Dto.Posts;
@@ -16,6 +17,7 @@ public sealed class PostService(
     IInternalMembershipAudienceService audience,
     INotificationSender notifications,
     MemberDirectory directory,
+    IFileUrlMapper urls,
     CommunityAccess access) : IPostService
 {
     public PostDto CreateGeneral(Guid accountId, Guid communityId, CreateGeneralPostRequest request)
@@ -23,7 +25,7 @@ public sealed class PostService(
         var authorMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
 
         var post = new GeneralTopicPost(communityId, authorMembershipId, request.Text,
-            PostMappers.ToKind(request.Kind), request.ImageUrls, DateTime.UtcNow);
+            PostMappers.ToKind(request.Kind), ToKeys(request.ImageUrls), DateTime.UtcNow);
         posts.Add(post);
 
         Announce(post);
@@ -35,7 +37,7 @@ public sealed class PostService(
     {
         var authorMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
 
-        var post = new HelpRequest(communityId, authorMembershipId, request.Text, request.ImageUrls, DateTime.UtcNow);
+        var post = new HelpRequest(communityId, authorMembershipId, request.Text, ToKeys(request.ImageUrls), DateTime.UtcNow);
         posts.Add(post);
 
         Announce(post);
@@ -70,8 +72,11 @@ public sealed class PostService(
         var page = posts.GetPage(communityId, before, Paging.Clamp(limit));
         var profiles = directory.Profiles(page.Items.Select(p => p.AuthorMembershipId).ToList());
 
-        return new CursorPage<PostDto, PageCursor>(page.Items.ToDtos(profiles), page.NextCursor);
+        return new CursorPage<PostDto, PageCursor>(page.Items.ToDtos(profiles, urls), page.NextCursor);
     }
+
+    private IEnumerable<string>? ToKeys(IReadOnlyList<string>? imageUrls) =>
+        imageUrls?.Select(u => urls.ToKey(u)!);
 
     private Post Require(Guid postId, Guid communityId)
     {
@@ -85,7 +90,7 @@ public sealed class PostService(
     private PostDto Single(Post post)
     {
         var profiles = directory.Profiles([post.AuthorMembershipId]);
-        return post.ToDto(profiles.GetValueOrDefault(post.AuthorMembershipId));
+        return post.ToDto(profiles.GetValueOrDefault(post.AuthorMembershipId), urls);
     }
 
     private void Announce(Post post)

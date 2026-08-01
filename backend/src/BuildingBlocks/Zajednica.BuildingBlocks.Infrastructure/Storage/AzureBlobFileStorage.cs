@@ -27,6 +27,6 @@ public sealed class AzureBlobFileStorage : IFileStorage
             HttpHeaders = new BlobHttpHeaders { ContentType = file.ContentType }
         });
 
-        return blob.Uri.ToString();
+        return file.ObjectName;
     }
 }

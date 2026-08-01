@@ -43,6 +43,7 @@ public class Membership : AggregateRoot
     {
         var membership = new Membership(accountId, communityId, now);
         membership.Confirm();
+        membership.Certificate = new Certificate(membership.Id, now);
         membership.Grant(CommunityRole.Issuer, null, now);
         return membership;
     }
@@ -144,4 +145,6 @@ public class Membership : AggregateRoot
     public bool IsConfirmed() => CertificationStatus == CertificationStatus.Confirmed;
 
     public bool IsMuted(DateTime now) => MutedUntil > now;
+
+    public DateTime? CertifiedAt => Certificate?.Date;
 }

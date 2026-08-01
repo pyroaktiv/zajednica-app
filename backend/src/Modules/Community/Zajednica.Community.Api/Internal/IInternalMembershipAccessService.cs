@@ -1,9 +1,12 @@
+using Zajednica.Community.Api.Internal.Dto;
+
 namespace Zajednica.Community.Api.Internal;
 
 public interface IInternalMembershipAccessService
 {
     Guid RequireActiveMembershipId(Guid accountId, Guid communityId);
     Guid RequireConfirmedMembershipId(Guid accountId, Guid communityId);
+    ConfirmedVoterDto RequireConfirmedVoter(Guid accountId, Guid communityId);
     Guid RequireUnconfirmedMembershipId(Guid accountId, Guid communityId);
     Guid RequireUnmutedActiveMembershipId(Guid accountId, Guid communityId);
     Guid RequireUnmutedConfirmedMembershipId(Guid accountId, Guid communityId);

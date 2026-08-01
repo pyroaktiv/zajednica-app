@@ -40,12 +40,12 @@ public sealed class IntentService(
 
     public IntentDetailsDto Vote(Guid accountId, Guid communityId, Guid intentId, CastVoteRequest request)
     {
-        var voterMembershipId = access.RequireConfirmed(accountId, communityId);
+        var voter = access.RequireVoter(accountId, communityId);
         var intent = lookup.RequireAggregate(intentId, communityId);
         var now = DateTime.UtcNow;
 
         closing.CloseIfDue(intent, now);
-        intent.CastVote(voterMembershipId, request.Value, now);
+        intent.CastVote(voter, request.Value, now);
 
         if (!closing.CloseIfDue(intent, now))
         {

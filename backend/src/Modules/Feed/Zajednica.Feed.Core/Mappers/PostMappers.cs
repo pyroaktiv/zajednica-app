@@ -1,4 +1,5 @@
 using Zajednica.BuildingBlocks.Core.Exceptions;
+using Zajednica.BuildingBlocks.Core.Storage;
 using Zajednica.Feed.Api.Dto.Posts;
 using Zajednica.Feed.Core.Domain.Posts;
 using Zajednica.Identity.Api.Internal.Dto;
@@ -17,20 +18,20 @@ public static class PostMappers
             : throw new EntityValidationException($"Unknown general post kind: {value}.");
     }
 
-    public static PostDto ToDto(this Post post, AccountProfileDto? author) => post switch
+    public static PostDto ToDto(this Post post, AccountProfileDto? author, IFileUrlMapper urls) => post switch
     {
-        GeneralTopicPost general => ToDto(post, author, "GENERAL", general.Kind.ToString(), null),
-        HelpRequest help => ToDto(post, author, "HELP_REQUEST", null, help.Closed),
+        GeneralTopicPost general => ToDto(post, author, urls, "GENERAL", general.Kind.ToString(), null),
+        HelpRequest help => ToDto(post, author, urls, "HELP_REQUEST", null, help.Closed),
         _ => throw new EntityValidationException("Unknown post type.")
     };
 
     public static IReadOnlyList<PostDto> ToDtos(
-        this IEnumerable<Post> posts, IReadOnlyDictionary<Guid, AccountProfileDto> authors) =>
+        this IEnumerable<Post> posts, IReadOnlyDictionary<Guid, AccountProfileDto> authors, IFileUrlMapper urls) =>
         posts
-            .Select(p => p.ToDto(authors.GetValueOrDefault(p.AuthorMembershipId)))
+            .Select(p => p.ToDto(authors.GetValueOrDefault(p.AuthorMembershipId), urls))
             .ToList();
 
-    private static PostDto ToDto(Post post, AccountProfileDto? author, string type, string? kind, bool? closed) =>
+    private static PostDto ToDto(Post post, AccountProfileDto? author, IFileUrlMapper urls, string type, string? kind, bool? closed) =>
         new(post.Id,
             type,
             kind,
@@ -39,6 +40,6 @@ public static class PostMappers
             author?.Username ?? string.Empty,
             author?.ImageUrl,
             post.Text,
-            post.Images.Select(i => i.Url).ToList(),
+            post.Images.Select(i => urls.ToUrl(i.Url)!).ToList(),
             post.DateCreated);
 }

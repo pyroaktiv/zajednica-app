@@ -11,24 +11,49 @@ public class LocalFileStorageTests : IDisposable
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"zajednica-storage-{Guid.NewGuid()}");
 
     [Fact]
-    public void Saves_under_the_folder_of_its_kind_and_returns_a_public_url()
+    public void Saves_under_the_folder_of_its_kind_and_returns_the_storage_key()
     {
         var storage = new LocalFileStorage(new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Storage:LocalPath"] = _root,
-                ["Storage:PublicBaseUrl"] = "http://localhost:5265"
+                ["Storage:LocalPath"] = _root
             })
             .Build());
         var stored = FileKind.Image.AcceptUpload("balcony.PNG", 12);
 
-        var url = storage.Save(new MemoryStream([1, 2, 3]), stored);
+        var key = storage.Save(new MemoryStream([1, 2, 3]), stored);
 
-        url.ShouldBe($"http://localhost:5265/uploads/{stored.ObjectName}");
+        key.ShouldBe(stored.ObjectName);
         stored.ObjectName.ShouldStartWith("images/");
         stored.ObjectName.ShouldEndWith(".png");
         stored.ContentType.ShouldBe("image/png");
         File.ReadAllBytes(Path.Combine(_root, "images", Path.GetFileName(stored.ObjectName))).Length.ShouldBe(3);
+    }
+
+    [Fact]
+    public void Save_writes_under_an_absolute_local_path_without_affecting_the_key()
+    {
+        var absolute = Path.Combine(Path.GetTempPath(), $"zajednica-abs-{Guid.NewGuid()}");
+        try
+        {
+            var storage = new LocalFileStorage(new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Storage:LocalPath"] = absolute
+                })
+                .Build());
+            var stored = FileKind.Image.AcceptUpload("balcony.png", 12);
+
+            var key = storage.Save(new MemoryStream([1, 2, 3]), stored);
+
+            key.ShouldBe(stored.ObjectName);
+            File.Exists(Path.Combine(absolute, "images", Path.GetFileName(stored.ObjectName))).ShouldBeTrue();
+        }
+        finally
+        {
+            if (Directory.Exists(absolute))
+                Directory.Delete(absolute, true);
+        }
     }
 
     [Fact]
