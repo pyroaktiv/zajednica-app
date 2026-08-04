@@ -1,3 +1,4 @@
+using Zajednica.Api.DevSeed;
 using Zajednica.Api.Middleware;
 using Zajednica.Api.Startup;
 using Zajednica.BuildingBlocks.Infrastructure.Realtime;
@@ -6,15 +7,13 @@ using Zajednica.BuildingBlocks.Infrastructure.Storage;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddHealthChecks();
 builder.Services.ConfigureOpenApi();
 builder.Services.ConfigureCors(builder.Configuration);
 builder.Services.ConfigureAuth(builder.Configuration);
 builder.Services.RegisterModules(builder.Configuration);
-
-var port = Environment.GetEnvironmentVariable("PORT");
-if (!string.IsNullOrEmpty(port))
-    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+builder.Services.AddDevSeed(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 

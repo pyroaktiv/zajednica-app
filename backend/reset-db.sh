@@ -11,12 +11,14 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+set -a; . ./.env; set +a
+
 MODULES=("${@:-}")
 [ -z "${MODULES[0]}" ] && MODULES=(Identity Community Feed Chat)
 
 CONTAINER=${DB_CONTAINER:-zajednica-postgres}
-DATABASE=${DB_NAME:-zajednica}
-DB_USER=${DB_USER:-zajednica}
+DATABASE=${POSTGRES_DB}
+DB_USER=${POSTGRES_USER}
 
 dotnet tool restore >/dev/null
 

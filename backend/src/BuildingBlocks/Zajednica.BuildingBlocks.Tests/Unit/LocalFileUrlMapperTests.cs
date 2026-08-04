@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Shouldly;
 using Zajednica.BuildingBlocks.Infrastructure.Storage;
@@ -6,13 +7,29 @@ namespace Zajednica.BuildingBlocks.Tests.Unit;
 
 public class LocalFileUrlMapperTests
 {
-    private static LocalFileUrlMapper Mapper(string publicBaseUrl) =>
-        new(new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Storage:PublicBaseUrl"] = publicBaseUrl
-            })
-            .Build());
+    private static LocalFileUrlMapper Mapper(string publicBaseUrl, HttpContext? context = null) =>
+        new(new HttpContextAccessor { HttpContext = context },
+            new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Storage:PublicBaseUrl"] = publicBaseUrl
+                })
+                .Build());
+
+    private static HttpContext RequestFrom(string scheme, string host)
+    {
+        var context = new DefaultHttpContext();
+        context.Request.Scheme = scheme;
+        context.Request.Host = new HostString(host);
+        return context;
+    }
+
+    [Fact]
+    public void ToUrl_builds_the_base_from_the_request_host_when_no_base_is_configured()
+    {
+        Mapper("", RequestFrom("http", "192.168.1.20:5265")).ToUrl("images/abc.jpg")
+            .ShouldBe("http://192.168.1.20:5265/uploads/images/abc.jpg");
+    }
 
     [Fact]
     public void ToUrl_prepends_base_url_and_public_path_to_a_key()

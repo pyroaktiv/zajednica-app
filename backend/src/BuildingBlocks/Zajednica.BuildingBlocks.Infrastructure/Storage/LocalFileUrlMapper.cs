@@ -1,14 +1,25 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 
 namespace Zajednica.BuildingBlocks.Infrastructure.Storage;
 
-public sealed class LocalFileUrlMapper : BaseFileUrlMapper
+public sealed class LocalFileUrlMapper(IHttpContextAccessor httpContext, IConfiguration configuration)
+    : BaseFileUrlMapper
 {
-    public LocalFileUrlMapper(IConfiguration configuration)
+    private readonly string _configuredBase = (configuration["Storage:PublicBaseUrl"] ?? "").TrimEnd('/');
+
+    protected override string Base
     {
-        var publicBaseUrl = (configuration["Storage:PublicBaseUrl"] ?? "").TrimEnd('/');
-        Base = $"{publicBaseUrl}{LocalFileStorage.PublicPath}";
+        get
+        {
+            var origin = string.IsNullOrEmpty(_configuredBase) ? RequestOrigin() : _configuredBase;
+            return $"{origin}{LocalFileStorage.PublicPath}";
+        }
     }
 
-    protected override string Base { get; }
+    private string RequestOrigin()
+    {
+        var request = httpContext.HttpContext?.Request;
+        return request is null ? "" : $"{request.Scheme}://{request.Host}";
+    }
 }
