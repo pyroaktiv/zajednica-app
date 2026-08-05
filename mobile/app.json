@@ -44,7 +44,10 @@
         {
           "cameraPermission": "Aplikacija koristi kameru za skeniranje QR kodova."
         }
-      ]
+      ],
+      "expo-image",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

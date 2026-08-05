@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { File } from "expo-file-system";
 import type { AuthTokens } from "./types";
 
 export const BASE_URL = process.env.EXPO_PUBLIC_API_URL!;
@@ -73,7 +74,8 @@ async function request<T>(path: string, init: RequestInit, retry = true): Promis
 
   if (!res.ok) throw await parseError(res);
   if (res.status === 204) return null as T;
-  return res.json();
+  const text = await res.text();
+  return text ? JSON.parse(text) : (null as T);
 }
 
 function json(body: unknown): RequestInit {
@@ -91,7 +93,7 @@ export const api = {
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
   upload: <T>(path: string, file: { uri: string; name: string; type: string }) => {
     const form = new FormData();
-    form.append("file", file as unknown as Blob);
+    form.append("file", new File(file.uri) as unknown as Blob, file.name);
     return request<T>(path, { method: "POST", body: form });
   },
 };

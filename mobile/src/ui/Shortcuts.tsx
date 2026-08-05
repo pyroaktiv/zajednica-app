@@ -26,7 +26,7 @@ export function JoinCommunityShortcut() {
           Nisi član nijedne stambene zajednice
         </Text>
         <Text style={{ color: colors.muted, textAlign: "center", marginTop: spacing.s }}>
-          Zajednici se pristupa skeniranjem QR koda koji stoji na ulazu zgrade.
+          Zajednici se pristupa skeniranjem njenog QR koda. Potraži ga u ulazu zgrade.
         </Text>
       </View>
       <Button title="Skeniraj QR kod zajednice" onPress={() => router.push("/join-scan")} />

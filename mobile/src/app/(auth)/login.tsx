@@ -1,4 +1,4 @@
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Text, View } from "react-native";
 import { useAuth } from "../../state/AuthContext";
@@ -18,7 +18,8 @@ export default function Login() {
     try {
       await login(usernameOrEmail.trim(), password);
     } catch (e: any) {
-      setError(e.message);
+      if (e.message === "Email is not verified.") router.push("/verify");
+      else setError(e.message);
     } finally {
       setBusy(false);
     }
@@ -39,12 +40,9 @@ export default function Login() {
         <Field label="Lozinka" value={password} onChangeText={setPassword} secureTextEntry />
         <ErrorText error={error} />
         <Button title="Prijavi se" onPress={submit} loading={busy} />
-        <View style={{ flexDirection: "row", justifyContent: "center", marginTop: spacing.l, gap: spacing.l }}>
+        <View style={{ flexDirection: "row", justifyContent: "center", marginTop: spacing.l }}>
           <Link href="/register" style={{ color: colors.primary }}>
             Registracija
-          </Link>
-          <Link href="/verify" style={{ color: colors.primary }}>
-            Aktivacija naloga
           </Link>
         </View>
       </KeyboardAvoidingView>

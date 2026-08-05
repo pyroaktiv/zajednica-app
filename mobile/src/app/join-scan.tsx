@@ -44,9 +44,15 @@ export default function JoinScan() {
         </Text>
       )}
       <View style={styles.overlay}>
-        <Text style={styles.hint}>Skeniraj QR kod zalepljen na ulazu zgrade</Text>
+        <Text style={styles.hint}>Skeniraj QR kod zajednice</Text>
         {error && (
-          <View style={{ backgroundColor: colors.card, borderRadius: 8, padding: spacing.m }}>
+          <View
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: 8,
+              padding: spacing.m,
+            }}
+          >
             <ErrorText error={error} />
             <Button
               title="Pokušaj ponovo"
