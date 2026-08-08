@@ -4,5 +4,6 @@ public enum MembershipStatus
 {
     Unknown,
     Unconfirmed,
-    Confirmed
+    Confirmed,
+    Banned
 }

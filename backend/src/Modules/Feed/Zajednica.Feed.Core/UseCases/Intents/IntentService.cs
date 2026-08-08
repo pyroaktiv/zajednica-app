@@ -63,6 +63,7 @@ public sealed class IntentService(
             kind,
             targetMembershipId,
             access.StatusOf(communityId, targetMembershipId),
+            access.RoleOf(communityId, targetMembershipId),
             communityId,
             authorMembershipId,
             audience.GetConfirmedCount(communityId),

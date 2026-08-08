@@ -66,6 +66,13 @@ public sealed class MembershipAccessService(IMembershipRepository memberships)
         && membership.IsConfirmed()
         && membership.HasRole(CommunityRole.Issuer);
 
+    public bool IsBanned(Guid communityId, Guid membershipId) =>
+        FindIn(communityId, membershipId) is { State: MembershipState.Banned };
+
+    public bool IsManagerOf(Guid communityId, Guid membershipId) =>
+        FindIn(communityId, membershipId) is { } membership
+        && membership.HasRole(CommunityRole.Manager);
+
     private Membership RequireActive(Guid accountId, Guid communityId)
     {
         var membership = memberships.Get(accountId, communityId)

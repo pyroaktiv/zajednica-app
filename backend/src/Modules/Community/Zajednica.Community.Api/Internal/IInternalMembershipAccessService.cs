@@ -13,4 +13,6 @@ public interface IInternalMembershipAccessService
 
     bool IsConfirmedMemberOf(Guid communityId, Guid membershipId);
     bool CanIssueCertifications(Guid communityId, Guid membershipId);
+    bool IsBanned(Guid communityId, Guid membershipId);
+    bool IsManagerOf(Guid communityId, Guid membershipId);
 }

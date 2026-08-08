@@ -15,8 +15,9 @@ public class IntentTests
     private static readonly Guid Target = Guid.NewGuid();
 
     private static UserTargetingInitiative BanInitiative(Guid author, int eligibleVoterCount,
-        MembershipStatus targetStatus = MembershipStatus.Confirmed) =>
-        new(UserActionKind.Ban, Target, targetStatus, Community, author, eligibleVoterCount, "Ne postuje kucni red.");
+        MembershipStatus targetStatus = MembershipStatus.Confirmed, MembershipRole targetRole = MembershipRole.None) =>
+        new(UserActionKind.Ban, Target, targetStatus, targetRole, Community, author, eligibleVoterCount,
+            "Ne postuje kucni red.");
 
     private static Intent Ban(int eligibleVoterCount = 10) =>
         Intent.Open(BanInitiative(Author, eligibleVoterCount), Now);
@@ -54,11 +55,27 @@ public class IntentTests
     public void Votes_are_hidden_on_a_ban_or_a_mute_but_open_on_a_manager_election()
     {
         UserTargetingInitiative Of(UserActionKind kind) =>
-            new(kind, Target, MembershipStatus.Confirmed, Community, Author, 10, "Razlog.");
+            new(kind, Target, MembershipStatus.Confirmed, MembershipRole.None, Community, Author, 10, "Razlog.");
 
         Of(UserActionKind.Ban).AreVotesPublic.ShouldBeFalse();
         Of(UserActionKind.Mute).AreVotesPublic.ShouldBeFalse();
         Of(UserActionKind.ManagerElection).AreVotesPublic.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void A_ban_cannot_be_opened_about_an_already_banned_member()
+    {
+        Should.Throw<EntityValidationException>(() => BanInitiative(Author, 10, MembershipStatus.Banned));
+    }
+
+    [Fact]
+    public void A_manager_election_cannot_be_opened_about_the_sitting_manager()
+    {
+        UserTargetingInitiative ManagerElection() =>
+            new(UserActionKind.ManagerElection, Target, MembershipStatus.Confirmed, MembershipRole.Manager,
+                Community, Author, 10, "Predlog.");
+
+        Should.Throw<EntityValidationException>(() => ManagerElection());
     }
 
     [Fact]
