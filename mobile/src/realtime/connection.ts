@@ -40,7 +40,7 @@ export function useChannel(channel: string | null, handlers: Record<string, (pay
     for (const [event, handler] of Object.entries(handlers)) c.on(event, handler);
     return () => {
       joinedChannels.delete(channel);
-      for (const [event, handler] of Object.entries(handlers)) c.off(event, handler);
+      for (const [event, handler] of Object.entries(handlers)) c?.off(event, handler);
       whenConnected((conn) => conn.invoke("LeaveChannel", channel).catch(() => {}));
     };
   }, [channel]);
