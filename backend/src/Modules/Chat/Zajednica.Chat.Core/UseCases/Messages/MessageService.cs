@@ -44,11 +44,11 @@ public sealed class MessageService(
         chats.Update(chat);
     }
 
-    public CursorPage<MessageDto, PageCursor> GetPage(Guid accountId, Guid communityId, Guid chatId, PageCursor? after, int limit)
+    public CursorPage<MessageDto, PageCursor> GetPage(Guid accountId, Guid communityId, Guid chatId, PageCursor? before, int limit)
     {
         Require(accountId, communityId, chatId);
 
-        var page = chats.GetMessagePage(chatId, after, Paging.Clamp(limit));
+        var page = chats.GetMessagePage(chatId, before, Paging.Clamp(limit));
         var senders = directory.Profiles(page.Items.Select(m => m.SenderMembershipId).ToList());
 
         return page.ToDtoPage(senders, urls);

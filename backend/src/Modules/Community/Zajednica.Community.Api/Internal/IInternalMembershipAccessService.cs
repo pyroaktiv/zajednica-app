@@ -6,7 +6,7 @@ public interface IInternalMembershipAccessService
 {
     Guid RequireActiveMembershipId(Guid accountId, Guid communityId);
     Guid RequireConfirmedMembershipId(Guid accountId, Guid communityId);
-    ConfirmedVoterDto RequireConfirmedVoter(Guid accountId, Guid communityId);
+    CertificationContext RequireCertification(Guid accountId, Guid communityId);
     Guid RequireUnconfirmedMembershipId(Guid accountId, Guid communityId);
     Guid RequireUnmutedActiveMembershipId(Guid accountId, Guid communityId);
     Guid RequireUnmutedConfirmedMembershipId(Guid accountId, Guid communityId);

@@ -32,7 +32,7 @@ public sealed class IntentClosing(
 
         foreach (var intentId in intents.GetDueIds(now))
         {
-            if (intents.Get(intentId) is { } intent)
+            if (intents.LoadFromSource(intentId) is { } intent)
                 CloseIfDue(intent, now);
         }
     }

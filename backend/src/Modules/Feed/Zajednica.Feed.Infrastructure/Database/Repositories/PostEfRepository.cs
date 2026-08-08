@@ -37,11 +37,10 @@ internal sealed class PostEfRepository(FeedDbContext db) : IPostRepository
         var items = query
             .OrderByDescending(p => p.DateCreated)
             .ThenByDescending(p => p.Id)
-            .Take(limit)
+            .Take(limit + 1)
             .ToList();
 
-        return new CursorPage<Post, PageCursor>(items,
-            items.Count < limit ? null : new PageCursor(items[^1].DateCreated, items[^1].Id));
+        return Paging.ToPage(items, limit, p => new PageCursor(p.DateCreated, p.Id));
     }
 
     public CursorPage<Comment, PageCursor> GetCommentPage(Guid postId, Guid? parentCommentId, PageCursor? after, int limit)
@@ -57,10 +56,9 @@ internal sealed class PostEfRepository(FeedDbContext db) : IPostRepository
         var items = query
             .OrderBy(c => c.Date)
             .ThenBy(c => c.Id)
-            .Take(limit)
+            .Take(limit + 1)
             .ToList();
 
-        return new CursorPage<Comment, PageCursor>(items,
-            items.Count < limit ? null : new PageCursor(items[^1].Date, items[^1].Id));
+        return Paging.ToPage(items, limit, c => new PageCursor(c.Date, c.Id));
     }
 }

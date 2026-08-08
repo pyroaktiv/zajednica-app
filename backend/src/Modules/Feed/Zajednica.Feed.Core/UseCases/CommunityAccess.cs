@@ -11,7 +11,7 @@ public sealed class CommunityAccess(IInternalMembershipAccessService memberships
 
     public VoterContext RequireVoter(Guid accountId, Guid communityId)
     {
-        var voter = memberships.RequireConfirmedVoter(accountId, communityId);
+        var voter = memberships.RequireCertification(accountId, communityId);
         return new VoterContext(voter.MembershipId, voter.CertifiedAt);
     }
 

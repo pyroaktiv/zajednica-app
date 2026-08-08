@@ -22,14 +22,14 @@ public sealed class MembershipAccessService(IMembershipRepository memberships)
         return membership.Id;
     }
 
-    public ConfirmedVoterDto RequireConfirmedVoter(Guid accountId, Guid communityId)
+    public CertificationContext RequireCertification(Guid accountId, Guid communityId)
     {
         var membership = RequireActive(accountId, communityId);
 
         if (!membership.IsConfirmed())
             throw new ForbiddenException("Only a confirmed member can do this.");
 
-        return new ConfirmedVoterDto(membership.Id, membership.CertifiedAt ?? membership.DateJoined);
+        return new CertificationContext(membership.Id, membership.CertifiedAt ?? membership.DateJoined);
     }
 
     public Guid RequireUnconfirmedMembershipId(Guid accountId, Guid communityId)

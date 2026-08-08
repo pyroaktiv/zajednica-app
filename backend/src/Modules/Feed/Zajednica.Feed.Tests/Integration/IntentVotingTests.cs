@@ -266,8 +266,8 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         using var first = Factory.Services.CreateScope();
         using var second = Factory.Services.CreateScope();
 
-        var one = Repository(first).Get(intentId);
-        var other = Repository(second).Get(intentId);
+        var one = Repository(first).LoadFromSource(intentId);
+        var other = Repository(second).LoadFromSource(intentId);
 
         one!.CastVote(new VoterContext(Guid.NewGuid(), DateTime.UtcNow.AddDays(-1)), true, DateTime.UtcNow);
         other!.CastVote(new VoterContext(Guid.NewGuid(), DateTime.UtcNow.AddDays(-1)), true, DateTime.UtcNow);
@@ -276,7 +276,7 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         Should.Throw<DbUpdateException>(() => Repository(second).Update(other));
 
         using var reader = Factory.Services.CreateScope();
-        var stored = Repository(reader).Get(intentId);
+        var stored = Repository(reader).LoadFromSource(intentId);
         stored!.VotesFor.ShouldBe(1);
         stored.Initiative.CommunityId.ShouldBe(communityId);
     }

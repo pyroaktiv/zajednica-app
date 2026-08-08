@@ -39,8 +39,8 @@ public sealed class MessageController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<CursorPage<MessageDto, PageCursor>> GetPage(Guid communityId, Guid chatId, [FromQuery] PageCursor? after, [FromQuery] int limit)
+    public ActionResult<CursorPage<MessageDto, PageCursor>> GetPage(Guid communityId, Guid chatId, [FromQuery] PageCursor? before, [FromQuery] int limit)
     {
-        return Ok(_messages.GetPage(User.AccountId(), communityId, chatId, after, limit));
+        return Ok(_messages.GetPage(User.AccountId(), communityId, chatId, before, limit));
     }
 }

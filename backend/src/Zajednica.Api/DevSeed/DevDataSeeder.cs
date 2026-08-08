@@ -4,6 +4,7 @@ using Zajednica.Community.Api.Dto.Communities;
 using Zajednica.Community.Api.Public;
 using Zajednica.Community.Core.Domain;
 using Zajednica.Community.Infrastructure.Database;
+using Zajednica.Feed.Api.Dto.Comments;
 using Zajednica.Feed.Api.Dto.Posts;
 using Zajednica.Feed.Api.Public;
 using Zajednica.Identity.Api.Dto;
@@ -58,6 +59,7 @@ public sealed class DevDataSeeder(
         var communities = sp.GetRequiredService<ICommunityService>();
         var certification = sp.GetRequiredService<ICertificationService>();
         var posts = sp.GetRequiredService<IPostService>();
+        var comments = sp.GetRequiredService<ICommentService>();
         var communityDb = sp.GetRequiredService<CommunityDbContext>();
 
         var accounts = People.ToDictionary(p => p.Username, p => RegisterActivated(auth, identityDb, p));
@@ -83,6 +85,11 @@ public sealed class DevDataSeeder(
             (accounts["djordje95"], "Lift u levom ulazu ne radi, prijavljeno je servisu.", "Problem"),
             (accounts["milicaa"], "Poplava u podrumu, hitno zatvorite glavni ventil za vodu!", "Emergency"),
             (accounts["markoo"], "Ko je zainteresovan za zajedničku nabavku soli za posipanje stepeništa?", "Plain"));
+
+        var vracarMembers = Members(accounts,
+            "milanp", "anak", "nikola021", "milicaa", "markoo", "teodora7", "lukam", "ivana.r", "djordje95", "stefan_92");
+        await SeedManyPosts(posts, vracar, vracarMembers);
+        await SeedBusyDiscussion(posts, comments, vracar, vracarMembers);
 
         var noviBeograd = BuildCommunity(
             communities, certification, communityDb, accounts,
@@ -177,6 +184,70 @@ public sealed class DevDataSeeder(
     {
         foreach (var item in items)
             posts.CreateGeneral(item.AuthorId, communityId, new CreateGeneralPostRequest(item.Text, item.Kind, null));
+    }
+
+    private static readonly string[] FillerPosts =
+    [
+        "Molba da se bicikli ne ostavljaju u hodniku prizemlja, smetaju prolazu.",
+        "Da li je neko primetio da svetlo na drugom spratu stalno gori i danju?",
+        "Skupljamo predloge za bojenje fasade sa dvorišne strane.",
+        "Podsećanje: kante za reciklažu su od sada iza zgrade, kod parkinga.",
+        "Traži se električar, kvar na osvetljenju u zajedničkoj garaži.",
+        "Ko parkira ispred kontejnera, blokira odvoz smeća četvrtkom.",
+        "Predlog da postavimo policu za pakete u ulazu, javite mišljenje.",
+        "Krečenje stepeništa počinje u ponedeljak, koristite drugi ulaz.",
+        "Deca se igraju u dvorištu, molim vozače da uspore pri ulasku.",
+        "Da li neko ima ključ od tavana? Treba proveriti krov posle kiše.",
+        "Organizujemo prolećno čišćenje dvorišta, prijavite se u komentarima.",
+        "Interfon na trećem spratu prekida vezu, prijavljeno majstoru.",
+        "Predlog za postavljanje kamere na ulaz zbog čestih provala.",
+        "Voda je slabija na višim spratovima ovih dana, javljam upravniku.",
+        "Nova pravila za korišćenje zajedničke perionice su okačena na oglasnoj tabli.",
+        "Molim da se vrata podruma drže zaključana, mačke ulaze unutra.",
+        "Kosačica za travu je pokvarena, tražimo majstora ili zamenu.",
+        "Sakupljamo za novu rasvetu u ulazu, detalji uskoro.",
+        "Ko je ostavio kolica za bebe kod lifta? Smetaju prolazu.",
+        "Podsećanje na plaćanje mesečnog održavanja do 15. u mesecu.",
+        "Grejanje u prizemlju ne radi kako treba, prijavljeno je.",
+        "Predlog da zajednički kupimo aparat za gašenje požara po ulazu.",
+        "Radovi na vodovodu u ulici, moguć prekid vode sutra pre podne.",
+        "Hvala svima koji su učestvovali u sređivanju dvorišta prošlog vikenda!",
+    ];
+
+    private static async Task SeedManyPosts(IPostService posts, Guid communityId, IReadOnlyList<Guid> authors)
+    {
+        for (var i = 0; i < FillerPosts.Length; i++)
+        {
+            posts.CreateGeneral(authors[i % authors.Count], communityId,
+                new CreateGeneralPostRequest(FillerPosts[i], "Plain", null));
+            await Task.Delay(1);
+        }
+    }
+
+    private static async Task SeedBusyDiscussion(
+        IPostService posts, ICommentService comments, Guid communityId, IReadOnlyList<Guid> authors)
+    {
+        var post = posts.CreateGeneral(authors[0], communityId,
+            new CreateGeneralPostRequest(
+                "Predlog za uređenje zajedničkog dvorišta — ostavite komentare i odgovore ispod.", "Plain", null));
+        await Task.Delay(1);
+
+        var firstCommentId = Guid.Empty;
+        for (var i = 0; i < 24; i++)
+        {
+            var comment = comments.Add(authors[i % authors.Count], communityId, post.Id,
+                new AddCommentRequest($"Komentar broj {i + 1} na predlog o dvorištu."));
+            if (i == 0)
+                firstCommentId = comment.Id;
+            await Task.Delay(1);
+        }
+
+        for (var i = 0; i < 24; i++)
+        {
+            comments.Reply(authors[i % authors.Count], communityId, post.Id, firstCommentId,
+                new AddCommentRequest($"Odgovor broj {i + 1} na prvi komentar."));
+            await Task.Delay(1);
+        }
     }
 
     private static IReadOnlyList<Guid> Members(IReadOnlyDictionary<string, Guid> accounts, params string[] usernames)

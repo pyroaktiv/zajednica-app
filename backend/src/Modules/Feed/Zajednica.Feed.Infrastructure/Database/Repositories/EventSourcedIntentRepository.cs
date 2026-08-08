@@ -24,7 +24,7 @@ internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRe
         Append(intent);
     }
 
-    public Intent? Get(Guid id)
+    public Intent? LoadFromSource(Guid id)
     {
         var stream = db.IntentEvents
             .AsNoTracking()
@@ -46,11 +46,10 @@ internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRe
         var items = query
             .OrderByDescending(v => v.DateCreated)
             .ThenByDescending(v => v.Id)
-            .Take(limit)
+            .Take(limit + 1)
             .ToList();
 
-        return new CursorPage<IntentView, PageCursor>(items,
-            items.Count < limit ? null : new PageCursor(items[^1].DateCreated, items[^1].Id));
+        return Paging.ToPage(items, limit, v => new PageCursor(v.DateCreated, v.Id));
     }
 
     public IntentView? GetView(Guid intentId) =>
