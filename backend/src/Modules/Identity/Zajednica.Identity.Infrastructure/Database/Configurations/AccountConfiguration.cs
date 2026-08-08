@@ -13,7 +13,7 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
 
         builder.Property(a => a.Username).IsRequired();
         builder.Property(a => a.Email).IsRequired();
-        builder.Property(a => a.Password).IsRequired();
+        builder.Property(a => a.PasswordHash).IsRequired();
 
         builder.HasIndex(a => a.Username).IsUnique();
         builder.HasIndex(a => a.Email).IsUnique();

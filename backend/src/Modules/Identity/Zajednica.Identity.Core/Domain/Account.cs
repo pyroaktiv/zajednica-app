@@ -5,33 +5,22 @@ namespace Zajednica.Identity.Core.Domain;
 
 public class Account : AggregateRoot
 {
-    private const int MinPasswordLength = 8;
-
     public string Username { get; private set; } = null!;
     public string Email { get; private set; } = null!;
-    public string Password { get; private set; } = null!;
+    public string PasswordHash { get; private set; } = null!;
     public bool IsEmailVerified { get; private set; }
     public DateTime DateCreated { get; private set; }
     public Profile? Profile { get; private set; }
 
     private Account() { }
 
-    public Account(string username, string email, string password, DateTime now)
+    public Account(string username, string email, string passwordHash, DateTime now)
     {
         Username = NormalizeUsername(username);
         Email = NormalizeEmail(email);
-        Password = RequirePassword(password);
+        PasswordHash = RequirePasswordHash(passwordHash);
         IsEmailVerified = false;
         DateCreated = now;
-    }
-
-    public static Account Register(string username, string email, string rawPassword, IPasswordHasher hasher,
-        DateTime now)
-    {
-        if (string.IsNullOrWhiteSpace(rawPassword) || rawPassword.Length < MinPasswordLength)
-            throw new EntityValidationException($"Password must be at least {MinPasswordLength} characters.");
-
-        return new Account(username, email, hasher.Hash(rawPassword), now);
     }
 
     public void VerifyEmail()
@@ -65,11 +54,11 @@ public class Account : AggregateRoot
         return value;
     }
 
-    private static string RequirePassword(string password)
+    private static string RequirePasswordHash(string passwordHash)
     {
-        if (string.IsNullOrWhiteSpace(password))
+        if (string.IsNullOrWhiteSpace(passwordHash))
             throw new EntityValidationException("Password hash is required.");
-        return password;
+        return passwordHash;
     }
 
     private static bool IsValidEmail(string email)

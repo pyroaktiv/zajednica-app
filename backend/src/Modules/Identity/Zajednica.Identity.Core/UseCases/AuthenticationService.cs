@@ -19,10 +19,16 @@ public sealed class AuthenticationService(
     IEmailSender email,
     IAuthTokenSettings settings) : IAuthenticationService
 {
+    private const int MinPasswordLength = 8;
+
     public void Register(RegisterAccountRequest request)
     {
         var now = DateTime.UtcNow;
-        var account = Account.Register(request.Username, request.Email, request.Password, passwordHasher, now);
+
+        if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < MinPasswordLength)
+            throw new EntityValidationException($"Password must be at least {MinPasswordLength} characters.");
+
+        var account = new Account(request.Username, request.Email, passwordHasher.Hash(request.Password), now);
 
         if (accounts.ExistsByUsername(account.Username))
             throw new EntityValidationException("Username is already taken.");
@@ -63,7 +69,7 @@ public sealed class AuthenticationService(
     {
         var account = accounts.GetByUsernameOrEmail(request.UsernameOrEmail);
 
-        if (account is null || !passwordHasher.Verify(request.Password, account.Password))
+        if (account is null || !passwordHasher.Verify(request.Password, account.PasswordHash))
             throw new EntityValidationException("Invalid username/email or password.");
 
         if (!account.IsEmailVerified)
