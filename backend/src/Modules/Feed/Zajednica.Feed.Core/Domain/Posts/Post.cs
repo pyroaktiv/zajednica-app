@@ -50,8 +50,6 @@ public abstract class Post : AggregateRoot
 
         var parent = _comments.SingleOrDefault(c => c.Id == parentCommentId)
             ?? throw new NotFoundException("Comment not found on this post.");
-        if (parent.ParentCommentId is not null)
-            throw new EntityValidationException("A reply cannot be answered, only the comment it replies to.");
 
         var reply = new Comment(Id, authorMembershipId, parent.Id, RequireText(text), now);
         _comments.Add(reply);

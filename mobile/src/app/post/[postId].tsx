@@ -23,21 +23,28 @@ import { MutedNotice } from "../../ui/MutedNotice";
 import { formatDateTime, postKindLabel } from "../../ui/labels";
 import { colors, spacing } from "../../ui/theme";
 
+const MAX_INDENT_DEPTH = 4;
+
 function CommentView({
   comment,
+  depth,
   onReply,
   replies,
+  repliesByComment,
   onLoadReplies,
-  hasMoreReplies,
+  repliesCursor,
   onLoadMoreReplies,
 }: {
   comment: CommentDto;
+  depth: number;
   onReply: (comment: CommentDto) => void;
   replies: CommentDto[] | undefined;
+  repliesByComment: Record<string, CommentDto[]>;
   onLoadReplies: (comment: CommentDto) => void;
-  hasMoreReplies: boolean;
+  repliesCursor: Record<string, string | null>;
   onLoadMoreReplies: (comment: CommentDto) => void;
 }) {
+  const hasMoreReplies = repliesCursor[comment.id] != null;
   return (
     <View style={{ marginBottom: spacing.s }}>
       <View
@@ -58,11 +65,9 @@ function CommentView({
         </Text>
         <Text style={{ color: colors.text, marginTop: 4 }}>{comment.text}</Text>
         <View style={{ flexDirection: "row", gap: spacing.l, marginTop: spacing.s }}>
-          {!comment.parentCommentId && (
-            <Pressable onPress={() => onReply(comment)}>
-              <Text style={{ color: colors.primary, fontSize: 12 }}>Odgovori</Text>
-            </Pressable>
-          )}
+          <Pressable onPress={() => onReply(comment)}>
+            <Text style={{ color: colors.primary, fontSize: 12 }}>Odgovori</Text>
+          </Pressable>
           {comment.hasReplies && !replies && (
             <Pressable onPress={() => onLoadReplies(comment)}>
               <Text style={{ color: colors.primary, fontSize: 12 }}>Prikaži odgovore</Text>
@@ -71,15 +76,17 @@ function CommentView({
         </View>
       </View>
       {replies && (
-        <View style={{ marginLeft: spacing.xl, marginTop: spacing.s }}>
+        <View style={{ marginLeft: depth < MAX_INDENT_DEPTH ? spacing.xl : 0, marginTop: spacing.s }}>
           {replies.map((reply) => (
             <CommentView
               key={reply.id}
               comment={reply}
+              depth={depth + 1}
               onReply={onReply}
-              replies={undefined}
+              replies={repliesByComment[reply.id]}
+              repliesByComment={repliesByComment}
               onLoadReplies={onLoadReplies}
-              hasMoreReplies={false}
+              repliesCursor={repliesCursor}
               onLoadMoreReplies={onLoadMoreReplies}
             />
           ))}
@@ -297,10 +304,12 @@ export default function PostDetails() {
                 <CommentView
                   key={comment.id}
                   comment={comment}
+                  depth={0}
                   onReply={setReplyTo}
                   replies={replies[comment.id]}
+                  repliesByComment={replies}
                   onLoadReplies={loadReplies}
-                  hasMoreReplies={repliesCursor[comment.id] != null}
+                  repliesCursor={repliesCursor}
                   onLoadMoreReplies={loadMoreReplies}
                 />
               ))}

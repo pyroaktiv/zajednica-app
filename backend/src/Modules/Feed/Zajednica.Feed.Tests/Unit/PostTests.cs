@@ -36,7 +36,7 @@ public class PostTests
     }
 
     [Fact]
-    public void A_reply_points_at_a_root_comment_and_is_not_answered_further()
+    public void A_reply_can_itself_be_replied_to()
     {
         var post = General();
         var comment = post.AddComment(Guid.NewGuid(), "Prvi komentar", Now);
@@ -49,8 +49,12 @@ public class PostTests
         reply.PostId.ShouldBe(post.Id);
         comment.HasReplies.ShouldBeTrue();
         reply.HasReplies.ShouldBeFalse();
-        Should.Throw<EntityValidationException>(() =>
-            post.AddReply(reply.Id, Guid.NewGuid(), "Odgovor na odgovor", Now));
+
+        var nested = post.AddReply(reply.Id, Guid.NewGuid(), "Odgovor na odgovor", Now.AddMinutes(2));
+
+        nested.ParentCommentId.ShouldBe(reply.Id);
+        nested.PostId.ShouldBe(post.Id);
+        reply.HasReplies.ShouldBeTrue();
     }
 
     [Fact]

@@ -43,7 +43,7 @@ export const commentApi = {
     ),
   getReplies: (communityId: string, postId: string, commentId: string, after: string | null) =>
     api.get<CursorPage<CommentDto>>(
-      `/api/communities/${communityId}/posts/${postId}/comments/${commentId}/replies?${cursorQuery("after", after)}`
+      `/api/communities/${communityId}/posts/${postId}/comments/${commentId}/replies?${cursorQuery("after", after, 3)}`
     ),
 };
 
