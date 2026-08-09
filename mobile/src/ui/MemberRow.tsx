@@ -11,6 +11,7 @@ export function roleLabel(role: string) {
 }
 
 export function MemberRow({ member }: { member: MemberSummaryDto }) {
+  const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ");
   return (
     <Pressable
       style={styles.row}
@@ -27,6 +28,9 @@ export function MemberRow({ member }: { member: MemberSummaryDto }) {
       )}
       <View style={{ flex: 1, marginLeft: spacing.m }}>
         <Text style={{ fontWeight: "600", color: colors.text }}>{member.username}</Text>
+        {fullName.length > 0 && (
+          <Text style={{ color: colors.muted, fontSize: 12 }}>{fullName}</Text>
+        )}
         {member.roles.length > 0 && (
           <View style={{ flexDirection: "row", gap: spacing.xs, marginTop: 2 }}>
             {member.roles.map((role) => (

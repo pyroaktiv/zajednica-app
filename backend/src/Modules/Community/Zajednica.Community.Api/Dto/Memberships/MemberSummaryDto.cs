@@ -4,6 +4,8 @@ public record MemberSummaryDto(
     Guid MembershipId,
     Guid AccountId,
     string Username,
+    string? FirstName,
+    string? LastName,
     string? ImageUrl,
     bool IsConfirmed,
     int? Stars,

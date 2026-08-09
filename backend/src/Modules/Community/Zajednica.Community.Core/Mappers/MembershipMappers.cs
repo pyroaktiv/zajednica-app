@@ -13,6 +13,8 @@ public static class MembershipMappers
         new(membership.Id,
             membership.AccountId,
             profile?.Username ?? string.Empty,
+            profile?.FirstName,
+            profile?.LastName,
             profile?.ImageUrl,
             membership.IsConfirmed(),
             membership.IsConfirmed() ? membership.Stars : null,

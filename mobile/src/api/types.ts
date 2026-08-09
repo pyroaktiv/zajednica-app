@@ -73,6 +73,8 @@ export type MemberSummaryDto = {
   membershipId: string;
   accountId: string;
   username: string;
+  firstName: string | null;
+  lastName: string | null;
   imageUrl: string | null;
   isConfirmed: boolean;
   stars: number | null;
