@@ -5,8 +5,8 @@ import { RoleNames } from "../api/types";
 import { colors, spacing } from "./theme";
 
 export function roleLabel(role: string) {
-  if (role === RoleNames.Issuer) return "izdavač potvrda";
-  if (role === RoleNames.Manager) return "upravnik";
+  if (role === RoleNames.Issuer) return "Izdavač potvrda";
+  if (role === RoleNames.Manager) return "Upravnik";
   return role;
 }
 

@@ -6,6 +6,7 @@ import type { ProfileDto } from "../../api/types";
 import { useAuth } from "../../state/AuthContext";
 import { useCommunity } from "../../state/CommunityContext";
 import { Button, Card, ErrorText, Loading, Screen, SectionTitle } from "../../ui/Basics";
+import { roleLabel } from "../../ui/MemberRow";
 import { colors, spacing } from "../../ui/theme";
 
 function Row({ label, value }: { label: string; value: string | null }) {
@@ -83,7 +84,7 @@ export default function Profile() {
           <Row label="Kontakt mejl" value={contactEmail} />
           {me && <Row label="Broj posebnog dela" value={me.unitNumber} />}
           {me && me.isConfirmed && <Row label="Zvezdice" value={`⭐ ${me.stars ?? 0}`} />}
-          {me && me.roles.length > 0 && <Row label="Uloge" value={me.roles.join(", ")} />}
+          {me && me.roles.length > 0 && <Row label="Uloge" value={me.roles.map(roleLabel).join(", ")} />}
         </Card>
 
         <Button title="Izmeni profil" onPress={() => router.push("/profile-edit")} />
