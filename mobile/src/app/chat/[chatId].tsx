@@ -24,7 +24,7 @@ import { useChannel } from "../../realtime/connection";
 import { useCommunity } from "../../state/CommunityContext";
 import { Button, ErrorText, Loading, Screen } from "../../ui/Basics";
 import { MutedNotice } from "../../ui/MutedNotice";
-import { helpStatusLabel } from "../../ui/labels";
+import { helpStatusColor, helpStatusLabel } from "../../ui/labels";
 import { colors, spacing } from "../../ui/theme";
 
 function VoiceBubble({ url, durationSeconds }: { url: string; durationSeconds: number | null }) {
@@ -253,24 +253,57 @@ export default function ChatScreen() {
         {isHelp && (
           <View style={{ backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border, padding: spacing.m }}>
             <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.s }}>
-              <Text style={{ fontWeight: "700", color: colors.text }}>
-                Ispomoć · {helpStatusLabel(chat.status)}
-              </Text>
-              {chat.awardedStars != null && (
-                <Text style={{ color: colors.warning, fontWeight: "700" }}>⭐ +{chat.awardedStars}</Text>
-              )}
-              {chat.helpRequestId && (
-                <Pressable
-                  onPress={() =>
-                    router.push({ pathname: "/post/[postId]", params: { postId: chat.helpRequestId! } })
-                  }
+              <Text style={{ fontWeight: "700", color: colors.text, fontSize: 15 }}>Ispomoć</Text>
+              <View
+                style={{
+                  backgroundColor: helpStatusColor(chat.status).background,
+                  borderRadius: 999,
+                  paddingHorizontal: spacing.m,
+                  paddingVertical: 3,
+                }}
+              >
+                <Text
+                  style={{
+                    color: helpStatusColor(chat.status).text,
+                    fontWeight: "700",
+                    fontSize: 12,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
                 >
-                  <Text style={{ color: colors.primary, fontSize: 12 }}>
-                    Originalni {chat.helpRequestId}
+                  {helpStatusLabel(chat.status)}
+                </Text>
+              </View>
+              {chat.awardedStars != null && (
+                <View
+                  style={{
+                    backgroundColor: "#fdf4dd",
+                    borderRadius: 999,
+                    paddingHorizontal: spacing.m,
+                    paddingVertical: 3,
+                  }}
+                >
+                  <Text style={{ color: colors.warning, fontWeight: "700", fontSize: 12 }}>
+                    ⭐ +{chat.awardedStars}
                   </Text>
-                </Pressable>
+                </View>
               )}
             </View>
+            {chat.helpRequestId && (
+              <Pressable
+                onPress={() =>
+                  router.push({ pathname: "/post/[postId]", params: { postId: chat.helpRequestId! } })
+                }
+                style={{ marginTop: spacing.s }}
+              >
+                <Text style={{ color: colors.muted, fontSize: 13 }}>
+                  Povod:{" "}
+                  <Text style={{ color: colors.primary, textDecorationLine: "underline" }}>
+                    {chat.helpRequestPreview ?? "otvori objavu"}
+                  </Text>
+                </Text>
+              </Pressable>
+            )}
             {chat.status === "Active" && myRole === "Requester" && !showRewardPicker && (
               <Button title="Zaključi saradnju" onPress={conclude} style={{ marginTop: spacing.s }} />
             )}

@@ -16,4 +16,16 @@ public sealed class InternalHelpRequestService(IPostRepository postRepository) :
 
         return help.AuthorMembershipId;
     }
+
+    public string? GetPreview(Guid helpRequestId, int maxLength)
+    {
+        if (postRepository.Get(helpRequestId) is not HelpRequest help)
+            return null;
+
+        var text = help.Text.Trim();
+        if (text.Length <= maxLength)
+            return text;
+
+        return text[..maxLength].TrimEnd() + "…";
+    }
 }

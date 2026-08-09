@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
@@ -11,13 +12,44 @@ import { colors, spacing } from "../../ui/theme";
 
 type Segment = "direct" | "help" | "temporary";
 
-function ChatRow({ chat, subtitle }: { chat: ChatSummaryDto; subtitle?: string }) {
+function helpRoleIcon(role: string | null) {
+  if (role === "Helper")
+    return { name: "heart-outline" as const, color: colors.success, label: "Pružaš pomoć" };
+  if (role === "Requester")
+    return { name: "help-buoy-outline" as const, color: colors.primary, label: "Primaš pomoć" };
+  return null;
+}
+
+function ChatRow({
+  chat,
+  subtitle,
+  roleIcon,
+}: {
+  chat: ChatSummaryDto;
+  subtitle?: string;
+  roleIcon?: ReturnType<typeof helpRoleIcon>;
+}) {
   return (
     <Pressable
       onPress={() => router.push({ pathname: "/chat/[chatId]", params: { chatId: chat.id } })}
     >
       <Card style={{ padding: spacing.m, marginBottom: spacing.s }}>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {roleIcon && (
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                marginRight: spacing.m,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: colors.background,
+              }}
+            >
+              <Ionicons name={roleIcon.name} size={20} color={roleIcon.color} />
+            </View>
+          )}
           <View style={{ flex: 1 }}>
             <Text style={{ fontWeight: chat.hasUnread ? "800" : "600", color: colors.text }}>
               {chat.participantUsernames.join(", ") || "Čet"}
@@ -113,6 +145,7 @@ export default function Chats() {
         renderItem={({ item }) => (
           <ChatRow
             chat={item}
+            roleIcon={effectiveSegment === "help" ? helpRoleIcon(item.viewerRole) : undefined}
             subtitle={
               effectiveSegment === "help"
                 ? `ispomoć · ${helpStatusLabel(item.status)}`

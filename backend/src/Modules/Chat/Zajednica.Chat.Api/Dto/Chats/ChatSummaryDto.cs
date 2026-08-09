@@ -5,5 +5,6 @@ public record ChatSummaryDto(
     IReadOnlyList<string> ParticipantUsernames,
     Guid? HelpRequestId,
     string? Status,
+    string? ViewerRole,
     DateTime LastActivityAt,
     bool HasUnread);

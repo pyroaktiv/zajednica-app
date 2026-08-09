@@ -10,7 +10,7 @@ namespace Zajednica.Chat.Core.Mappers;
 public static class ChatMappers
 {
     public static ChatDetailsDto ToDetailsDto(this ChatAggregate chat, Guid viewerMembershipId,
-        IReadOnlyDictionary<Guid, InternalProfileDto> profiles)
+        IReadOnlyDictionary<Guid, InternalProfileDto> profiles, string? helpRequestPreview)
     {
         var help = chat as HelpRequestChat;
 
@@ -25,6 +25,7 @@ public static class ChatMappers
                 .ToList(),
             CanSend: chat.CanSend(viewerMembershipId),
             HelpRequestId: help?.HelpRequestId,
+            HelpRequestPreview: helpRequestPreview,
             Status: help?.Status.ToString(),
             AwardedStars: help?.AwardedStars);
     }
@@ -42,6 +43,8 @@ public static class ChatMappers
                 .ToList(),
             HelpRequestId: help?.HelpRequestId,
             Status: help?.Status.ToString(),
+            ViewerRole: chat.Participants
+                .FirstOrDefault(p => p.MembershipId == viewerMembershipId)?.Role?.ToString(),
             LastActivityAt: chat.LastActivityAt,
             HasUnread: chat.HasUnread(viewerMembershipId));
     }

@@ -200,6 +200,7 @@ export type ChatDetailsDto = {
   participants: ChatParticipantDto[];
   canSend: boolean;
   helpRequestId: string | null;
+  helpRequestPreview: string | null;
   status: string | null;
   awardedStars: number | null;
 };
@@ -209,6 +210,7 @@ export type ChatSummaryDto = {
   participantUsernames: string[];
   helpRequestId: string | null;
   status: string | null;
+  viewerRole: string | null;
   lastActivityAt: string;
   hasUnread: boolean;
 };

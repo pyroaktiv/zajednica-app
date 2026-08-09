@@ -6,5 +6,6 @@ public record ChatDetailsDto(
     IReadOnlyList<ChatParticipantDto> Participants,
     bool CanSend,
     Guid? HelpRequestId,
+    string? HelpRequestPreview,
     string? Status,
     int? AwardedStars);

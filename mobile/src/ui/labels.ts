@@ -26,6 +26,13 @@ export function helpStatusLabel(status: string | null) {
   return status ?? "";
 }
 
+export function helpStatusColor(status: string | null): { text: string; background: string } {
+  if (status === "Active") return { text: "#1d8a4a", background: "#e3f5ea" };
+  if (status === "Concluded") return { text: "#1f4fb0", background: "#e6eefc" };
+  if (status === "HelperResigned") return { text: "#6b7280", background: "#eceef2" };
+  return { text: "#6b7280", background: "#eceef2" };
+}
+
 export function formatDateTime(value: string) {
   return new Date(value).toLocaleString("sr-RS", {
     day: "2-digit",
