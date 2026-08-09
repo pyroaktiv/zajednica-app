@@ -128,7 +128,7 @@ export default function IntentDetails() {
         </Card>
 
         <Card>
-          <SectionTitle>Glasači</SectionTitle>
+          <SectionTitle>Glasovi</SectionTitle>
           {!intent.areVotesPublic && (
             <Text style={{ color: colors.muted }}>Glasovi za ovu vrstu namere nisu javni.</Text>
           )}
