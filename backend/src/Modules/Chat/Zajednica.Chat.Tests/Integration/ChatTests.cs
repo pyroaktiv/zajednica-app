@@ -33,13 +33,13 @@ public class ChatTests : BaseChatIntegrationTest
         SendText(scope, owner.AccountId, community.Id, chat.Id, "Treca");
 
         var first = Page(scope, owner.AccountId, community.Id, chat.Id, null, 2);
-        first.Items.Select(m => m.Text).ShouldBe(["Prva", "Druga"]);
+        first.Items.Select(m => m.Text).ShouldBe(["Treca", "Druga"]);
         first.Items[0].Type.ShouldBe("TEXT");
         first.Items[0].SenderUsername.ShouldNotBeNullOrEmpty();
         first.NextCursor.ShouldNotBeNull();
 
         var rest = Page(scope, owner.AccountId, community.Id, chat.Id, first.NextCursor, 2);
-        rest.Items.Select(m => m.Text).ShouldBe(["Treca"]);
+        rest.Items.Select(m => m.Text).ShouldBe(["Prva"]);
         rest.NextCursor.ShouldBeNull();
     }
 
@@ -142,7 +142,7 @@ public class ChatTests : BaseChatIntegrationTest
         var chat = OpenDirect(scope, muted.AccountId, community.Id, owner.MembershipId);
         SendText(scope, muted.AccountId, community.Id, chat.Id, "Pre utisavanja");
 
-        scope.ServiceProvider.GetRequiredService<IInternalIntentOutcomeService>().Mute(muted.MembershipId);
+        scope.ServiceProvider.GetRequiredService<IInternalMembershipCommandService>().Mute(muted.MembershipId);
         CommunityDb(scope).ChangeTracker.Clear();
 
         Should.Throw<ForbiddenException>(() => SendText(scope, muted.AccountId, community.Id, chat.Id, "Posle"));
@@ -168,9 +168,9 @@ public class ChatTests : BaseChatIntegrationTest
     }
 
     private static CursorPage<MessageDto, PageCursor> Page(IServiceScope scope, Guid accountId, Guid communityId, Guid chatId,
-        PageCursor? after, int limit) =>
+        PageCursor? before, int limit) =>
         Value<CursorPage<MessageDto, PageCursor>>(Messages(scope, accountId)
-            .GetPage(communityId, chatId, after, limit).Result!);
+            .GetPage(communityId, chatId, before, limit).Result!);
 
     private static CursorPage<ChatSummaryDto, PageCursor> Direct(IServiceScope scope, Guid accountId, Guid communityId) =>
         Value<CursorPage<ChatSummaryDto, PageCursor>>(Chats(scope, accountId).GetDirectPage(communityId, null, 10).Result!);

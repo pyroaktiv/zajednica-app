@@ -20,15 +20,15 @@ public sealed class CommentController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult<CommentDto> Add(Guid communityId, Guid postId, [FromBody] AddCommentRequest request)
+    public ActionResult<CommentDto> Add(Guid communityId, Guid postId, [FromBody] AddCommentRequestDto requestDto)
     {
-        return Ok(_comments.Add(User.AccountId(), communityId, postId, request));
+        return Ok(_comments.Add(User.AccountId(), communityId, postId, requestDto));
     }
 
     [HttpPost("{commentId:guid}/replies")]
-    public ActionResult<CommentDto> Reply(Guid communityId, Guid postId, Guid commentId, [FromBody] AddCommentRequest request)
+    public ActionResult<CommentDto> Reply(Guid communityId, Guid postId, Guid commentId, [FromBody] AddCommentRequestDto requestDto)
     {
-        return Ok(_comments.Reply(User.AccountId(), communityId, postId, commentId, request));
+        return Ok(_comments.Reply(User.AccountId(), communityId, postId, commentId, requestDto));
     }
 
     [HttpGet]

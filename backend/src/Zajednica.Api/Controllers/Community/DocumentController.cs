@@ -20,9 +20,9 @@ public sealed class DocumentController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult<DocumentDto> Add(Guid communityId, [FromBody] AddDocumentRequest request)
+    public ActionResult<DocumentDto> Add(Guid communityId, [FromBody] AddDocumentRequestDto requestDto)
     {
-        return Ok(_documents.Add(User.AccountId(), communityId, request));
+        return Ok(_documents.Add(User.AccountId(), communityId, requestDto));
     }
 
     [HttpGet]

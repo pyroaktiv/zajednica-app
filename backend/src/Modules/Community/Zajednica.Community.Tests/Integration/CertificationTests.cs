@@ -54,7 +54,7 @@ public class CertificationTests : BaseCommunityIntegrationTest
         db.ChangeTracker.Clear();
 
         Should.Throw<EntityValidationException>(() =>
-            Certification(scope, candidateId).Confirm(new ConfirmCertificationRequest(expired.Token)));
+            Certification(scope, candidateId).Confirm(new ConfirmCertificationRequestDto(expired.Token)));
 
         db.ChangeTracker.Clear();
         db.CertificationChallenges.Count(c => c.Token == expired.Token).ShouldBe(0);

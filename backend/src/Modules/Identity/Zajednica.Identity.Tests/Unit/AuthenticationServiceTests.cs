@@ -34,7 +34,7 @@ public class AuthenticationServiceTests
         _passwordHasher.Object, _accessTokens.Object, _secureTokens.Object,
         _email.Object, _settings.Object);
 
-    private static RegisterAccountRequest Registration(string password = "password123") =>
+    private static RegisterAccountRequestDto Registration(string password = "password123") =>
         new("pera", "pera@example.com", password, null, null, null, null);
 
     [Fact]

@@ -20,16 +20,16 @@ public sealed class ChatController : ControllerBase
     }
 
     [HttpPost("direct")]
-    public ActionResult<ChatDetailsDto> OpenDirect(Guid communityId, [FromBody] OpenDirectChatRequest request)
+    public ActionResult<ChatDetailsDto> OpenDirect(Guid communityId, [FromBody] OpenDirectChatRequestDto requestDto)
     {
-        var opened = _chats.OpenDirect(User.AccountId(), communityId, request);
+        var opened = _chats.OpenDirect(User.AccountId(), communityId, requestDto);
         return CreatedAtAction(nameof(Get), new { communityId, chatId = opened.Id }, opened);
     }
 
     [HttpPost("temporary")]
-    public ActionResult<ChatDetailsDto> OpenTemporary(Guid communityId, [FromBody] OpenTemporaryChatRequest request)
+    public ActionResult<ChatDetailsDto> OpenTemporary(Guid communityId, [FromBody] OpenTemporaryChatRequestDto requestDto)
     {
-        var opened = _chats.OpenTemporary(User.AccountId(), communityId, request);
+        var opened = _chats.OpenTemporary(User.AccountId(), communityId, requestDto);
         return CreatedAtAction(nameof(Get), new { communityId, chatId = opened.Id }, opened);
     }
 

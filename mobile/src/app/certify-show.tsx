@@ -48,14 +48,11 @@ export default function CertifyShow() {
       {challenge && !confirmed && (
         <>
           <Text style={styles.title}>Izdavanje potvrde</Text>
-          <Text style={styles.subtitle}>
-            Neka kandidat skenira ovaj QR kod svojim telefonom, iz aplikacije.
-          </Text>
           <View style={styles.qrBox}>
             <QRCode value={challenge.token} size={280} />
           </View>
           <Text style={styles.hint}>
-            Kod važi do {new Date(challenge.expiresAt).toLocaleTimeString("sr-RS")}.
+            Kod važi 2 minuta.
           </Text>
         </>
       )}

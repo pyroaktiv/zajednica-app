@@ -23,8 +23,7 @@ export function MutedNotice() {
         Utišani ste do {formatDateTime(mutedUntil)}.
       </Text>
       <Text style={{ color: colors.muted, marginTop: spacing.xs }}>
-        Do tada ne možete da objavljujete, komentarišete, šaljete poruke ni da pokrećete namere.
-        Glasanje o namerama vam ostaje.
+        Do tada nemate mogućnost aktivnosti u zajednici, osim glasanja u namerama.
       </Text>
     </View>
   );

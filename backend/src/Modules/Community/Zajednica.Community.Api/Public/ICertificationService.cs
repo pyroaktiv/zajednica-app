@@ -6,5 +6,5 @@ public interface ICertificationService
 {
     CertificationChallengeDto CreateChallenge(Guid accountId, Guid communityId);
     void CancelChallenge(Guid accountId, Guid communityId, Guid challengeId);
-    CertificationResultDto Confirm(Guid accountId, ConfirmCertificationRequest request);
+    CertificationResultDto Confirm(Guid accountId, ConfirmCertificationRequestDto requestDto);
 }

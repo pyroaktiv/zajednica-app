@@ -43,13 +43,13 @@ public class BaseCommunityIntegrationTest : BaseWebIntegrationTest<CommunityTest
 
     protected static CommunityDetailsDto CreateCommunity(IServiceScope scope, Guid accountId)
     {
-        var request = new CreateCommunityRequest(
+        var request = new CreateCommunityRequestDto(
             $"Zgrada {Guid.NewGuid():N}", new AddressDto("Bulevar", "12", 45.25m, 19.83m), null, null, null);
         return Value<CommunityDetailsDto>((Communities(scope, accountId).Create(request)).Result!);
     }
 
     protected static JoinedCommunityDto Join(IServiceScope scope, Guid accountId, string qrToken) =>
-        Value<JoinedCommunityDto>((Communities(scope, accountId).Join(new JoinCommunityRequest(qrToken))).Result!);
+        Value<JoinedCommunityDto>((Communities(scope, accountId).Join(new JoinCommunityRequestDto(qrToken))).Result!);
 
     protected static string QrToken(IServiceScope scope, Guid ownerAccountId, Guid communityId) =>
         Value<CommunityQrDto>((Communities(scope, ownerAccountId).GetQr(communityId)).Result!).QrToken;
@@ -60,7 +60,7 @@ public class BaseCommunityIntegrationTest : BaseWebIntegrationTest<CommunityTest
         var challenge = Value<CertificationChallengeDto>(
             (Certification(scope, issuerAccountId).CreateChallenge(communityId)).Result!);
         var result = Certification(scope, candidateAccountId)
-            .Confirm(new ConfirmCertificationRequest(challenge.Token));
+            .Confirm(new ConfirmCertificationRequestDto(challenge.Token));
         return Value<CertificationResultDto>(result.Result!);
     }
 

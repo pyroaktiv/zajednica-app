@@ -9,11 +9,11 @@ import { Button, Card, ErrorText, Loading, Screen, SectionTitle } from "../../ui
 import { formatDateTime, intentKindLabel, intentStatusLabel } from "../../ui/labels";
 import { colors, spacing } from "../../ui/theme";
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
   return (
     <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.s }}>
       <Text style={{ color: colors.muted }}>{label}</Text>
-      <Text style={{ color: colors.text, fontWeight: "500" }}>{value}</Text>
+      <Text style={{ color: valueColor ?? colors.text, fontWeight: valueColor ? "700" : "500" }}>{value}</Text>
     </View>
   );
 }
@@ -77,30 +77,36 @@ export default function IntentDetails() {
       <Stack.Screen options={{ title: "Namera" }} />
       <ScrollView contentContainerStyle={{ padding: spacing.l }}>
         <Card>
-          <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text }}>
+          <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text, marginBottom: spacing.l }}>
             {intentKindLabel(intent.kind)}: {intent.targetUsername ?? "?"}
           </Text>
-          <Text
-            style={{
-              color: open ? colors.primary : colors.muted,
-              fontWeight: "700",
-              marginTop: spacing.xs,
-              marginBottom: spacing.m,
-            }}
-          >
-            {intentStatusLabel(intent.status).toUpperCase()}
-          </Text>
+          <SectionTitle>Obrazloženje</SectionTitle>
           <Text style={{ color: colors.text, lineHeight: 22 }}>{intent.text}</Text>
         </Card>
 
         <Card>
-          <SectionTitle>Glasanje</SectionTitle>
-          <Row label="Pokrenuo" value={intent.authorUsername ?? "?"} />
+          <View style={{ alignItems: "center", marginBottom: spacing.m }}>
+            <Text
+              style={{
+                backgroundColor: open ? "#e8effc" : colors.background,
+                color: open ? colors.primaryDark : colors.muted,
+                fontWeight: "700",
+                fontSize: 15,
+                borderRadius: 6,
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                overflow: "hidden",
+              }}
+            >
+              {intentStatusLabel(intent.status).toUpperCase()}
+            </Text>
+          </View>
+          <Row label="Inicijator" value={intent.authorUsername ?? "?"} />
           <Row label="Otvorena" value={formatDateTime(intent.dateCreated)} />
           <Row label="Rok" value={formatDateTime(intent.deadline)} />
           {intent.dateOfClosure && <Row label="Zaključena" value={formatDateTime(intent.dateOfClosure)} />}
-          <Row label="Za" value={String(intent.votesFor)} />
-          <Row label="Protiv" value={String(intent.votesAgainst)} />
+          <Row label="Za" value={String(intent.votesFor)} valueColor={colors.success} />
+          <Row label="Protiv" value={String(intent.votesAgainst)} valueColor={colors.danger} />
           <Row
             label="Kvorum"
             value={`${intent.votesFor + intent.votesAgainst}/${quorumTarget} ${intent.quorumReached ? "✔" : ""}`}
@@ -112,6 +118,7 @@ export default function IntentDetails() {
             <View style={{ flexDirection: "row", gap: spacing.m, marginTop: spacing.s }}>
               <Button
                 title="Glasaj ZA"
+                variant="success"
                 onPress={() => vote(true)}
                 loading={busy}
                 style={{ flex: 1 }}
@@ -128,24 +135,33 @@ export default function IntentDetails() {
         </Card>
 
         <Card>
-          <SectionTitle>Glasači</SectionTitle>
+          <SectionTitle>Glasovi</SectionTitle>
           {!intent.areVotesPublic && (
             <Text style={{ color: colors.muted }}>Glasovi za ovu vrstu namere nisu javni.</Text>
           )}
           {intent.areVotesPublic && voters.length === 0 && (
             <Text style={{ color: colors.muted }}>Još niko nije glasao.</Text>
           )}
-          {intent.areVotesPublic && voters.map((voter) => (
-            <View
-              key={voter.membershipId}
-              style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: spacing.xs }}
-            >
-              <Text style={{ color: colors.text }}>{voter.username ?? "?"}</Text>
-              <Text style={{ color: voter.inFavor ? colors.success : colors.danger, fontWeight: "600" }}>
-                {voter.inFavor ? "ZA" : "PROTIV"}
-              </Text>
+          {intent.areVotesPublic && voters.length > 0 && (
+            <View style={{ flexDirection: "row", gap: spacing.m }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.success, fontWeight: "700", marginBottom: spacing.xs }}>ZA</Text>
+                {voters.filter((v) => v.inFavor).map((voter) => (
+                  <Text key={voter.membershipId} style={{ color: colors.text, paddingVertical: spacing.xs }}>
+                    {voter.username ?? "?"}
+                  </Text>
+                ))}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.danger, fontWeight: "700", marginBottom: spacing.xs }}>PROTIV</Text>
+                {voters.filter((v) => !v.inFavor).map((voter) => (
+                  <Text key={voter.membershipId} style={{ color: colors.text, paddingVertical: spacing.xs }}>
+                    {voter.username ?? "?"}
+                  </Text>
+                ))}
+              </View>
             </View>
-          ))}
+          )}
         </Card>
       </ScrollView>
     </Screen>

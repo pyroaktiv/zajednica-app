@@ -57,8 +57,8 @@ export const messageApi = {
     }),
   markRead: (communityId: string, chatId: string) =>
     api.post<void>(`/api/communities/${communityId}/chats/${chatId}/messages/read`),
-  getPage: (communityId: string, chatId: string, after: string | null) =>
+  getPage: (communityId: string, chatId: string, before: string | null) =>
     api.get<CursorPage<MessageDto>>(
-      `/api/communities/${communityId}/chats/${chatId}/messages?${cursorQuery("after", after, 50)}`
+      `/api/communities/${communityId}/chats/${chatId}/messages?${cursorQuery("before", before, 30)}`
     ),
 };

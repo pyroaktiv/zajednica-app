@@ -25,8 +25,8 @@ public sealed class ProfileController : ControllerBase
     }
 
     [HttpPut]
-    public ActionResult<ProfileDto> Update([FromBody] UpdateProfileRequest request)
+    public ActionResult<ProfileDto> Update([FromBody] UpdateProfileRequestDto requestDto)
     {
-        return Ok(_profiles.Update(User.AccountId(), request));
+        return Ok(_profiles.Update(User.AccountId(), requestDto));
     }
 }

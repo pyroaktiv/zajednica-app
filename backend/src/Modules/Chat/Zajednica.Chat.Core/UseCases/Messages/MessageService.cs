@@ -10,28 +10,28 @@ using ChatAggregate = Zajednica.Chat.Core.Domain.Chat;
 namespace Zajednica.Chat.Core.UseCases.Messages;
 
 public sealed class MessageService(
-    IChatRepository chats,
-    MemberDirectory directory,
-    ChatAccess access,
-    IFileUrlMapper urls,
+    IChatRepository chatRepository,
+    MemberDirectory memberDirectory,
+    ChatRequirementsService requirementsService,
+    IFileUrlMapper urlMapper,
     ChatNotifier notifier) : IMessageService
 {
-    public MessageDto SendText(Guid accountId, Guid communityId, Guid chatId, SendTextRequest request)
+    public MessageDto SendText(Guid accountId, Guid communityId, Guid chatId, SendTextRequestDto requestDto)
     {
         var (myMembershipId, chat) = RequireForWriting(accountId, communityId, chatId);
 
-        var message = chat.SendText(myMembershipId, request.Text, DateTime.UtcNow);
-        chats.Update(chat);
+        var message = chat.SendText(myMembershipId, requestDto.Text, DateTime.UtcNow);
+        chatRepository.Update(chat);
 
         return Announce(chat, message, myMembershipId);
     }
 
-    public MessageDto SendVoice(Guid accountId, Guid communityId, Guid chatId, SendVoiceRequest request)
+    public MessageDto SendVoice(Guid accountId, Guid communityId, Guid chatId, SendVoiceRequestDto requestDto)
     {
         var (myMembershipId, chat) = RequireForWriting(accountId, communityId, chatId);
 
-        var message = chat.SendVoice(myMembershipId, urls.ToKey(request.AudioUrl)!, request.DurationSeconds, DateTime.UtcNow);
-        chats.Update(chat);
+        var message = chat.SendVoice(myMembershipId, urlMapper.ToKey(requestDto.AudioUrl)!, requestDto.DurationSeconds, DateTime.UtcNow);
+        chatRepository.Update(chat);
 
         return Announce(chat, message, myMembershipId);
     }
@@ -41,37 +41,37 @@ public sealed class MessageService(
         var (myMembershipId, chat) = Require(accountId, communityId, chatId);
 
         chat.MarkRead(myMembershipId, DateTime.UtcNow);
-        chats.Update(chat);
+        chatRepository.Update(chat);
     }
 
-    public CursorPage<MessageDto, PageCursor> GetPage(Guid accountId, Guid communityId, Guid chatId, PageCursor? after, int limit)
+    public CursorPage<MessageDto, PageCursor> GetPage(Guid accountId, Guid communityId, Guid chatId, PageCursor? before, int limit)
     {
         Require(accountId, communityId, chatId);
 
-        var page = chats.GetMessagePage(chatId, after, Paging.Clamp(limit));
-        var senders = directory.Profiles(page.Items.Select(m => m.SenderMembershipId).ToList());
+        var page = chatRepository.GetMessagePage(chatId, before, Paging.Clamp(limit));
+        var senders = memberDirectory.Profiles(page.Items.Select(m => m.SenderMembershipId).ToList());
 
-        return page.ToDtoPage(senders, urls);
+        return page.ToDtoPage(senders, urlMapper);
     }
 
     private (Guid MyMembershipId, ChatAggregate Chat) Require(Guid accountId, Guid communityId, Guid chatId)
     {
-        var myMembershipId = access.RequireMember(accountId, communityId);
+        var myMembershipId = requirementsService.RequireMember(accountId, communityId);
 
-        return (myMembershipId, access.RequireChat(communityId, chatId, myMembershipId));
+        return (myMembershipId, requirementsService.RequireChat(communityId, chatId, myMembershipId));
     }
 
     private (Guid MyMembershipId, ChatAggregate Chat) RequireForWriting(Guid accountId, Guid communityId, Guid chatId)
     {
-        var myMembershipId = access.RequireUnmutedMember(accountId, communityId);
+        var myMembershipId = requirementsService.RequireUnmutedMember(accountId, communityId);
 
-        return (myMembershipId, access.RequireChat(communityId, chatId, myMembershipId));
+        return (myMembershipId, requirementsService.RequireChat(communityId, chatId, myMembershipId));
     }
 
     private MessageDto Announce(ChatAggregate chat, Message message, Guid senderMembershipId)
     {
-        var profiles = directory.Profiles([senderMembershipId]);
-        var dto = message.ToDto(profiles.GetValueOrDefault(senderMembershipId), urls);
+        var profiles = memberDirectory.Profiles([senderMembershipId]);
+        var dto = message.ToDto(profiles.GetValueOrDefault(senderMembershipId), urlMapper);
 
         notifier.MessageSent(chat, dto);
 

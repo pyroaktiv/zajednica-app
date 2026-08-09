@@ -13,8 +13,8 @@ public class RoleGrantTests : BaseCommunityIntegrationTest
 {
     public RoleGrantTests(CommunityTestFactory factory) : base(factory) { }
 
-    private static IInternalIntentOutcomeService Outcome(IServiceScope scope) =>
-        scope.ServiceProvider.GetRequiredService<IInternalIntentOutcomeService>();
+    private static IInternalMembershipCommandService Outcome(IServiceScope scope) =>
+        scope.ServiceProvider.GetRequiredService<IInternalMembershipCommandService>();
 
     [Fact]
     public void An_issuer_can_share_the_right_to_certify()
@@ -86,7 +86,7 @@ public class RoleGrantTests : BaseCommunityIntegrationTest
         Outcome(scope).ElectManager(membership.Id);
 
         var updated = Value<CommunityDetailsDto>((Communities(scope, accountId)
-            .Update(community.Id, new UpdateCommunityRequest("Zgrada 2", community.Address, "12345678", "123456789", "160-1"))).Result!);
+            .Update(community.Id, new UpdateCommunityRequestDto("Zgrada 2", community.Address, "12345678", "123456789", "160-1"))).Result!);
 
         updated.Name.ShouldBe("Zgrada 2");
         updated.RegistrationNumber.ShouldBe("12345678");

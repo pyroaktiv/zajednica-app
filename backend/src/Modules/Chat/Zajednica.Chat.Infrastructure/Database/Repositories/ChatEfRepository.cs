@@ -35,11 +35,10 @@ internal sealed class ChatEfRepository(ChatDbContext db) : IChatRepository
         var items = query
             .OrderByDescending(c => c.LastActivityAt)
             .ThenByDescending(c => c.Id)
-            .Take(limit)
+            .Take(limit + 1)
             .ToList();
 
-        return new CursorPage<TChat, PageCursor>(items,
-            items.Count < limit ? null : new PageCursor(items[^1].LastActivityAt, items[^1].Id));
+        return Paging.ToPage(items, limit, c => new PageCursor(c.LastActivityAt, c.Id));
     }
 
     public DirectChat? GetDirect(Guid communityId, Guid membershipId, Guid otherMembershipId) =>
@@ -83,21 +82,20 @@ internal sealed class ChatEfRepository(ChatDbContext db) : IChatRepository
         db.SaveChanges();
     }
 
-    public CursorPage<Message, PageCursor> GetMessagePage(Guid chatId, PageCursor? after, int limit)
+    public CursorPage<Message, PageCursor> GetMessagePage(Guid chatId, PageCursor? before, int limit)
     {
         var query = db.Messages.AsNoTracking().Where(m => m.ChatId == chatId);
 
-        if (after is { } cursor)
-            query = query.Where(m => m.Date > cursor.At
-                                     || (m.Date == cursor.At && m.Id.CompareTo(cursor.Id) > 0));
+        if (before is { } cursor)
+            query = query.Where(m => m.Date < cursor.At
+                                     || (m.Date == cursor.At && m.Id.CompareTo(cursor.Id) < 0));
 
         var items = query
-            .OrderBy(m => m.Date)
-            .ThenBy(m => m.Id)
-            .Take(limit)
+            .OrderByDescending(m => m.Date)
+            .ThenByDescending(m => m.Id)
+            .Take(limit + 1)
             .ToList();
 
-        return new CursorPage<Message, PageCursor>(items,
-            items.Count < limit ? null : new PageCursor(items[^1].Date, items[^1].Id));
+        return Paging.ToPage(items, limit, m => new PageCursor(m.Date, m.Id));
     }
 }

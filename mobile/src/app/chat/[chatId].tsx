@@ -79,26 +79,33 @@ export default function ChatScreen() {
   const { activeCommunityId, me, status: myStatus, isMuted } = useCommunity();
   const [chat, setChat] = useState<ChatDetailsDto | null>(null);
   const [messages, setMessages] = useState<MessageDto[]>([]);
+  const [olderCursor, setOlderCursor] = useState<string | null>(null);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [recording, setRecording] = useState(false);
   const [showRewardPicker, setShowRewardPicker] = useState(false);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const listRef = useRef<FlatList<MessageDto>>(null);
+  const loadingOlder = useRef(false);
 
   const loadMessages = useCallback(async () => {
     if (!activeCommunityId || !chatId) return;
-    const all: MessageDto[] = [];
-    let cursor: string | null = null;
-    for (let i = 0; i < 10; i++) {
-      const page = await messageApi.getPage(activeCommunityId, chatId, cursor);
-      all.push(...page.items);
-      cursor = page.nextCursor;
-      if (!cursor) break;
-    }
-    setMessages(all);
+    const page = await messageApi.getPage(activeCommunityId, chatId, null);
+    setMessages(page.items);
+    setOlderCursor(page.nextCursor);
   }, [activeCommunityId, chatId]);
+
+  const loadOlder = useCallback(async () => {
+    if (!activeCommunityId || !chatId || !olderCursor || loadingOlder.current) return;
+    loadingOlder.current = true;
+    try {
+      const page = await messageApi.getPage(activeCommunityId, chatId, olderCursor);
+      setMessages((current) => [...current, ...page.items]);
+      setOlderCursor(page.nextCursor);
+    } finally {
+      loadingOlder.current = false;
+    }
+  }, [activeCommunityId, chatId, olderCursor]);
 
   const loadChat = useCallback(async () => {
     if (!activeCommunityId || !chatId) return;
@@ -120,7 +127,7 @@ export default function ChatScreen() {
   useChannel(chatId ? `chat:${chatId}` : null, {
     "chat.message": (message: MessageDto) => {
       setMessages((current) =>
-        current.some((m) => m.id === message.id) ? current : [...current, message]
+        current.some((m) => m.id === message.id) ? current : [message, ...current]
       );
       if (activeCommunityId && chatId) messageApi.markRead(activeCommunityId, chatId).catch(() => {});
     },
@@ -152,7 +159,7 @@ export default function ChatScreen() {
     try {
       const sent = await messageApi.sendText(activeCommunityId, chat.id, text.trim());
       setMessages((current) =>
-        current.some((m) => m.id === sent.id) ? current : [...current, sent]
+        current.some((m) => m.id === sent.id) ? current : [sent, ...current]
       );
       setText("");
     } catch (e: any) {
@@ -184,7 +191,7 @@ export default function ChatScreen() {
       });
       const sent = await messageApi.sendVoice(activeCommunityId, chat.id, uploaded.url, durationSeconds);
       setMessages((current) =>
-        current.some((m) => m.id === sent.id) ? current : [...current, sent]
+        current.some((m) => m.id === sent.id) ? current : [sent, ...current]
       );
     } catch (e: any) {
       Alert.alert("Greška", e.message);
@@ -318,14 +325,15 @@ export default function ChatScreen() {
         )}
 
         <FlatList
-          ref={listRef}
+          inverted
           data={messages}
           keyExtractor={(m) => m.id}
           renderItem={({ item }) => (
             <MessageBubble message={item} mine={item.senderMembershipId === me.membershipId} />
           )}
           contentContainerStyle={{ padding: spacing.l }}
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+          onEndReached={loadOlder}
+          onEndReachedThreshold={0.4}
         />
 
         {isMuted ? (

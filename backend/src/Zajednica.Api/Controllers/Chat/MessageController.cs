@@ -20,15 +20,15 @@ public sealed class MessageController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult<MessageDto> SendText(Guid communityId, Guid chatId, [FromBody] SendTextRequest request)
+    public ActionResult<MessageDto> SendText(Guid communityId, Guid chatId, [FromBody] SendTextRequestDto requestDto)
     {
-        return Ok(_messages.SendText(User.AccountId(), communityId, chatId, request));
+        return Ok(_messages.SendText(User.AccountId(), communityId, chatId, requestDto));
     }
 
     [HttpPost("voice")]
-    public ActionResult<MessageDto> SendVoice(Guid communityId, Guid chatId, [FromBody] SendVoiceRequest request)
+    public ActionResult<MessageDto> SendVoice(Guid communityId, Guid chatId, [FromBody] SendVoiceRequestDto requestDto)
     {
-        return Ok(_messages.SendVoice(User.AccountId(), communityId, chatId, request));
+        return Ok(_messages.SendVoice(User.AccountId(), communityId, chatId, requestDto));
     }
 
     [HttpPost("read")]
@@ -39,8 +39,8 @@ public sealed class MessageController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<CursorPage<MessageDto, PageCursor>> GetPage(Guid communityId, Guid chatId, [FromQuery] PageCursor? after, [FromQuery] int limit)
+    public ActionResult<CursorPage<MessageDto, PageCursor>> GetPage(Guid communityId, Guid chatId, [FromQuery] PageCursor? before, [FromQuery] int limit)
     {
-        return Ok(_messages.GetPage(User.AccountId(), communityId, chatId, after, limit));
+        return Ok(_messages.GetPage(User.AccountId(), communityId, chatId, before, limit));
     }
 }

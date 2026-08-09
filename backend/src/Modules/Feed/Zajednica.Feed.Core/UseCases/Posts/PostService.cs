@@ -13,32 +13,32 @@ using Zajednica.Feed.Core.UseCases.Queries;
 namespace Zajednica.Feed.Core.UseCases.Posts;
 
 public sealed class PostService(
-    IPostRepository posts,
-    IInternalMembershipAudienceService audience,
-    INotificationSender notifications,
-    MemberDirectory directory,
-    IFileUrlMapper urls,
-    CommunityAccess access) : IPostService
+    IPostRepository postRepository,
+    IInternalMembershipAudienceService internalAudienceService,
+    INotificationSender notificationSender,
+    MemberDirectory memberDirectory,
+    IFileUrlMapper urlMapper,
+    MemberRequirementsService requirementsService) : IPostService
 {
-    public PostDto CreateGeneral(Guid accountId, Guid communityId, CreateGeneralPostRequest request)
+    public PostDto CreateGeneral(Guid accountId, Guid communityId, CreateGeneralPostRequestDto requestDto)
     {
-        var authorMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
+        var authorMembershipId = requirementsService.RequireUnmutedConfirmed(accountId, communityId);
 
-        var post = new GeneralTopicPost(communityId, authorMembershipId, request.Text,
-            PostMappers.ToKind(request.Kind), ToKeys(request.ImageUrls), DateTime.UtcNow);
-        posts.Add(post);
+        var post = new GeneralTopicPost(communityId, authorMembershipId, requestDto.Text,
+            PostMappers.ToKind(requestDto.Kind), ToKeys(requestDto.ImageUrls), DateTime.UtcNow);
+        postRepository.Add(post);
 
         Announce(post);
 
         return Single(post);
     }
 
-    public PostDto CreateHelpRequest(Guid accountId, Guid communityId, CreateHelpRequestRequest request)
+    public PostDto CreateHelpRequest(Guid accountId, Guid communityId, CreateHelpRequestPostDto request)
     {
-        var authorMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
+        var authorMembershipId = requirementsService.RequireUnmutedConfirmed(accountId, communityId);
 
         var post = new HelpRequest(communityId, authorMembershipId, request.Text, ToKeys(request.ImageUrls), DateTime.UtcNow);
-        posts.Add(post);
+        postRepository.Add(post);
 
         Announce(post);
 
@@ -47,40 +47,40 @@ public sealed class PostService(
 
     public PostDto CloseHelpRequest(Guid accountId, Guid communityId, Guid postId)
     {
-        var actorMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
+        var actorMembershipId = requirementsService.RequireUnmutedConfirmed(accountId, communityId);
 
         if (Require(postId, communityId) is not HelpRequest help)
             throw new EntityValidationException("Only a help request can be closed for further responses.");
 
         help.Close(actorMembershipId);
-        posts.Update(help);
+        postRepository.Update(help);
 
         return Single(help);
     }
 
     public PostDto Get(Guid accountId, Guid communityId, Guid postId)
     {
-        access.RequireConfirmed(accountId, communityId);
+        requirementsService.RequireConfirmed(accountId, communityId);
 
         return Single(Require(postId, communityId));
     }
 
     public CursorPage<PostDto, PageCursor> GetPage(Guid accountId, Guid communityId, PageCursor? before, int limit)
     {
-        access.RequireConfirmed(accountId, communityId);
+        requirementsService.RequireConfirmed(accountId, communityId);
 
-        var page = posts.GetPage(communityId, before, Paging.Clamp(limit));
-        var profiles = directory.Profiles(page.Items.Select(p => p.AuthorMembershipId).ToList());
+        var page = postRepository.GetPage(communityId, before, Paging.Clamp(limit));
+        var profiles = memberDirectory.Profiles(page.Items.Select(p => p.AuthorMembershipId).ToList());
 
-        return new CursorPage<PostDto, PageCursor>(page.Items.ToDtos(profiles, urls), page.NextCursor);
+        return new CursorPage<PostDto, PageCursor>(page.Items.ToDtos(profiles, urlMapper), page.NextCursor);
     }
 
     private IEnumerable<string>? ToKeys(IReadOnlyList<string>? imageUrls) =>
-        imageUrls?.Select(u => urls.ToKey(u)!);
+        imageUrls?.Select(u => urlMapper.ToKey(u)!);
 
     private Post Require(Guid postId, Guid communityId)
     {
-        var post = posts.Get(postId);
+        var post = postRepository.Get(postId);
         if (post is null || post.CommunityId != communityId)
             throw new NotFoundException("Post not found in this community.");
 
@@ -89,16 +89,16 @@ public sealed class PostService(
 
     private PostDto Single(Post post)
     {
-        var profiles = directory.Profiles([post.AuthorMembershipId]);
-        return post.ToDto(profiles.GetValueOrDefault(post.AuthorMembershipId), urls);
+        var profiles = memberDirectory.Profiles([post.AuthorMembershipId]);
+        return post.ToDto(profiles.GetValueOrDefault(post.AuthorMembershipId), urlMapper);
     }
 
     private void Announce(Post post)
     {
         var (title, body, priority) = Announcement(post);
-        var recipients = audience.GetConfirmedAccountIds(post.CommunityId, post.AuthorMembershipId);
+        var recipients = internalAudienceService.GetConfirmedAccountIds(post.CommunityId, post.AuthorMembershipId);
 
-        notifications.Send(new NotificationRequest(recipients, title, body, priority));
+        notificationSender.Send(new NotificationRequest(recipients, title, body, priority));
 
         if (post is GeneralTopicPost { Kind: GeneralPostKind.Problem })
             NotifyManager(post.CommunityId);
@@ -106,10 +106,10 @@ public sealed class PostService(
 
     private void NotifyManager(Guid communityId)
     {
-        if (audience.GetManagerAccountId(communityId) is not { } managerAccountId)
+        if (internalAudienceService.GetManagerAccountId(communityId) is not { } managerAccountId)
             return;
 
-        notifications.Send(new NotificationRequest(managerAccountId, "Prijavljen problem",
+        notificationSender.Send(new NotificationRequest(managerAccountId, "Prijavljen problem",
             "U zgradi je prijavljen problem koji traži reakciju upravnika.", NotificationPriority.Default));
     }
 

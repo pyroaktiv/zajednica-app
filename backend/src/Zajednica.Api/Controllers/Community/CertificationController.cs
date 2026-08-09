@@ -32,8 +32,8 @@ public sealed class CertificationController : ControllerBase
     }
 
     [HttpPost("certification-challenges/confirm")]
-    public ActionResult<CertificationResultDto> Confirm([FromBody] ConfirmCertificationRequest request)
+    public ActionResult<CertificationResultDto> Confirm([FromBody] ConfirmCertificationRequestDto requestDto)
     {
-        return Ok(_certification.Confirm(User.AccountId(), request));
+        return Ok(_certification.Confirm(User.AccountId(), requestDto));
     }
 }

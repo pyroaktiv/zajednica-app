@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import { router, Stack } from "expo-router";
 import { useState } from "react";
-import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Image, Pressable, ScrollView, Text, type TextStyle, TextInput, View } from "react-native";
 import { postApi } from "../api/feed";
 import { fileApi } from "../api/files";
 import { useCommunity } from "../state/CommunityContext";
@@ -16,10 +16,12 @@ function Option({
   label,
   selected,
   onPress,
+  labelStyle,
 }: {
   label: string;
   selected: boolean;
   onPress: () => void;
+  labelStyle?: TextStyle;
 }) {
   return (
     <Pressable
@@ -46,9 +48,16 @@ function Option({
           <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />
         )}
       </View>
-      <Text style={{ color: colors.text }}>{label}</Text>
+      <Text style={[{ color: colors.text }, labelStyle]}>{label}</Text>
     </Pressable>
   );
+}
+
+function placeholderFor(type: PostType, kind: Kind) {
+  if (type === "help") return "Kako komšije mogu da pomognu?";
+  if (kind === "Problem") return "Opis problema...";
+  if (kind === "Emergency") return "Opis hitnog slučaja...";
+  return "Šta ima novo u zgradi?";
 }
 
 export default function PostCreate() {
@@ -115,6 +124,7 @@ export default function PostCreate() {
               label="Potrebna je hitna reakcija zajednice"
               selected={kind === "Emergency"}
               onPress={() => setKind("Emergency")}
+              labelStyle={{ color: colors.danger, fontWeight: "700" }}
             />
           </>
         )}
@@ -124,7 +134,7 @@ export default function PostCreate() {
           multiline
           value={text}
           onChangeText={setText}
-          placeholder="Šta ima novo u zgradi?"
+          placeholder={placeholderFor(type, kind)}
           placeholderTextColor={colors.muted}
           style={{
             backgroundColor: colors.card,

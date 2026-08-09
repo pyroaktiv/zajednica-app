@@ -10,36 +10,36 @@ using Zajednica.Community.Core.Mappers;
 namespace Zajednica.Community.Core.UseCases;
 
 public sealed class DocumentService(
-    IDocumentRepository documents,
-    IFileUrlMapper urls,
-    MembershipAccess access) : IDocumentService
+    IDocumentRepository documentRepository,
+    IFileUrlMapper urlMapper,
+    MembershipRequirementsService requirementsService) : IDocumentService
 {
-    public DocumentDto Add(Guid accountId, Guid communityId, AddDocumentRequest request)
+    public DocumentDto Add(Guid accountId, Guid communityId, AddDocumentRequestDto requestDto)
     {
-        var (_, actor) = access.RequireRole(accountId, communityId, CommunityRole.Manager);
+        var (_, actor) = requirementsService.RequireRole(accountId, communityId, CommunityRole.Manager);
 
-        var document = new Document(communityId, actor.Id, request.Name, urls.ToKey(request.Url)!, DateTime.UtcNow);
-        documents.Add(document);
+        var document = new Document(communityId, actor.Id, requestDto.Name, urlMapper.ToKey(requestDto.Url)!, DateTime.UtcNow);
+        documentRepository.Add(document);
 
-        return document.ToDto(urls);
+        return document.ToDto(urlMapper);
     }
 
     public PagedResult<DocumentDto> GetPaged(Guid accountId, Guid communityId, int page, int pageSize)
     {
-        access.RequireConfirmed(accountId, communityId);
+        requirementsService.RequireConfirmed(accountId, communityId);
 
-        var paged = documents.GetPaged(communityId, page, pageSize);
-        return new PagedResult<DocumentDto>(paged.Results.Select(d => d.ToDto(urls)).ToList(), paged.TotalCount);
+        var paged = documentRepository.GetPaged(communityId, page, pageSize);
+        return new PagedResult<DocumentDto>(paged.Results.Select(d => d.ToDto(urlMapper)).ToList(), paged.TotalCount);
     }
 
     public void Remove(Guid accountId, Guid communityId, Guid documentId)
     {
-        access.RequireRole(accountId, communityId, CommunityRole.Manager);
+        requirementsService.RequireRole(accountId, communityId, CommunityRole.Manager);
 
-        var document = documents.GetById(documentId);
+        var document = documentRepository.GetById(documentId);
         if (document is null || document.CommunityId != communityId)
             throw new NotFoundException("Document not found in this community.");
 
-        documents.Remove(document);
+        documentRepository.Remove(document);
     }
 }

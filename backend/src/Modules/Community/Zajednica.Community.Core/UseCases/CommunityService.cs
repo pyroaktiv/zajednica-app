@@ -11,39 +11,39 @@ using CommunityAggregate = Zajednica.Community.Core.Domain.Community;
 namespace Zajednica.Community.Core.UseCases;
 
 public sealed class CommunityService(
-    ICommunityRepository communities,
-    IMembershipRepository memberships,
-    ISecureTokenGenerator tokens,
-    IRealtimePusher realtime,
-    MembershipAccess access) : ICommunityService
+    ICommunityRepository communityRepository,
+    IMembershipRepository membershipRepository,
+    ISecureTokenGenerator tokenGenerator,
+    IRealtimePusher realtimePusher,
+    MembershipRequirementsService requirementsService) : ICommunityService
 {
-    public CommunityDetailsDto Create(Guid accountId, CreateCommunityRequest request)
+    public CommunityDetailsDto Create(Guid accountId, CreateCommunityRequestDto requestDto)
     {
         var now = DateTime.UtcNow;
         var community = new CommunityAggregate(
-            request.Name,
-            request.Address.ToAddress(),
-            tokens.Generate(),
+            requestDto.Name,
+            requestDto.Address.ToAddress(),
+            tokenGenerator.Generate(),
             now,
-            CommunityMappers.ToRegistrationNumber(request.RegistrationNumber),
-            CommunityMappers.ToTaxId(request.TaxId),
-            request.BankAccountNumber);
+            CommunityMappers.ToRegistrationNumber(requestDto.RegistrationNumber),
+            CommunityMappers.ToTaxId(requestDto.TaxId),
+            requestDto.BankAccountNumber);
 
-        communities.Add(community);
-        memberships.Add(Membership.MakeCreator(accountId, community.Id, now));
+        communityRepository.Add(community);
+        membershipRepository.Add(Membership.MakeCreator(accountId, community.Id, now));
 
         return community.ToDetailsDto();
     }
 
     public IReadOnlyList<MyCommunityDto> GetMine(Guid accountId)
     {
-        var mine = (memberships.GetByAccount(accountId))
+        var mine = (membershipRepository.GetByAccount(accountId))
             .Where(m => m.IsActive())
             .ToList();
         if (mine.Count == 0)
             return [];
 
-        var found = (communities.GetManyByIds(mine.Select(m => m.CommunityId).ToList()))
+        var found = (communityRepository.GetManyByIds(mine.Select(m => m.CommunityId).ToList()))
             .ToDictionary(c => c.Id);
 
         return mine
@@ -54,59 +54,59 @@ public sealed class CommunityService(
 
     public CommunityDetailsDto Get(Guid accountId, Guid communityId)
     {
-        var (community, _) = access.RequireMember(accountId, communityId);
+        var (community, _) = requirementsService.RequireMember(accountId, communityId);
         return community.ToDetailsDto();
     }
 
-    public CommunityDetailsDto Update(Guid accountId, Guid communityId, UpdateCommunityRequest request)
+    public CommunityDetailsDto Update(Guid accountId, Guid communityId, UpdateCommunityRequestDto requestDto)
     {
-        var (community, _) = access.RequireRole(accountId, communityId, CommunityRole.Manager);
+        var (community, _) = requirementsService.RequireRole(accountId, communityId, CommunityRole.Manager);
 
         community.UpdateDetails(
-            request.Name,
-            request.Address.ToAddress(),
-            CommunityMappers.ToRegistrationNumber(request.RegistrationNumber),
-            CommunityMappers.ToTaxId(request.TaxId),
-            request.BankAccountNumber);
+            requestDto.Name,
+            requestDto.Address.ToAddress(),
+            CommunityMappers.ToRegistrationNumber(requestDto.RegistrationNumber),
+            CommunityMappers.ToTaxId(requestDto.TaxId),
+            requestDto.BankAccountNumber);
 
-        communities.Update(community);
+        communityRepository.Update(community);
 
         return community.ToDetailsDto();
     }
 
     public CommunityQrDto GetQr(Guid accountId, Guid communityId)
     {
-        var (community, _) = access.RequireConfirmed(accountId, communityId);
+        var (community, _) = requirementsService.RequireConfirmed(accountId, communityId);
         return community.ToQrDto();
     }
 
-    public JoinedCommunityDto Join(Guid accountId, JoinCommunityRequest request)
+    public JoinedCommunityDto Join(Guid accountId, JoinCommunityRequestDto requestDto)
     {
-        var community = communities.GetByQrToken(request.QrToken)
+        var community = communityRepository.GetByQrToken(requestDto.QrToken)
             ?? throw new NotFoundException("No community matches this QR code.");
 
-        var existing = memberships.Get(accountId, community.Id);
+        var existing = membershipRepository.Get(accountId, community.Id);
         if (existing is null)
         {
             var membership = new Membership(accountId, community.Id, DateTime.UtcNow);
-            memberships.Add(membership);
+            membershipRepository.Add(membership);
             return membership.ToJoinedDto(community.Name);
         }
 
         existing.Rejoin();
-        memberships.Update(existing);
+        membershipRepository.Update(existing);
 
         return existing.ToJoinedDto(community.Name);
     }
 
     public void Leave(Guid accountId, Guid communityId)
     {
-        var (_, membership) = access.RequireMember(accountId, communityId);
+        var (_, membership) = requirementsService.RequireMember(accountId, communityId);
 
         membership.Leave(DateTime.UtcNow);
-        memberships.Update(membership);
+        membershipRepository.Update(membership);
 
-        realtime.PushToUser(accountId,
+        realtimePusher.PushToUser(accountId,
             new RealtimeMessage("membership.roles.changed", new { communityId }));
     }
 }

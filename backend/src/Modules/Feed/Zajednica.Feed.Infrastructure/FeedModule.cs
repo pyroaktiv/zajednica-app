@@ -39,17 +39,17 @@ public static class FeedModule
     private static void AddApplicationServices(IServiceCollection services)
     {
         services.AddScoped<MemberDirectory>();
-        services.AddScoped<CommunityAccess>();
+        services.AddScoped<MemberRequirementsService>();
 
         services.AddScoped<IPostService, PostService>();
         services.AddScoped<ICommentService, CommentService>();
         services.AddScoped<IInternalHelpRequestService, InternalHelpRequestService>();
 
-        services.AddScoped<IntentAccess>();
+        services.AddScoped<IntentRetrievalService>();
         services.AddScoped<IntentNotifier>();
-        services.AddScoped<IntentClosing>();
-        services.AddScoped<IntentPresenter>();
-        services.AddScoped<IIntentService, IntentService>();
+        services.AddScoped<IntentClosingService>();
+        services.AddScoped<IntentPresenterService>();
+        services.AddScoped<IIntentCommandService, IntentCommandService>();
         services.AddScoped<IIntentQueryService, IntentQueryService>();
 
         services.AddHostedService<IntentClosingWorker>();

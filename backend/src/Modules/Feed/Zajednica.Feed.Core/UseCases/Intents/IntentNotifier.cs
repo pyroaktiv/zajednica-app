@@ -6,9 +6,9 @@ using Zajednica.Feed.Core.Domain.Intents.Initiatives;
 namespace Zajednica.Feed.Core.UseCases.Intents;
 
 public sealed class IntentNotifier(
-    MemberDirectory directory,
-    INotificationSender notifications,
-    IRealtimePusher realtime)
+    MemberDirectory memberDirectory,
+    INotificationSender notificationSender,
+    IRealtimePusher realtimePusher)
 {
     public void Opened(Intent intent)
     {
@@ -27,7 +27,7 @@ public sealed class IntentNotifier(
 
     public void Changed(Intent intent)
     {
-        realtime.PushToChannel(Channels.Intent(intent.Id), new RealtimeMessage("intent.updated", new
+        realtimePusher.PushToChannel(Channels.Intent(intent.Id), new RealtimeMessage("intent.updated", new
         {
             id = intent.Id,
             votesFor = intent.VotesFor,
@@ -41,9 +41,9 @@ public sealed class IntentNotifier(
         if (intent.Initiative is not UserTargetingInitiative targeting)
             return;
 
-        if (directory.AccountId(targeting.TargetMembershipId) is not { } targetAccountId)
+        if (memberDirectory.AccountId(targeting.TargetMembershipId) is not { } targetAccountId)
             return;
 
-        notifications.Send(new NotificationRequest(targetAccountId, title, body, priority));
+        notificationSender.Send(new NotificationRequest(targetAccountId, title, body, priority));
     }
 }

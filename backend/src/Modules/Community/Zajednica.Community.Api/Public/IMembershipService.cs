@@ -5,7 +5,7 @@ namespace Zajednica.Community.Api.Public;
 public interface IMembershipService
 {
     MemberProfileDto GetMine(Guid accountId, Guid communityId);
-    UnitNumberDto SetUnitNumber(Guid accountId, Guid communityId, SetUnitNumberRequest request);
+    UnitNumberDto SetUnitNumber(Guid accountId, Guid communityId, SetUnitNumberRequestDto requestDto);
     MemberProfileDto Get(Guid accountId, Guid communityId, Guid membershipId);
 
     IReadOnlyList<MemberSummaryDto> GetConfirmed(Guid accountId, Guid communityId);

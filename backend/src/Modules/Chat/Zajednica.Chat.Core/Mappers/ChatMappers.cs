@@ -10,7 +10,7 @@ namespace Zajednica.Chat.Core.Mappers;
 public static class ChatMappers
 {
     public static ChatDetailsDto ToDetailsDto(this ChatAggregate chat, Guid viewerMembershipId,
-        IReadOnlyDictionary<Guid, AccountProfileDto> profiles)
+        IReadOnlyDictionary<Guid, InternalProfileDto> profiles)
     {
         var help = chat as HelpRequestChat;
 
@@ -30,7 +30,7 @@ public static class ChatMappers
     }
 
     public static ChatSummaryDto ToSummaryDto(this ChatAggregate chat, Guid viewerMembershipId,
-        IReadOnlyDictionary<Guid, AccountProfileDto> profiles)
+        IReadOnlyDictionary<Guid, InternalProfileDto> profiles)
     {
         var help = chat as HelpRequestChat;
 
@@ -47,12 +47,12 @@ public static class ChatMappers
     }
 
     public static CursorPage<ChatSummaryDto, PageCursor> ToSummaryPage<TChat>(this CursorPage<TChat, PageCursor> page,
-        Guid viewerMembershipId, IReadOnlyDictionary<Guid, AccountProfileDto> profiles)
+        Guid viewerMembershipId, IReadOnlyDictionary<Guid, InternalProfileDto> profiles)
         where TChat : ChatAggregate =>
         new(page.Items.Select(c => c.ToSummaryDto(viewerMembershipId, profiles)).ToList(),
             page.NextCursor);
 
-    private static string UsernameOf(IReadOnlyDictionary<Guid, AccountProfileDto> profiles, Guid membershipId) =>
+    private static string UsernameOf(IReadOnlyDictionary<Guid, InternalProfileDto> profiles, Guid membershipId) =>
         profiles.GetValueOrDefault(membershipId)?.Username ?? string.Empty;
 
     private static string TypeOf(ChatAggregate chat) => chat switch

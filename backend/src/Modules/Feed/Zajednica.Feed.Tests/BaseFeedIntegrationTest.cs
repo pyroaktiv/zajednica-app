@@ -33,13 +33,13 @@ public class BaseFeedIntegrationTest : BaseWebIntegrationTest<FeedTestFactory>
 
     protected static IntentController Intents(IServiceScope scope, Guid accountId) =>
         As(new IntentController(
-            scope.ServiceProvider.GetRequiredService<IIntentService>(),
+            scope.ServiceProvider.GetRequiredService<IIntentCommandService>(),
             scope.ServiceProvider.GetRequiredService<IIntentQueryService>()), accountId);
 
     protected static (CommunityDetailsDto Community, Member Owner) CreateCommunity(IServiceScope scope)
     {
         var accountId = NewAccount(scope);
-        var request = new CreateCommunityRequest(
+        var request = new CreateCommunityRequestDto(
             $"Zgrada {Guid.NewGuid():N}", new AddressDto("Bulevar", "12", 45.25m, 19.83m), null, null, null);
 
         var community = Communities(scope).Create(accountId, request);
@@ -52,7 +52,7 @@ public class BaseFeedIntegrationTest : BaseWebIntegrationTest<FeedTestFactory>
         var certification = scope.ServiceProvider.GetRequiredService<ICertificationService>();
 
         var challenge = certification.CreateChallenge(issuerAccountId, communityId);
-        certification.Confirm(member.AccountId, new ConfirmCertificationRequest(challenge.Token));
+        certification.Confirm(member.AccountId, new ConfirmCertificationRequestDto(challenge.Token));
 
         return member;
     }
@@ -62,7 +62,7 @@ public class BaseFeedIntegrationTest : BaseWebIntegrationTest<FeedTestFactory>
         var accountId = NewAccount(scope);
         var qr = Communities(scope).GetQr(issuerAccountId, communityId);
 
-        Communities(scope).Join(accountId, new JoinCommunityRequest(qr.QrToken));
+        Communities(scope).Join(accountId, new JoinCommunityRequestDto(qr.QrToken));
 
         return new Member(accountId, MembershipId(scope, accountId, communityId));
     }

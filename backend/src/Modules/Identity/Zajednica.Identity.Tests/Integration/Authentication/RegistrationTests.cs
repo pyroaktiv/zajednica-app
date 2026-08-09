@@ -16,7 +16,7 @@ public class RegistrationTests : BaseIdentityIntegrationTest
         using var scope = Factory.Services.CreateScope();
         var email = UniqueEmail();
 
-        Controller(scope).Register(new RegisterAccountRequest(email, email, ValidPassword, null, null, null, null));
+        Controller(scope).Register(new RegisterAccountRequestDto(email, email, ValidPassword, null, null, null, null));
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
@@ -35,7 +35,7 @@ public class RegistrationTests : BaseIdentityIntegrationTest
         var email = UniqueEmail();
 
         Controller(scope).Register(
-            new RegisterAccountRequest(email, email, ValidPassword, "Petar", "Petrović", "0601234567", "petar@contact.local"));
+            new RegisterAccountRequestDto(email, email, ValidPassword, "Petar", "Petrović", "0601234567", "petar@contact.local"));
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
@@ -54,7 +54,7 @@ public class RegistrationTests : BaseIdentityIntegrationTest
         var email = UniqueEmail();
 
         Should.Throw<EntityValidationException>(() =>
-            Controller(scope).Register(new RegisterAccountRequest(email, email, "short", null, null, null, null)));
+            Controller(scope).Register(new RegisterAccountRequestDto(email, email, "short", null, null, null, null)));
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
@@ -66,10 +66,10 @@ public class RegistrationTests : BaseIdentityIntegrationTest
     {
         using var scope = Factory.Services.CreateScope();
         var username = $"user-{Guid.NewGuid():N}";
-        Controller(scope).Register(new RegisterAccountRequest(username, UniqueEmail(), ValidPassword, null, null, null, null));
+        Controller(scope).Register(new RegisterAccountRequestDto(username, UniqueEmail(), ValidPassword, null, null, null, null));
 
         Should.Throw<EntityValidationException>(() =>
-            Controller(scope).Register(new RegisterAccountRequest(username, UniqueEmail(), ValidPassword, null, null, null, null)));
+            Controller(scope).Register(new RegisterAccountRequestDto(username, UniqueEmail(), ValidPassword, null, null, null, null)));
     }
 
     [Fact]
@@ -77,9 +77,9 @@ public class RegistrationTests : BaseIdentityIntegrationTest
     {
         using var scope = Factory.Services.CreateScope();
         var email = UniqueEmail();
-        Controller(scope).Register(new RegisterAccountRequest($"user-{Guid.NewGuid():N}", email, ValidPassword, null, null, null, null));
+        Controller(scope).Register(new RegisterAccountRequestDto($"user-{Guid.NewGuid():N}", email, ValidPassword, null, null, null, null));
 
         Should.Throw<EntityValidationException>(() =>
-            Controller(scope).Register(new RegisterAccountRequest($"user-{Guid.NewGuid():N}", email, ValidPassword, null, null, null, null)));
+            Controller(scope).Register(new RegisterAccountRequestDto($"user-{Guid.NewGuid():N}", email, ValidPassword, null, null, null, null)));
     }
 }

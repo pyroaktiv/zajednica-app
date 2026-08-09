@@ -11,5 +11,6 @@ public class UserTargetingIntentOpenedConfiguration : IEntityTypeConfiguration<U
     {
         builder.Property(e => e.Kind).HasConversion<string>();
         builder.Property(e => e.TargetMembershipStatus).HasConversion<string>();
+        builder.Property(e => e.TargetMembershipRole).HasConversion<string>();
     }
 }

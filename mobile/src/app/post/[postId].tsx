@@ -1,9 +1,12 @@
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Modal,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   Platform,
   Pressable,
   ScrollView,
@@ -25,11 +28,15 @@ function CommentView({
   onReply,
   replies,
   onLoadReplies,
+  hasMoreReplies,
+  onLoadMoreReplies,
 }: {
   comment: CommentDto;
   onReply: (comment: CommentDto) => void;
   replies: CommentDto[] | undefined;
   onLoadReplies: (comment: CommentDto) => void;
+  hasMoreReplies: boolean;
+  onLoadMoreReplies: (comment: CommentDto) => void;
 }) {
   return (
     <View style={{ marginBottom: spacing.s }}>
@@ -72,8 +79,17 @@ function CommentView({
               onReply={onReply}
               replies={undefined}
               onLoadReplies={onLoadReplies}
+              hasMoreReplies={false}
+              onLoadMoreReplies={onLoadMoreReplies}
             />
           ))}
+          {hasMoreReplies && (
+            <Pressable onPress={() => onLoadMoreReplies(comment)}>
+              <Text style={{ color: colors.primary, fontSize: 12, marginTop: spacing.xs }}>
+                Prikaži još odgovora
+              </Text>
+            </Pressable>
+          )}
         </View>
       )}
     </View>
@@ -85,11 +101,15 @@ export default function PostDetails() {
   const { activeCommunityId, me, isMuted } = useCommunity();
   const [post, setPost] = useState<PostDto | null>(null);
   const [comments, setComments] = useState<CommentDto[]>([]);
+  const [commentsCursor, setCommentsCursor] = useState<string | null>(null);
   const [replies, setReplies] = useState<Record<string, CommentDto[]>>({});
+  const [repliesCursor, setRepliesCursor] = useState<Record<string, string | null>>({});
   const [commentText, setCommentText] = useState("");
   const [replyTo, setReplyTo] = useState<CommentDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [zoomedImageUrl, setZoomedImageUrl] = useState<string | null>(null);
+  const loadingComments = useRef(false);
 
   const isGeneral = post?.type === "GENERAL";
   const isHelp = post?.type === "HELP_REQUEST";
@@ -103,11 +123,33 @@ export default function PostDetails() {
       if (loaded.type === "GENERAL") {
         const page = await commentApi.getRoots(activeCommunityId, postId, null);
         setComments(page.items);
+        setCommentsCursor(page.nextCursor);
       }
     } catch (e: any) {
       setError(e.message);
     }
   }, [activeCommunityId, postId]);
+
+  const loadMoreComments = useCallback(async () => {
+    if (!activeCommunityId || !postId || !commentsCursor || loadingComments.current) return;
+    loadingComments.current = true;
+    try {
+      const page = await commentApi.getRoots(activeCommunityId, postId, commentsCursor);
+      setComments((current) => [...current, ...page.items]);
+      setCommentsCursor(page.nextCursor);
+    } catch (e: any) {
+      Alert.alert("Greška", e.message);
+    } finally {
+      loadingComments.current = false;
+    }
+  }, [activeCommunityId, postId, commentsCursor]);
+
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    if (contentOffset.y + layoutMeasurement.height >= contentSize.height - 240) {
+      loadMoreComments();
+    }
+  };
 
   useEffect(() => {
     load();
@@ -153,6 +195,23 @@ export default function PostDetails() {
     try {
       const page = await commentApi.getReplies(activeCommunityId, post.id, comment.id, null);
       setReplies((current) => ({ ...current, [comment.id]: page.items }));
+      setRepliesCursor((current) => ({ ...current, [comment.id]: page.nextCursor }));
+    } catch (e: any) {
+      Alert.alert("Greška", e.message);
+    }
+  };
+
+  const loadMoreReplies = async (comment: CommentDto) => {
+    if (!activeCommunityId) return;
+    const cursor = repliesCursor[comment.id];
+    if (!cursor) return;
+    try {
+      const page = await commentApi.getReplies(activeCommunityId, post.id, comment.id, cursor);
+      setReplies((current) => ({
+        ...current,
+        [comment.id]: [...(current[comment.id] ?? []), ...page.items],
+      }));
+      setRepliesCursor((current) => ({ ...current, [comment.id]: page.nextCursor }));
     } catch (e: any) {
       Alert.alert("Greška", e.message);
     }
@@ -190,7 +249,7 @@ export default function PostDetails() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ScrollView contentContainerStyle={{ padding: spacing.l }}>
+        <ScrollView contentContainerStyle={{ padding: spacing.l }} onScroll={onScroll} scrollEventThrottle={100}>
           <Card>
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.s }}>
               <Text style={{ fontWeight: "700", color: colors.text, flex: 1 }}>
@@ -207,14 +266,19 @@ export default function PostDetails() {
               {formatDateTime(post.dateCreated)}
             </Text>
             <Text style={{ color: colors.text, fontSize: 15, lineHeight: 22 }}>{post.text}</Text>
-            {post.imageUrls.map((url) => (
-              <Image
-                key={url}
-                source={{ uri: url }}
-                style={{ width: "100%", height: 220, borderRadius: 8, marginTop: spacing.m }}
-                resizeMode="cover"
-              />
-            ))}
+            {post.imageUrls.length > 0 && (
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.s, marginTop: spacing.m }}>
+                {post.imageUrls.map((url) => (
+                  <Pressable key={url} onPress={() => setZoomedImageUrl(url)}>
+                    <Image
+                      source={{ uri: url }}
+                      style={{ width: 96, height: 96, borderRadius: 8 }}
+                      resizeMode="cover"
+                    />
+                  </Pressable>
+                ))}
+              </View>
+            )}
           </Card>
 
           <MutedNotice />
@@ -236,6 +300,8 @@ export default function PostDetails() {
                   onReply={setReplyTo}
                   replies={replies[comment.id]}
                   onLoadReplies={loadReplies}
+                  hasMoreReplies={repliesCursor[comment.id] != null}
+                  onLoadMoreReplies={loadMoreReplies}
                 />
               ))}
             </>
@@ -274,6 +340,31 @@ export default function PostDetails() {
           </View>
         )}
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={zoomedImageUrl != null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setZoomedImageUrl(null)}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.92)",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onPress={() => setZoomedImageUrl(null)}
+        >
+          {zoomedImageUrl && (
+            <Image
+              source={{ uri: zoomedImageUrl }}
+              style={{ width: "100%", height: "100%" }}
+              resizeMode="contain"
+            />
+          )}
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }

@@ -5,11 +5,11 @@ using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 
 namespace Zajednica.Feed.Core.UseCases.Internal;
 
-public sealed class InternalHelpRequestService(IPostRepository posts) : IInternalHelpRequestService
+public sealed class InternalHelpRequestService(IPostRepository postRepository) : IInternalHelpRequestService
 {
     public Guid RequireRespondableBy(Guid communityId, Guid helpRequestId, Guid helperMembershipId)
     {
-        if (posts.Get(helpRequestId) is not HelpRequest help || help.CommunityId != communityId)
+        if (postRepository.Get(helpRequestId) is not HelpRequest help || help.CommunityId != communityId)
             throw new NotFoundException("Help request not found in this community.");
 
         help.EnsureRespondableBy(helperMembershipId);

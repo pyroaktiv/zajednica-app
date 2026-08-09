@@ -20,14 +20,14 @@ public sealed class PostController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult<PostDto> CreateGeneral(Guid communityId, [FromBody] CreateGeneralPostRequest request)
+    public ActionResult<PostDto> CreateGeneral(Guid communityId, [FromBody] CreateGeneralPostRequestDto requestDto)
     {
-        var created = _posts.CreateGeneral(User.AccountId(), communityId, request);
+        var created = _posts.CreateGeneral(User.AccountId(), communityId, requestDto);
         return CreatedAtAction(nameof(Get), new { communityId, postId = created.Id }, created);
     }
 
     [HttpPost("help-requests")]
-    public ActionResult<PostDto> CreateHelpRequest(Guid communityId, [FromBody] CreateHelpRequestRequest request)
+    public ActionResult<PostDto> CreateHelpRequest(Guid communityId, [FromBody] CreateHelpRequestPostDto request)
     {
         var created = _posts.CreateHelpRequest(User.AccountId(), communityId, request);
         return CreatedAtAction(nameof(Get), new { communityId, postId = created.Id }, created);

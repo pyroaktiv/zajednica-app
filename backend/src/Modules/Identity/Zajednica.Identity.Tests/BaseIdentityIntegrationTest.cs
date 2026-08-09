@@ -26,7 +26,7 @@ public class BaseIdentityIntegrationTest : BaseWebIntegrationTest<IdentityTestFa
     {
         email ??= UniqueEmail();
         Controller(scope).Register(
-            new RegisterAccountRequest(email, email, ValidPassword, null, null, null, null));
+            new RegisterAccountRequestDto(email, email, ValidPassword, null, null, null, null));
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
@@ -40,15 +40,15 @@ public class BaseIdentityIntegrationTest : BaseWebIntegrationTest<IdentityTestFa
 
         var db = Db(scope);
         var token = db.Verifications.Single(t => t.AccountId == accountId);
-        Controller(scope).VerifyEmail(new VerifyEmailRequest(token.Token));
+        Controller(scope).VerifyEmail(new VerifyEmailRequestDto(token.Token));
 
         return (registeredEmail, accountId);
     }
 
-    protected static AuthTokens Login(IServiceScope scope, string usernameOrEmail)
+    protected static AuthTokensDto Login(IServiceScope scope, string usernameOrEmail)
     {
-        var result = Controller(scope).Login(new LoginRequest(usernameOrEmail, ValidPassword));
-        return Value<AuthTokens>(result.Result!);
+        var result = Controller(scope).Login(new LoginRequestDto(usernameOrEmail, ValidPassword));
+        return Value<AuthTokensDto>(result.Result!);
     }
 
     protected static T Value<T>(IActionResult result) => (T)((ObjectResult)result).Value!;

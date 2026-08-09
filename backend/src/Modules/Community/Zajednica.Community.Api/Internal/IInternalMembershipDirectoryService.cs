@@ -4,5 +4,5 @@ namespace Zajednica.Community.Api.Internal;
 
 public interface IInternalMembershipDirectoryService
 {
-    IReadOnlyList<MemberAccountDto> GetAccounts(IReadOnlyCollection<Guid> membershipIds);
+    IReadOnlyList<InternalMembershipAccountIdDto> GetAccountIdsByMembershipIds(IReadOnlyCollection<Guid> membershipIds);
 }

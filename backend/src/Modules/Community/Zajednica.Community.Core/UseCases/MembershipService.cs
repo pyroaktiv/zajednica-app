@@ -10,68 +10,68 @@ using Zajednica.Identity.Api.Internal.Dto;
 namespace Zajednica.Community.Core.UseCases;
 
 public sealed class MembershipService(
-    IMembershipRepository memberships,
-    IInternalAccountService accounts,
+    IMembershipRepository membershipRepository,
+    IInternalProfileService internalProfileService,
     MembershipNotifier notifier,
-    MembershipAccess access) : IMembershipService
+    MembershipRequirementsService requirementsService) : IMembershipService
 {
     public MemberProfileDto GetMine(Guid accountId, Guid communityId)
     {
-        var (_, membership) = access.RequireMember(accountId, communityId);
-        return membership.ToProfileDto(accounts.GetProfile(accountId), DateTime.UtcNow);
+        var (_, membership) = requirementsService.RequireMember(accountId, communityId);
+        return membership.ToProfileDto(internalProfileService.GetProfile(accountId), DateTime.UtcNow);
     }
 
-    public UnitNumberDto SetUnitNumber(Guid accountId, Guid communityId, SetUnitNumberRequest request)
+    public UnitNumberDto SetUnitNumber(Guid accountId, Guid communityId, SetUnitNumberRequestDto requestDto)
     {
-        var (_, membership) = access.RequireMember(accountId, communityId);
+        var (_, membership) = requirementsService.RequireMember(accountId, communityId);
 
-        membership.SetUnitNumber(request.UnitNumber);
-        memberships.Update(membership);
+        membership.SetUnitNumber(requestDto.UnitNumber);
+        membershipRepository.Update(membership);
 
         return membership.ToUnitNumberDto();
     }
 
     public MemberProfileDto Get(Guid accountId, Guid communityId, Guid membershipId)
     {
-        access.RequireConfirmed(accountId, communityId);
+        requirementsService.RequireConfirmed(accountId, communityId);
 
-        var target = memberships.GetById(membershipId);
+        var target = membershipRepository.GetById(membershipId);
         if (target is null || target.CommunityId != communityId)
             throw new NotFoundException("Membership not found in this community.");
 
-        return target.ToProfileDto(accounts.GetProfile(target.AccountId), DateTime.UtcNow);
+        return target.ToProfileDto(internalProfileService.GetProfile(target.AccountId), DateTime.UtcNow);
     }
 
     public IReadOnlyList<MemberSummaryDto> GetConfirmed(Guid accountId, Guid communityId)
     {
-        access.RequireConfirmed(accountId, communityId);
+        requirementsService.RequireConfirmed(accountId, communityId);
         return Cards(communityId, m => m.IsActive() && m.IsConfirmed());
     }
 
     public IReadOnlyList<MemberSummaryDto> GetIssuers(Guid accountId, Guid communityId)
     {
-        access.RequireMember(accountId, communityId);
-        return Cards(communityId, m => m.IsActive() && m.HasRole(CommunityRole.Issuer));
+        requirementsService.RequireMember(accountId, communityId);
+        return Cards(communityId, m => m.CanIssueCertifications());
     }
 
     public IReadOnlyList<MemberSummaryDto> GetUnconfirmed(Guid accountId, Guid communityId)
     {
-        access.RequireAnyRole(accountId, communityId, CommunityRole.Issuer, CommunityRole.Manager);
+        requirementsService.RequireAnyRole(accountId, communityId, CommunityRole.Issuer, CommunityRole.Manager);
         return Cards(communityId, m => m.IsActive() && !m.IsConfirmed());
     }
 
     public MemberSummaryDto? GetManager(Guid accountId, Guid communityId)
     {
-        access.RequireConfirmed(accountId, communityId);
+        requirementsService.RequireConfirmed(accountId, communityId);
         var cards = Cards(communityId, m => m.IsActive() && m.HasRole(CommunityRole.Manager));
         return cards.SingleOrDefault();
     }
 
     public IReadOnlyList<MemberSummaryDto> GetRanking(Guid accountId, Guid communityId)
     {
-        access.RequireConfirmed(accountId, communityId);
+        requirementsService.RequireConfirmed(accountId, communityId);
 
-        var roster = (memberships.GetByCommunity(communityId))
+        var roster = (membershipRepository.GetByCommunity(communityId))
             .Where(m => m.IsActive() && m.IsConfirmed() && m.Stars > 0)
             .OrderByDescending(m => m.Stars)
             .ToList();
@@ -81,14 +81,14 @@ public sealed class MembershipService(
 
     public void GrantIssuer(Guid accountId, Guid communityId, Guid membershipId)
     {
-        var (_, actor) = access.RequireRole(accountId, communityId, CommunityRole.Issuer);
+        var (_, actor) = requirementsService.RequireAnyRole(accountId, communityId, CommunityRole.Issuer, CommunityRole.Manager);
 
-        var target = memberships.GetById(membershipId);
+        var target = membershipRepository.GetById(membershipId);
         if (target is null || target.CommunityId != communityId)
             throw new NotFoundException("Membership not found in this community.");
 
         target.Grant(CommunityRole.Issuer, actor.Id, DateTime.UtcNow);
-        memberships.Update(target);
+        membershipRepository.Update(target);
 
         notifier.RolesChanged(target);
     }
@@ -96,17 +96,17 @@ public sealed class MembershipService(
     private IReadOnlyList<MemberSummaryDto> Cards(
         Guid communityId, Func<Membership, bool> predicate)
     {
-        var roster = (memberships.GetByCommunity(communityId)).Where(predicate).ToList();
+        var roster = (membershipRepository.GetByCommunity(communityId)).Where(predicate).ToList();
         return roster.ToSummaryDtos(Profiles(roster));
     }
 
-    private IReadOnlyDictionary<Guid, AccountProfileDto> Profiles(
+    private IReadOnlyDictionary<Guid, InternalProfileDto> Profiles(
         IReadOnlyCollection<Membership> roster)
     {
         if (roster.Count == 0)
-            return new Dictionary<Guid, AccountProfileDto>();
+            return new Dictionary<Guid, InternalProfileDto>();
 
-        var profiles = accounts.GetProfiles(roster.Select(m => m.AccountId).Distinct().ToList());
+        var profiles = internalProfileService.GetProfiles(roster.Select(m => m.AccountId).Distinct().ToList());
         return profiles.ToDictionary(p => p.AccountId);
     }
 }

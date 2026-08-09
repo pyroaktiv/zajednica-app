@@ -8,13 +8,13 @@ using ChatAggregate = Zajednica.Chat.Core.Domain.Chat;
 namespace Zajednica.Chat.Core.UseCases;
 
 public sealed class ChatNotifier(
-    INotificationSender notifications,
-    IRealtimePusher realtime,
-    MemberDirectory directory)
+    INotificationSender notificationSender,
+    IRealtimePusher realtimePusher,
+    MemberDirectory memberDirectory)
 {
     public void MessageSent(ChatAggregate chat, MessageDto message)
     {
-        realtime.PushToChannel(Channels.Chat(chat.Id), new RealtimeMessage("chat.message", message));
+        realtimePusher.PushToChannel(Channels.Chat(chat.Id), new RealtimeMessage("chat.message", message));
 
         var recipients = Participants(chat)
             .Where(p => p.MembershipId != message.SenderMembershipId)
@@ -23,7 +23,7 @@ public sealed class ChatNotifier(
         if (recipients.Count == 0)
             return;
 
-        notifications.Send(new NotificationRequest(recipients, "Nova poruka",
+        notificationSender.Send(new NotificationRequest(recipients, "Nova poruka",
             $"{message.SenderUsername} vam je poslao poruku.", NotificationPriority.Default));
     }
 
@@ -33,7 +33,7 @@ public sealed class ChatNotifier(
 
     public void Concluded(HelpRequestChat chat, int stars)
     {
-        realtime.PushToChannel(Channels.Chat(chat.Id), new RealtimeMessage("chat.concluded",
+        realtimePusher.PushToChannel(Channels.Chat(chat.Id), new RealtimeMessage("chat.concluded",
             new { chatId = chat.Id, status = chat.Status.ToString(), stars }));
 
         if (chat.Status == HelpRequestChatStatus.HelperResigned)
@@ -54,14 +54,14 @@ public sealed class ChatNotifier(
             "Komšija se zahvalio na dobroj volji.");
     }
 
-    private IReadOnlyList<MemberAccountDto> Participants(ChatAggregate chat) =>
-        directory.Accounts(chat.Participants.Select(p => p.MembershipId).ToList());
+    private IReadOnlyList<InternalMembershipAccountIdDto> Participants(ChatAggregate chat) =>
+        memberDirectory.Accounts(chat.Participants.Select(p => p.MembershipId).ToList());
 
     private void Notify(Guid membershipId, string title, string body)
     {
-        if (directory.AccountId(membershipId) is not { } recipientAccountId)
+        if (memberDirectory.AccountId(membershipId) is not { } recipientAccountId)
             return;
 
-        notifications.Send(new NotificationRequest(recipientAccountId, title, body, NotificationPriority.Default));
+        notificationSender.Send(new NotificationRequest(recipientAccountId, title, body, NotificationPriority.Default));
     }
 }
