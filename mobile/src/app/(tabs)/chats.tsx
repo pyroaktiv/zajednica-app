@@ -135,7 +135,7 @@ export default function Chats() {
           <EmptyState
             text={
               status === "unconfirmed"
-                ? "Još nemaš razgovora sa izdavačima potvrde. Izaberi izdavača na nekom od ostalih tabova."
+                ? "Još nemaš razgovora sa izdavačima potvrde."
                 : "Nema razgovora u ovoj kategoriji."
             }
           />

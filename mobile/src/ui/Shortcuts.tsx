@@ -71,20 +71,17 @@ export function CertificationShortcut() {
           Još uvek nisi potvrđen član
         </Text>
         <Text style={{ color: colors.muted, textAlign: "center", marginTop: spacing.s }}>
-          Dogovori se sa nekim od izdavača potvrde i nađite se uživo — potvrda se izdaje
+          Dogovori se sa nekim od izdavača potvrde i nađite se uživo. Potvrda se izdaje
           skeniranjem QR koda sa njegovog telefona.
         </Text>
       </View>
-      <Button title="Skeniraj QR kod za potvrdu" onPress={() => router.push("/certify-scan")} />
+      <Button style={{marginBottom: spacing.l}} title="Skeniraj QR kod za potvrdu" onPress={() => router.push("/certify-scan")} />
       <SectionTitle>Izaberi izdavača potvrde</SectionTitle>
       <ErrorText error={error} />
       {issuers.map((issuer) => (
         <Pressable key={issuer.membershipId} onPress={() => openChat(issuer)}>
           <Card style={{ padding: spacing.m, marginBottom: spacing.s }}>
             <Text style={{ fontWeight: "600", color: colors.text }}>{issuer.username}</Text>
-            <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>
-              Započni razgovor o potvrđivanju
-            </Text>
           </Card>
         </Pressable>
       ))}
