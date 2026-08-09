@@ -51,7 +51,7 @@ public sealed class MembershipService(
     public IReadOnlyList<MemberSummaryDto> GetIssuers(Guid accountId, Guid communityId)
     {
         requirementsService.RequireMember(accountId, communityId);
-        return Cards(communityId, m => m.IsActive() && m.HasRole(CommunityRole.Issuer));
+        return Cards(communityId, m => m.CanIssueCertifications());
     }
 
     public IReadOnlyList<MemberSummaryDto> GetUnconfirmed(Guid accountId, Guid communityId)
@@ -81,7 +81,7 @@ public sealed class MembershipService(
 
     public void GrantIssuer(Guid accountId, Guid communityId, Guid membershipId)
     {
-        var (_, actor) = requirementsService.RequireRole(accountId, communityId, CommunityRole.Issuer);
+        var (_, actor) = requirementsService.RequireAnyRole(accountId, communityId, CommunityRole.Issuer, CommunityRole.Manager);
 
         var target = membershipRepository.GetById(membershipId);
         if (target is null || target.CommunityId != communityId)

@@ -26,7 +26,7 @@ public sealed class CertificationService(
 
     public CertificationChallengeDto CreateChallenge(Guid accountId, Guid communityId)
     {
-        var (_, issuer) = requirementsService.RequireRole(accountId, communityId, CommunityRole.Issuer);
+        var (_, issuer) = requirementsService.RequireAnyRole(accountId, communityId, CommunityRole.Issuer, CommunityRole.Manager);
 
         var challenge = new CertificationChallenge(
             communityId, issuer.Id, tokenGenerator.Generate(), DateTime.UtcNow.Add(ChallengeLifetime));
@@ -37,7 +37,7 @@ public sealed class CertificationService(
 
     public void CancelChallenge(Guid accountId, Guid communityId, Guid challengeId)
     {
-        var (_, issuer) = requirementsService.RequireRole(accountId, communityId, CommunityRole.Issuer);
+        var (_, issuer) = requirementsService.RequireAnyRole(accountId, communityId, CommunityRole.Issuer, CommunityRole.Manager);
 
         var challenge = challengeRepository.GetById(challengeId);
         if (challenge is null || challenge.CommunityId != communityId)

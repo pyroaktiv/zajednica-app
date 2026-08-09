@@ -61,7 +61,7 @@ public static class MembershipMappers
             membership.IsConfirmed(),
             membership.State == MembershipState.Banned,
             membership.MutedUntil,
-            membership.IsActive() && membership.IsConfirmed() && membership.HasRole(CommunityRole.Issuer),
+            membership.CanIssueCertifications(),
             membership.HasRole(CommunityRole.Manager),
             membership.CertifiedAt ?? membership.DateJoined);
 

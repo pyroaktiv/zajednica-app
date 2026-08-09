@@ -39,6 +39,22 @@ public class CertificationServiceTests
     }
 
     [Fact]
+    public void A_manager_can_certify_without_holding_the_issuer_role()
+    {
+        var communityId = Guid.NewGuid();
+        var manager = Candidate(communityId);
+        manager.Confirm();
+        manager.Grant(CommunityRole.Manager, null, Now);
+        var candidate = Candidate(communityId);
+
+        _service.Certify(manager, candidate, Now);
+
+        manager.HasRole(CommunityRole.Issuer).ShouldBeFalse();
+        candidate.CertificationStatus.ShouldBe(CertificationStatus.Confirmed);
+        candidate.Certificate!.IssuerMembershipId.ShouldBe(manager.Id);
+    }
+
+    [Fact]
     public void Certify_is_rejected_after_the_issuer_leaves_the_community()
     {
         var communityId = Guid.NewGuid();

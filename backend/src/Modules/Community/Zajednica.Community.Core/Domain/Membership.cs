@@ -140,6 +140,9 @@ public class Membership : AggregateRoot
 
     public bool HasRole(CommunityRole role) => _roles.Any(r => r.Role == role);
 
+    public bool CanIssueCertifications() =>
+        IsActive() && IsConfirmed() && (HasRole(CommunityRole.Issuer) || HasRole(CommunityRole.Manager));
+
     public bool IsActive() => State == MembershipState.Active;
 
     public bool IsConfirmed() => CertificationStatus == CertificationStatus.Confirmed;

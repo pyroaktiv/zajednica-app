@@ -86,7 +86,7 @@ export function CommunityProvider({ children }: { children: ReactNode }) {
         activeCommunityId,
         me,
         status,
-        isIssuer: me?.roles.includes(RoleNames.Issuer) ?? false,
+        isIssuer: (me?.roles.some((r) => r === RoleNames.Issuer || r === RoleNames.Manager)) ?? false,
         isManager: me?.roles.includes(RoleNames.Manager) ?? false,
         isMuted: mutedUntil !== null && new Date(mutedUntil) > new Date(),
         mutedUntil,
