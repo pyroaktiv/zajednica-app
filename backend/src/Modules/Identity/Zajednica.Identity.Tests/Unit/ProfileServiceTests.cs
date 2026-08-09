@@ -16,7 +16,7 @@ public class ProfileServiceTests
 
     private ProfileService Sut() => new(_accounts.Object, _urls.Object);
 
-    private static UpdateProfileRequest Update() => new("Pera", "Peric", "060123456", "pera@example.com", null);
+    private static UpdateProfileRequestDto Update() => new("Pera", "Peric", "060123456", "pera@example.com", null);
 
     [Fact]
     public void Updating_an_existing_profile_persists_once()

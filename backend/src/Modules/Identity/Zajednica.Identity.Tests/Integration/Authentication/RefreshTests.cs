@@ -18,8 +18,8 @@ public class RefreshTests : BaseIdentityIntegrationTest
         var (email, accountId) = RegisterVerified(scope);
         var issued = Login(scope, email);
 
-        var result = Controller(scope).Refresh(new RefreshRequest(issued.RefreshToken));
-        var refreshed = Value<AuthTokens>(result.Result!);
+        var result = Controller(scope).Refresh(new RefreshRequestDto(issued.RefreshToken));
+        var refreshed = Value<AuthTokensDto>(result.Result!);
 
         refreshed.RefreshToken.ShouldNotBe(issued.RefreshToken);
 
@@ -35,7 +35,7 @@ public class RefreshTests : BaseIdentityIntegrationTest
         using var scope = Factory.Services.CreateScope();
 
         Should.Throw<EntityValidationException>(() =>
-            Controller(scope).Refresh(new RefreshRequest("no-such-token")));
+            Controller(scope).Refresh(new RefreshRequestDto("no-such-token")));
     }
 
     [Fact]
@@ -44,10 +44,10 @@ public class RefreshTests : BaseIdentityIntegrationTest
         using var scope = Factory.Services.CreateScope();
         var (email, _) = RegisterVerified(scope);
         var issued = Login(scope, email);
-        Controller(scope).Refresh(new RefreshRequest(issued.RefreshToken));
+        Controller(scope).Refresh(new RefreshRequestDto(issued.RefreshToken));
 
         Should.Throw<EntityValidationException>(() =>
-            Controller(scope).Refresh(new RefreshRequest(issued.RefreshToken)));
+            Controller(scope).Refresh(new RefreshRequestDto(issued.RefreshToken)));
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public class RefreshTests : BaseIdentityIntegrationTest
         db.ChangeTracker.Clear();
 
         Should.Throw<EntityValidationException>(() =>
-            Controller(scope).Refresh(new RefreshRequest(tokenValue)));
+            Controller(scope).Refresh(new RefreshRequestDto(tokenValue)));
 
         db.ChangeTracker.Clear();
         db.RefreshTokens.Any(t => t.Token == tokenValue).ShouldBeFalse();

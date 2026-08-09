@@ -36,7 +36,7 @@ public static class IdentityModule
     {
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IProfileService, ProfileService>();
-        services.AddScoped<IInternalAccountService, InternalAccountService>();
+        services.AddScoped<IInternalProfileService, InternalProfileService>();
     }
     
     private static void AddPersistence(IServiceCollection services)

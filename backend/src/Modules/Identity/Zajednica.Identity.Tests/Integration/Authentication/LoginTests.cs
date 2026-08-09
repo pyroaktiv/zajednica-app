@@ -37,11 +37,11 @@ public class LoginTests : BaseIdentityIntegrationTest
         using var scope = Factory.Services.CreateScope();
         var username = $"user-{Guid.NewGuid():N}";
         var email = UniqueEmail();
-        Controller(scope).Register(new RegisterAccountRequest(username, email, ValidPassword, null, null, null, null));
+        Controller(scope).Register(new RegisterAccountRequestDto(username, email, ValidPassword, null, null, null, null));
         var db = Db(scope);
         var accountId = db.Accounts.Single(a => a.Email == email).Id;
         var token = db.Verifications.Single(t => t.AccountId == accountId).Token;
-        Controller(scope).VerifyEmail(new VerifyEmailRequest(token));
+        Controller(scope).VerifyEmail(new VerifyEmailRequestDto(token));
 
         var tokens = Login(scope, username);
 
@@ -64,7 +64,7 @@ public class LoginTests : BaseIdentityIntegrationTest
         var (email, _) = RegisterVerified(scope);
 
         Should.Throw<EntityValidationException>(() =>
-            Controller(scope).Login(new LoginRequest(email, "wrong-password")));
+            Controller(scope).Login(new LoginRequestDto(email, "wrong-password")));
     }
 
     [Fact]

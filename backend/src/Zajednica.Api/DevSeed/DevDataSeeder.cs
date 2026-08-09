@@ -67,7 +67,7 @@ public sealed class DevDataSeeder(
         var vracar = BuildCommunity(
             communities, certification, communityDb, accounts,
             creatorId: accounts["milanp"],
-            new CreateCommunityRequest(
+            new CreateCommunityRequestDto(
                 "SZ Njegoševa 24",
                 new AddressDto("Njegoševa", "24", 44.8010m, 20.4720m),
                 "17845210", "108234567", "160-0000012345678-90"),
@@ -94,7 +94,7 @@ public sealed class DevDataSeeder(
         var noviBeograd = BuildCommunity(
             communities, certification, communityDb, accounts,
             creatorId: accounts["jovana88"],
-            new CreateCommunityRequest(
+            new CreateCommunityRequestDto(
                 "SZ Bulevar Zorana Đinđića 105",
                 new AddressDto("Bulevar Zorana Đinđića", "105", 44.8180m, 20.4210m),
                 "20911345", "109876543", "265-0000098765432-11"),
@@ -125,19 +125,19 @@ public sealed class DevDataSeeder(
         CommunityDbContext communityDb,
         IReadOnlyDictionary<string, Guid> accounts,
         Guid creatorId,
-        CreateCommunityRequest request,
+        CreateCommunityRequestDto requestDto,
         IReadOnlyList<Guid> memberIds,
         IReadOnlyDictionary<string, int> starsByUsername)
     {
-        var community = communities.Create(creatorId, request);
+        var community = communities.Create(creatorId, requestDto);
         var qr = communities.GetQr(creatorId, community.Id);
 
         foreach (var memberId in memberIds)
         {
-            communities.Join(memberId, new JoinCommunityRequest(qr.QrToken));
+            communities.Join(memberId, new JoinCommunityRequestDto(qr.QrToken));
 
             var challenge = certification.CreateChallenge(creatorId, community.Id);
-            certification.Confirm(memberId, new ConfirmCertificationRequest(challenge.Token));
+            certification.Confirm(memberId, new ConfirmCertificationRequestDto(challenge.Token));
         }
 
         AwardStars(communityDb, community.Id, accounts, starsByUsername);
@@ -183,7 +183,7 @@ public sealed class DevDataSeeder(
         params (Guid AuthorId, string Text, string Kind)[] items)
     {
         foreach (var item in items)
-            posts.CreateGeneral(item.AuthorId, communityId, new CreateGeneralPostRequest(item.Text, item.Kind, null));
+            posts.CreateGeneral(item.AuthorId, communityId, new CreateGeneralPostRequestDto(item.Text, item.Kind, null));
     }
 
     private static readonly string[] FillerPosts =
@@ -219,7 +219,7 @@ public sealed class DevDataSeeder(
         for (var i = 0; i < FillerPosts.Length; i++)
         {
             posts.CreateGeneral(authors[i % authors.Count], communityId,
-                new CreateGeneralPostRequest(FillerPosts[i], "Plain", null));
+                new CreateGeneralPostRequestDto(FillerPosts[i], "Plain", null));
             await Task.Delay(1);
         }
     }
@@ -228,7 +228,7 @@ public sealed class DevDataSeeder(
         IPostService posts, ICommentService comments, Guid communityId, IReadOnlyList<Guid> authors)
     {
         var post = posts.CreateGeneral(authors[0], communityId,
-            new CreateGeneralPostRequest(
+            new CreateGeneralPostRequestDto(
                 "Predlog za uređenje zajedničkog dvorišta — ostavite komentare i odgovore ispod.", "Plain", null));
         await Task.Delay(1);
 
@@ -236,7 +236,7 @@ public sealed class DevDataSeeder(
         for (var i = 0; i < 24; i++)
         {
             var comment = comments.Add(authors[i % authors.Count], communityId, post.Id,
-                new AddCommentRequest($"Komentar broj {i + 1} na predlog o dvorištu."));
+                new AddCommentRequestDto($"Komentar broj {i + 1} na predlog o dvorištu."));
             if (i == 0)
                 firstCommentId = comment.Id;
             await Task.Delay(1);
@@ -245,7 +245,7 @@ public sealed class DevDataSeeder(
         for (var i = 0; i < 24; i++)
         {
             comments.Reply(authors[i % authors.Count], communityId, post.Id, firstCommentId,
-                new AddCommentRequest($"Odgovor broj {i + 1} na prvi komentar."));
+                new AddCommentRequestDto($"Odgovor broj {i + 1} na prvi komentar."));
             await Task.Delay(1);
         }
     }
@@ -255,13 +255,13 @@ public sealed class DevDataSeeder(
 
     private Guid RegisterActivated(IAuthenticationService auth, IdentityDbContext identityDb, SeedAccount person)
     {
-        auth.Register(new RegisterAccountRequest(
+        auth.Register(new RegisterAccountRequestDto(
             person.Username, person.Email, DefaultPassword, person.FirstName, person.LastName, Phone: null, ContactEmail: null));
 
         var accountId = identityDb.Accounts.Single(a => a.Username == person.Username).Id;
         var token = identityDb.Verifications.Where(v => v.AccountId == accountId).Select(v => v.Token).Single();
 
-        auth.VerifyEmail(new VerifyEmailRequest(token));
+        auth.VerifyEmail(new VerifyEmailRequestDto(token));
 
         return accountId;
     }

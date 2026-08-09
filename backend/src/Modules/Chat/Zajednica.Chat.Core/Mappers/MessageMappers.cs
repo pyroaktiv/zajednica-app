@@ -9,7 +9,7 @@ namespace Zajednica.Chat.Core.Mappers;
 
 public static class MessageMappers
 {
-    public static MessageDto ToDto(this Message message, AccountProfileDto? sender, IFileUrlMapper urls) => message switch
+    public static MessageDto ToDto(this Message message, InternalProfileDto? sender, IFileUrlMapper urls) => message switch
     {
         TextMessage text => ToDto(message, sender, "TEXT", text.Text, null, null),
         VoiceMessage voice => ToDto(message, sender, "VOICE", null, urls.ToUrl(voice.AudioUrl), voice.DurationSeconds),
@@ -17,11 +17,11 @@ public static class MessageMappers
     };
 
     public static CursorPage<MessageDto, PageCursor> ToDtoPage(this CursorPage<Message, PageCursor> page,
-        IReadOnlyDictionary<Guid, AccountProfileDto> senders, IFileUrlMapper urls) =>
+        IReadOnlyDictionary<Guid, InternalProfileDto> senders, IFileUrlMapper urls) =>
         new(page.Items.Select(m => m.ToDto(senders.GetValueOrDefault(m.SenderMembershipId), urls)).ToList(),
             page.NextCursor);
 
-    private static MessageDto ToDto(Message message, AccountProfileDto? sender, string type, string? text,
+    private static MessageDto ToDto(Message message, InternalProfileDto? sender, string type, string? text,
         string? audioUrl, int? durationSeconds) =>
         new MessageDto(
             Id: message.Id,

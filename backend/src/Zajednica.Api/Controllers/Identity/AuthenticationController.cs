@@ -18,35 +18,35 @@ public sealed class AuthenticationController : ControllerBase
     }
 
     [HttpPost("register")]
-    public IActionResult Register([FromBody] RegisterAccountRequest request)
+    public IActionResult Register([FromBody] RegisterAccountRequestDto requestDto)
     {
-        _auth.Register(request);
+        _auth.Register(requestDto);
         return Ok();
     }
 
     [HttpPost("verify-email")]
-    public IActionResult VerifyEmail([FromBody] VerifyEmailRequest request)
+    public IActionResult VerifyEmail([FromBody] VerifyEmailRequestDto requestDto)
     {
-        _auth.VerifyEmail(request);
+        _auth.VerifyEmail(requestDto);
         return Ok();
     }
 
     [HttpPost("login")]
-    public ActionResult<AuthTokens> Login([FromBody] LoginRequest request)
+    public ActionResult<AuthTokensDto> Login([FromBody] LoginRequestDto requestDto)
     {
-        return Ok(_auth.Login(request));
+        return Ok(_auth.Login(requestDto));
     }
 
     [HttpPost("refresh")]
-    public ActionResult<AuthTokens> Refresh([FromBody] RefreshRequest request)
+    public ActionResult<AuthTokensDto> Refresh([FromBody] RefreshRequestDto requestDto)
     {
-        return Ok(_auth.Refresh(request));
+        return Ok(_auth.Refresh(requestDto));
     }
 
     [HttpPost("logout")]
-    public IActionResult Logout([FromBody] LogoutRequest request)
+    public IActionResult Logout([FromBody] LogoutRequestDto requestDto)
     {
-        _auth.Logout(request);
+        _auth.Logout(requestDto);
         return Ok();
     }
 }

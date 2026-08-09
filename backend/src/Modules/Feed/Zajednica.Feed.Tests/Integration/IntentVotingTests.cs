@@ -29,17 +29,17 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
 
         var election = Value<IntentDetailsDto>((Intents(scope, second.AccountId)
-            .OpenManagerElection(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Predlog za upravnika"))).Result!);
+            .OpenManagerElection(community.Id, new OpenUserTargetingIntentRequestDto(target.MembershipId, "Predlog za upravnika"))).Result!);
 
         var ban = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
-            .OpenBan(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Ne postuje kucni red"))).Result!);
+            .OpenBan(community.Id, new OpenUserTargetingIntentRequestDto(target.MembershipId, "Ne postuje kucni red"))).Result!);
         ban.EligibleVoterCount.ShouldBe(5);
 
-        Intents(scope, owner.AccountId).Vote(community.Id, ban.Id, new CastVoteRequest(true));
-        Intents(scope, second.AccountId).Vote(community.Id, ban.Id, new CastVoteRequest(true));
-        Intents(scope, third.AccountId).Vote(community.Id, ban.Id, new CastVoteRequest(true));
+        Intents(scope, owner.AccountId).Vote(community.Id, ban.Id, new CastVoteRequestDto(true));
+        Intents(scope, second.AccountId).Vote(community.Id, ban.Id, new CastVoteRequestDto(true));
+        Intents(scope, third.AccountId).Vote(community.Id, ban.Id, new CastVoteRequestDto(true));
         var closed = Value<IntentDetailsDto>((Intents(scope, fourth.AccountId)
-            .Vote(community.Id, ban.Id, new CastVoteRequest(true))).Result!);
+            .Vote(community.Id, ban.Id, new CastVoteRequestDto(true))).Result!);
 
         closed.Status.ShouldBe(nameof(IntentStatus.Accepted));
         closed.VotesFor.ShouldBe(4);
@@ -66,10 +66,10 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
 
         var intent = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
-            .OpenManagerElection(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Razlog"))).Result!);
+            .OpenManagerElection(community.Id, new OpenUserTargetingIntentRequestDto(target.MembershipId, "Razlog"))).Result!);
 
-        Intents(scope, owner.AccountId).Vote(community.Id, intent.Id, new CastVoteRequest(true));
-        Intents(scope, second.AccountId).Vote(community.Id, intent.Id, new CastVoteRequest(false));
+        Intents(scope, owner.AccountId).Vote(community.Id, intent.Id, new CastVoteRequestDto(true));
+        Intents(scope, second.AccountId).Vote(community.Id, intent.Id, new CastVoteRequestDto(false));
 
         var voters = Value<IReadOnlyList<IntentVoterDto>>(
             (Intents(scope, second.AccountId).GetVotes(community.Id, intent.Id)).Result!);
@@ -91,9 +91,9 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
 
         var intent = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
-            .OpenBan(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Razlog"))).Result!);
+            .OpenBan(community.Id, new OpenUserTargetingIntentRequestDto(target.MembershipId, "Razlog"))).Result!);
 
-        Intents(scope, owner.AccountId).Vote(community.Id, intent.Id, new CastVoteRequest(true));
+        Intents(scope, owner.AccountId).Vote(community.Id, intent.Id, new CastVoteRequestDto(true));
 
         Should.Throw<ForbiddenException>(() => Intents(scope, second.AccountId)
             .GetVotes(community.Id, intent.Id));
@@ -108,7 +108,7 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         var (other, otherOwner) = CreateCommunity(scope);
 
         var intent = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
-            .OpenBan(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Razlog"))).Result!);
+            .OpenBan(community.Id, new OpenUserTargetingIntentRequestDto(target.MembershipId, "Razlog"))).Result!);
 
         Should.Throw<NotFoundException>(() => Intents(scope, otherOwner.AccountId)
             .GetVotes(other.Id, intent.Id));
@@ -124,19 +124,19 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
 
         var ban = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
-            .OpenBan(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Razlog"))).Result!);
+            .OpenBan(community.Id, new OpenUserTargetingIntentRequestDto(target.MembershipId, "Razlog"))).Result!);
         var election = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
             .OpenManagerElection(community.Id,
-                new OpenUserTargetingIntentRequest(target.MembershipId, "Predlog"))).Result!);
+                new OpenUserTargetingIntentRequestDto(target.MembershipId, "Predlog"))).Result!);
 
-        Intents(scope, owner.AccountId).Vote(community.Id, ban.Id, new CastVoteRequest(true));
-        Intents(scope, second.AccountId).Vote(community.Id, ban.Id, new CastVoteRequest(true));
-        Intents(scope, third.AccountId).Vote(community.Id, ban.Id, new CastVoteRequest(false));
+        Intents(scope, owner.AccountId).Vote(community.Id, ban.Id, new CastVoteRequestDto(true));
+        Intents(scope, second.AccountId).Vote(community.Id, ban.Id, new CastVoteRequestDto(true));
+        Intents(scope, third.AccountId).Vote(community.Id, ban.Id, new CastVoteRequestDto(false));
 
         MakeDue(scope, ban.Id, TimeSpan.FromDays(4));
         MakeDue(scope, election.Id, TimeSpan.FromDays(3));
 
-        Should.NotThrow(() => scope.ServiceProvider.GetRequiredService<IntentClosing>().CloseDue());
+        Should.NotThrow(() => scope.ServiceProvider.GetRequiredService<IntentClosingService>().CloseDue());
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
@@ -172,16 +172,16 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
 
         var election = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
-            .OpenManagerElection(community.Id, new OpenUserTargetingIntentRequest(second.MembershipId, "Predlog"))).Result!);
+            .OpenManagerElection(community.Id, new OpenUserTargetingIntentRequestDto(second.MembershipId, "Predlog"))).Result!);
 
         var mute = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
-            .OpenMute(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Vredja komsije"))).Result!);
+            .OpenMute(community.Id, new OpenUserTargetingIntentRequestDto(target.MembershipId, "Vredja komsije"))).Result!);
 
-        Intents(scope, owner.AccountId).Vote(community.Id, mute.Id, new CastVoteRequest(true));
-        Intents(scope, second.AccountId).Vote(community.Id, mute.Id, new CastVoteRequest(true));
-        Intents(scope, third.AccountId).Vote(community.Id, mute.Id, new CastVoteRequest(true));
+        Intents(scope, owner.AccountId).Vote(community.Id, mute.Id, new CastVoteRequestDto(true));
+        Intents(scope, second.AccountId).Vote(community.Id, mute.Id, new CastVoteRequestDto(true));
+        Intents(scope, third.AccountId).Vote(community.Id, mute.Id, new CastVoteRequestDto(true));
         var closed = Value<IntentDetailsDto>((Intents(scope, fourth.AccountId)
-            .Vote(community.Id, mute.Id, new CastVoteRequest(true))).Result!);
+            .Vote(community.Id, mute.Id, new CastVoteRequestDto(true))).Result!);
 
         closed.Status.ShouldBe(nameof(IntentStatus.Accepted));
 
@@ -192,11 +192,11 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         muted.MutedUntil!.Value.ShouldBe(DateTime.UtcNow.AddDays(3), TimeSpan.FromMinutes(1));
 
         Should.Throw<ForbiddenException>(() => Posts(scope, target.AccountId)
-            .CreateGeneral(community.Id, new CreateGeneralPostRequest("Nesto", nameof(GeneralPostKind.Plain), [])));
+            .CreateGeneral(community.Id, new CreateGeneralPostRequestDto("Nesto", nameof(GeneralPostKind.Plain), [])));
         Should.Throw<ForbiddenException>(() => Intents(scope, target.AccountId)
-            .OpenBan(community.Id, new OpenUserTargetingIntentRequest(second.MembershipId, "Razlog")));
+            .OpenBan(community.Id, new OpenUserTargetingIntentRequestDto(second.MembershipId, "Razlog")));
 
-        Intents(scope, target.AccountId).Vote(community.Id, election.Id, new CastVoteRequest(false));
+        Intents(scope, target.AccountId).Vote(community.Id, election.Id, new CastVoteRequestDto(false));
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
@@ -211,7 +211,7 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         var newcomer = AddUnconfirmedMember(scope, owner.AccountId, community.Id);
 
         Should.Throw<EntityValidationException>(() => Intents(scope, owner.AccountId)
-            .OpenBan(community.Id, new OpenUserTargetingIntentRequest(newcomer.MembershipId, "Ne poznajem ga")));
+            .OpenBan(community.Id, new OpenUserTargetingIntentRequestDto(newcomer.MembershipId, "Ne poznajem ga")));
     }
 
     [Fact]
@@ -222,12 +222,12 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
 
         var intent = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
-            .OpenBan(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Razlog"))).Result!);
+            .OpenBan(community.Id, new OpenUserTargetingIntentRequestDto(target.MembershipId, "Razlog"))).Result!);
 
         var latecomer = AddConfirmedMember(scope, owner.AccountId, community.Id);
 
         Should.Throw<EntityValidationException>(() => Intents(scope, latecomer.AccountId)
-            .Vote(community.Id, intent.Id, new CastVoteRequest(true)));
+            .Vote(community.Id, intent.Id, new CastVoteRequestDto(true)));
     }
 
     [Fact]
@@ -239,10 +239,10 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         var newcomer = AddUnconfirmedMember(scope, owner.AccountId, community.Id);
 
         var intent = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
-            .OpenBan(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Razlog"))).Result!);
+            .OpenBan(community.Id, new OpenUserTargetingIntentRequestDto(target.MembershipId, "Razlog"))).Result!);
 
         Should.Throw<ForbiddenException>(() => Intents(scope, newcomer.AccountId)
-            .Vote(community.Id, intent.Id, new CastVoteRequest(true)));
+            .Vote(community.Id, intent.Id, new CastVoteRequestDto(true)));
     }
 
     [Fact]
@@ -260,7 +260,7 @@ public class IntentVotingTests : BaseFeedIntegrationTest
             var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
 
             intentId = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
-                .OpenBan(community.Id, new OpenUserTargetingIntentRequest(target.MembershipId, "Razlog"))).Result!).Id;
+                .OpenBan(community.Id, new OpenUserTargetingIntentRequestDto(target.MembershipId, "Razlog"))).Result!).Id;
         }
 
         using var first = Factory.Services.CreateScope();

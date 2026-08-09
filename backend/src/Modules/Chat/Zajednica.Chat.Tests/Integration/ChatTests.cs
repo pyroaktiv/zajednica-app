@@ -142,7 +142,7 @@ public class ChatTests : BaseChatIntegrationTest
         var chat = OpenDirect(scope, muted.AccountId, community.Id, owner.MembershipId);
         SendText(scope, muted.AccountId, community.Id, chat.Id, "Pre utisavanja");
 
-        scope.ServiceProvider.GetRequiredService<IInternalIntentOutcomeService>().Mute(muted.MembershipId);
+        scope.ServiceProvider.GetRequiredService<IInternalMembershipCommandService>().Mute(muted.MembershipId);
         CommunityDb(scope).ChangeTracker.Clear();
 
         Should.Throw<ForbiddenException>(() => SendText(scope, muted.AccountId, community.Id, chat.Id, "Posle"));

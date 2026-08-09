@@ -5,8 +5,8 @@ namespace Zajednica.Feed.Api.Public;
 
 public interface IPostService
 {
-    PostDto CreateGeneral(Guid accountId, Guid communityId, CreateGeneralPostRequest request);
-    PostDto CreateHelpRequest(Guid accountId, Guid communityId, CreateHelpRequestRequest request);
+    PostDto CreateGeneral(Guid accountId, Guid communityId, CreateGeneralPostRequestDto requestDto);
+    PostDto CreateHelpRequest(Guid accountId, Guid communityId, CreateHelpRequestPostDto request);
     PostDto CloseHelpRequest(Guid accountId, Guid communityId, Guid postId);
 
     PostDto Get(Guid accountId, Guid communityId, Guid postId);

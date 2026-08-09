@@ -12,18 +12,18 @@ namespace Zajednica.Chat.Core.UseCases.HelpChats;
 public sealed class HelpRequestChatService(
     IChatRepository chats,
     IInternalHelpRequestService helpRequests,
-    IInternalStarAwardService stars,
-    ChatAccess access,
-    ChatPresenter presenter,
+    IInternalMembershipCommandService stars,
+    ChatRequirementsService requirementsService,
+    ChatPresenterService presenterService,
     ChatNotifier notifier) : IHelpRequestChatService
 {
     public ChatDetailsDto Respond(Guid accountId, Guid communityId, Guid helpRequestId)
     {
-        var helperMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
+        var helperMembershipId = requirementsService.RequireUnmutedConfirmed(accountId, communityId);
 
         var existing = chats.GetActiveHelp(helpRequestId, helperMembershipId);
         if (existing is not null)
-            return presenter.Details(existing, helperMembershipId);
+            return presenterService.Details(existing, helperMembershipId);
 
         var authorMembershipId = helpRequests.RequireRespondableBy(communityId, helpRequestId, helperMembershipId);
 
@@ -33,15 +33,15 @@ public sealed class HelpRequestChatService(
 
         notifier.Responded(chat);
 
-        return presenter.Details(chat, helperMembershipId);
+        return presenterService.Details(chat, helperMembershipId);
     }
 
     public ChatDetailsDto ConcludeWithReward(Guid accountId, Guid communityId, Guid chatId,
-        ConcludeWithRewardRequest request)
+        ConcludeWithRewardRequestDto requestDto)
     {
         var (myMembershipId, chat) = Require(accountId, communityId, chatId);
 
-        return Settle(chat, myMembershipId, chat.ConcludeWithReward(myMembershipId, request.Stars));
+        return Settle(chat, myMembershipId, chat.ConcludeWithReward(myMembershipId, requestDto.Stars));
     }
 
     public ChatDetailsDto ConcludeWithoutReward(Guid accountId, Guid communityId, Guid chatId)
@@ -69,14 +69,14 @@ public sealed class HelpRequestChatService(
 
         notifier.Concluded(chat, awardedStars);
 
-        return presenter.Details(chat, actorMembershipId);
+        return presenterService.Details(chat, actorMembershipId);
     }
 
     private (Guid MyMembershipId, HelpRequestChat Chat) Require(Guid accountId, Guid communityId, Guid chatId)
     {
-        var myMembershipId = access.RequireConfirmed(accountId, communityId);
+        var myMembershipId = requirementsService.RequireConfirmed(accountId, communityId);
 
-        if (access.RequireChat(communityId, chatId, myMembershipId) is not HelpRequestChat chat)
+        if (requirementsService.RequireChat(communityId, chatId, myMembershipId) is not HelpRequestChat chat)
             throw new EntityValidationException("Only a help request chat has a conclusion.");
 
         return (myMembershipId, chat);

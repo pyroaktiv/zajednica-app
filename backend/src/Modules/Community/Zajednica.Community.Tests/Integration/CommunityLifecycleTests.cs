@@ -35,7 +35,7 @@ public class CommunityLifecycleTests : BaseCommunityIntegrationTest
         var accountId = NewAccount(scope);
         var community = CreateCommunity(scope, accountId);
 
-        var request = new UpdateCommunityRequest("Zgrada 2", community.Address, null, null, null);
+        var request = new UpdateCommunityRequestDto("Zgrada 2", community.Address, null, null, null);
 
         Should.Throw<ForbiddenException>(() =>
             Communities(scope, accountId).Update(community.Id, request));

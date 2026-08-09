@@ -26,14 +26,14 @@ public class DocumentTests : BaseCommunityIntegrationTest
         var db = Db(scope);
         var managerMembership = db.Memberships.Single(m => m.AccountId == managerId && m.CommunityId == community.Id);
         db.ChangeTracker.Clear();
-        scope.ServiceProvider.GetRequiredService<IInternalIntentOutcomeService>()
+        scope.ServiceProvider.GetRequiredService<IInternalMembershipCommandService>()
             .ElectManager(managerMembership.Id);
 
         Should.Throw<ForbiddenException>(() =>
-            Documents(scope, memberId).Add(community.Id, new AddDocumentRequest("Kucni red", "https://files.local/kucni-red.pdf")));
+            Documents(scope, memberId).Add(community.Id, new AddDocumentRequestDto("Kucni red", "https://files.local/kucni-red.pdf")));
 
         var added = Value<DocumentDto>((Documents(scope, managerId)
-            .Add(community.Id, new AddDocumentRequest("Kucni red", "https://files.local/kucni-red.pdf"))).Result!);
+            .Add(community.Id, new AddDocumentRequestDto("Kucni red", "https://files.local/kucni-red.pdf"))).Result!);
         added.PostedByMembershipId.ShouldBe(managerMembership.Id);
 
         var page = Value<PagedResult<DocumentDto>>(

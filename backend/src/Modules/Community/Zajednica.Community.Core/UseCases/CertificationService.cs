@@ -13,69 +13,69 @@ using DomainCertificationService = Zajednica.Community.Core.Domain.Certification
 namespace Zajednica.Community.Core.UseCases;
 
 public sealed class CertificationService(
-    ICertificationChallengeRepository challenges,
-    IMembershipRepository memberships,
-    ISecureTokenGenerator tokens,
-    IInternalChatService chats,
-    INotificationSender notifications,
-    IRealtimePusher realtime,
-    DomainCertificationService certification,
-    MembershipAccess access) : ICertificationService
+    ICertificationChallengeRepository challengeRepository,
+    IMembershipRepository membershipRepository,
+    ISecureTokenGenerator tokenGenerator,
+    IInternalChatService internalChatService,
+    INotificationSender notificationSender,
+    IRealtimePusher realtimePusher,
+    DomainCertificationService certificationService,
+    MembershipRequirementsService requirementsService) : ICertificationService
 {
     private static readonly TimeSpan ChallengeLifetime = TimeSpan.FromMinutes(2);
 
     public CertificationChallengeDto CreateChallenge(Guid accountId, Guid communityId)
     {
-        var (_, issuer) = access.RequireRole(accountId, communityId, CommunityRole.Issuer);
+        var (_, issuer) = requirementsService.RequireRole(accountId, communityId, CommunityRole.Issuer);
 
         var challenge = new CertificationChallenge(
-            communityId, issuer.Id, tokens.Generate(), DateTime.UtcNow.Add(ChallengeLifetime));
-        challenges.Add(challenge);
+            communityId, issuer.Id, tokenGenerator.Generate(), DateTime.UtcNow.Add(ChallengeLifetime));
+        challengeRepository.Add(challenge);
 
         return challenge.ToDto();
     }
 
     public void CancelChallenge(Guid accountId, Guid communityId, Guid challengeId)
     {
-        var (_, issuer) = access.RequireRole(accountId, communityId, CommunityRole.Issuer);
+        var (_, issuer) = requirementsService.RequireRole(accountId, communityId, CommunityRole.Issuer);
 
-        var challenge = challenges.GetById(challengeId);
+        var challenge = challengeRepository.GetById(challengeId);
         if (challenge is null || challenge.CommunityId != communityId)
             throw new NotFoundException("Challenge not found in this community.");
         if (challenge.IssuerMembershipId != issuer.Id)
             throw new ForbiddenException("Only the issuer who created the challenge can cancel it.");
 
-        challenges.Remove(challenge);
+        challengeRepository.Remove(challenge);
     }
 
-    public CertificationResultDto Confirm(Guid accountId, ConfirmCertificationRequest request)
+    public CertificationResultDto Confirm(Guid accountId, ConfirmCertificationRequestDto requestDto)
     {
         var now = DateTime.UtcNow;
-        var challenge = challenges.GetByToken(request.Token)
+        var challenge = challengeRepository.GetByToken(requestDto.Token)
             ?? throw new NotFoundException("Certification challenge not found.");
 
         if (!challenge.IsValid(now))
         {
-            challenges.Remove(challenge);
+            challengeRepository.Remove(challenge);
             throw new EntityValidationException("Certification challenge has expired.");
         }
 
-        var candidate = memberships.Get(accountId, challenge.CommunityId)
+        var candidate = membershipRepository.Get(accountId, challenge.CommunityId)
             ?? throw new ForbiddenException("Not a member of this community.");
-        var issuer = memberships.GetById(challenge.IssuerMembershipId)
+        var issuer = membershipRepository.GetById(challenge.IssuerMembershipId)
             ?? throw new NotFoundException("Issuer membership not found.");
 
-        certification.Certify(issuer, candidate, now);
+        certificationService.Certify(issuer, candidate, now);
 
-        memberships.Update(candidate);
-        challenges.Remove(challenge);
-        chats.DeleteTemporaryChats(challenge.CommunityId, candidate.Id);
+        membershipRepository.Update(candidate);
+        challengeRepository.Remove(challenge);
+        internalChatService.DeleteTemporaryChats(challenge.CommunityId, candidate.Id);
 
-        realtime.PushToUser(issuer.AccountId,
+        realtimePusher.PushToUser(issuer.AccountId,
             new RealtimeMessage("certification.confirmed", new { challengeId = challenge.Id, membershipId = candidate.Id }));
-        realtime.PushToUser(accountId,
+        realtimePusher.PushToUser(accountId,
             new RealtimeMessage("membership.roles.changed", new { communityId = challenge.CommunityId }));
-        notifications.Send(new NotificationRequest(
+        notificationSender.Send(new NotificationRequest(
             accountId, "Potvrda članstva", "Vaše članstvo u zajednici je potvrđeno.", NotificationPriority.Default));
 
         return candidate.ToCertificationResultDto();

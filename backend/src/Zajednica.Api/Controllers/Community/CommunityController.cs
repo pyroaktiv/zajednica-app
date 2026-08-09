@@ -19,9 +19,9 @@ public sealed class CommunityController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult<CommunityDetailsDto> Create([FromBody] CreateCommunityRequest request)
+    public ActionResult<CommunityDetailsDto> Create([FromBody] CreateCommunityRequestDto requestDto)
     {
-        var created = _communities.Create(User.AccountId(), request);
+        var created = _communities.Create(User.AccountId(), requestDto);
         return CreatedAtAction(nameof(Get), new { communityId = created.Id }, created);
     }
 
@@ -38,9 +38,9 @@ public sealed class CommunityController : ControllerBase
     }
 
     [HttpPut("{communityId:guid}")]
-    public ActionResult<CommunityDetailsDto> Update(Guid communityId, [FromBody] UpdateCommunityRequest request)
+    public ActionResult<CommunityDetailsDto> Update(Guid communityId, [FromBody] UpdateCommunityRequestDto requestDto)
     {
-        return Ok(_communities.Update(User.AccountId(), communityId, request));
+        return Ok(_communities.Update(User.AccountId(), communityId, requestDto));
     }
 
     [HttpGet("{communityId:guid}/qr")]
@@ -50,9 +50,9 @@ public sealed class CommunityController : ControllerBase
     }
 
     [HttpPost("join")]
-    public ActionResult<JoinedCommunityDto> Join([FromBody] JoinCommunityRequest request)
+    public ActionResult<JoinedCommunityDto> Join([FromBody] JoinCommunityRequestDto requestDto)
     {
-        return Ok(_communities.Join(User.AccountId(), request));
+        return Ok(_communities.Join(User.AccountId(), requestDto));
     }
 
     [HttpPost("{communityId:guid}/leave")]

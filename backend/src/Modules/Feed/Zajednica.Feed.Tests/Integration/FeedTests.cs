@@ -58,11 +58,11 @@ public class FeedTests : BaseFeedIntegrationTest
         var post = CreateGeneral(scope, owner.AccountId, community.Id, "Tema", "Plain");
 
         var first = Value<CommentDto>((Comments(scope, owner.AccountId)
-            .Add(community.Id, post.Id, new AddCommentRequest("Prvi"))).Result!);
-        Comments(scope, owner.AccountId).Add(community.Id, post.Id, new AddCommentRequest("Drugi"));
-        Comments(scope, owner.AccountId).Add(community.Id, post.Id, new AddCommentRequest("Treci"));
+            .Add(community.Id, post.Id, new AddCommentRequestDto("Prvi"))).Result!);
+        Comments(scope, owner.AccountId).Add(community.Id, post.Id, new AddCommentRequestDto("Drugi"));
+        Comments(scope, owner.AccountId).Add(community.Id, post.Id, new AddCommentRequestDto("Treci"));
         Comments(scope, owner.AccountId)
-            .Reply(community.Id, post.Id, first.Id, new AddCommentRequest("Odgovor na prvi"));
+            .Reply(community.Id, post.Id, first.Id, new AddCommentRequestDto("Odgovor na prvi"));
 
         Db(scope).ChangeTracker.Clear();
 
@@ -92,12 +92,12 @@ public class FeedTests : BaseFeedIntegrationTest
         var other = CreateGeneral(scope, owner.AccountId, community.Id, "Druga tema", "Plain");
 
         var elsewhere = Value<CommentDto>((Comments(scope, owner.AccountId)
-            .Add(community.Id, other.Id, new AddCommentRequest("Na drugoj objavi"))).Result!);
+            .Add(community.Id, other.Id, new AddCommentRequestDto("Na drugoj objavi"))).Result!);
 
         Should.Throw<NotFoundException>(() => Comments(scope, owner.AccountId)
-            .Reply(community.Id, post.Id, elsewhere.Id, new AddCommentRequest("Odgovor")));
+            .Reply(community.Id, post.Id, elsewhere.Id, new AddCommentRequestDto("Odgovor")));
         Should.Throw<NotFoundException>(() => Comments(scope, owner.AccountId)
-            .Reply(community.Id, post.Id, Guid.NewGuid(), new AddCommentRequest("Odgovor")));
+            .Reply(community.Id, post.Id, Guid.NewGuid(), new AddCommentRequestDto("Odgovor")));
     }
 
     [Fact]
@@ -108,12 +108,12 @@ public class FeedTests : BaseFeedIntegrationTest
         var neighbour = AddConfirmedMember(scope, owner.AccountId, community.Id);
 
         var help = Value<PostDto>((Posts(scope, owner.AccountId)
-            .CreateHelpRequest(community.Id, new CreateHelpRequestRequest("Treba mi pomoc", null))).Result!);
+            .CreateHelpRequest(community.Id, new CreateHelpRequestPostDto("Treba mi pomoc", null))).Result!);
         help.Type.ShouldBe("HELP_REQUEST");
         help.Closed.ShouldBe(false);
 
         Should.Throw<EntityValidationException>(() => Comments(scope, neighbour.AccountId)
-            .Add(community.Id, help.Id, new AddCommentRequest("Javljam se")));
+            .Add(community.Id, help.Id, new AddCommentRequestDto("Javljam se")));
 
         Should.Throw<ForbiddenException>(() =>
             Posts(scope, neighbour.AccountId).CloseHelpRequest(community.Id, help.Id));
@@ -150,7 +150,7 @@ public class FeedTests : BaseFeedIntegrationTest
         string text, string kind)
     {
         var created = Posts(scope, accountId)
-            .CreateGeneral(communityId, new CreateGeneralPostRequest(text, kind, null));
+            .CreateGeneral(communityId, new CreateGeneralPostRequestDto(text, kind, null));
         return Value<PostDto>(created.Result!);
     }
 }

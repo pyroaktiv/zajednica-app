@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.Community.Api.Internal;
+using Zajednica.Community.Api.Internal.Dto;
 
 namespace Zajednica.Community.Tests.Integration;
 
@@ -10,14 +11,14 @@ public class MembershipSeamTests : BaseCommunityIntegrationTest
 {
     public MembershipSeamTests(CommunityTestFactory factory) : base(factory) { }
 
-    private static IInternalMembershipAccessService Access(IServiceScope scope) =>
-        scope.ServiceProvider.GetRequiredService<IInternalMembershipAccessService>();
+    private static IInternalMembershipFactsService Membership(IServiceScope scope) =>
+        scope.ServiceProvider.GetRequiredService<IInternalMembershipFactsService>();
 
     private static IInternalMembershipAudienceService Audience(IServiceScope scope) =>
         scope.ServiceProvider.GetRequiredService<IInternalMembershipAudienceService>();
 
-    private static IInternalIntentOutcomeService Outcome(IServiceScope scope) =>
-        scope.ServiceProvider.GetRequiredService<IInternalIntentOutcomeService>();
+    private static IInternalMembershipCommandService Command(IServiceScope scope) =>
+        scope.ServiceProvider.GetRequiredService<IInternalMembershipCommandService>();
 
     [Fact]
     public void An_unconfirmed_member_passes_only_the_membership_requirement()
@@ -28,12 +29,12 @@ public class MembershipSeamTests : BaseCommunityIntegrationTest
         var community = CreateCommunity(scope, issuerId);
         Join(scope, newcomerId, QrToken(scope, issuerId, community.Id));
 
-        var access = Access(scope);
+        var svc = Membership(scope);
 
-        access.RequireActiveMembershipId(newcomerId, community.Id).ShouldNotBe(Guid.Empty);
-        access.RequireUnconfirmedMembershipId(newcomerId, community.Id).ShouldNotBe(Guid.Empty);
-        Should.Throw<ForbiddenException>(() => access.RequireConfirmedMembershipId(newcomerId, community.Id));
-        Should.Throw<ForbiddenException>(() => access.RequireUnconfirmedMembershipId(issuerId, community.Id));
+        svc.FindWithAccountInCommunity(newcomerId, community.Id).RequireActive().MembershipId.ShouldNotBe(Guid.Empty);
+        svc.FindWithAccountInCommunity(newcomerId, community.Id).RequireUnconfirmed().MembershipId.ShouldNotBe(Guid.Empty);
+        Should.Throw<ForbiddenException>(() => svc.FindWithAccountInCommunity(newcomerId, community.Id).RequireConfirmed());
+        Should.Throw<ForbiddenException>(() => svc.FindWithAccountInCommunity(issuerId, community.Id).RequireUnconfirmed());
     }
 
     [Fact]
@@ -45,7 +46,7 @@ public class MembershipSeamTests : BaseCommunityIntegrationTest
         var community = CreateCommunity(scope, issuerId);
 
         Should.Throw<ForbiddenException>(() =>
-            Access(scope).RequireActiveMembershipId(strangerId, community.Id));
+            Membership(scope).FindWithAccountInCommunity(strangerId, community.Id).RequireActive());
     }
 
     [Fact]
@@ -66,13 +67,13 @@ public class MembershipSeamTests : BaseCommunityIntegrationTest
         var newcomer = db.Memberships.Single(m => m.AccountId == newcomerId && m.CommunityId == community.Id);
         db.ChangeTracker.Clear();
 
-        var access = Access(scope);
+        var svc = Membership(scope);
 
-        access.CanIssueCertifications(community.Id, issuer.Id).ShouldBeTrue();
-        access.CanIssueCertifications(community.Id, member.MembershipId).ShouldBeFalse();
-        access.IsConfirmedMemberOf(community.Id, member.MembershipId).ShouldBeTrue();
-        access.IsConfirmedMemberOf(community.Id, newcomer.Id).ShouldBeFalse();
-        access.IsConfirmedMemberOf(Guid.NewGuid(), member.MembershipId).ShouldBeFalse();
+        svc.FindByMembershipInCommunity(community.Id, issuer.Id)!.CanIssueCertifications.ShouldBeTrue();
+        svc.FindByMembershipInCommunity(community.Id, member.MembershipId)!.CanIssueCertifications.ShouldBeFalse();
+        (svc.FindByMembershipInCommunity(community.Id, member.MembershipId) is { IsActive: true, IsConfirmed: true }).ShouldBeTrue();
+        (svc.FindByMembershipInCommunity(community.Id, newcomer.Id) is { IsActive: true, IsConfirmed: true }).ShouldBeFalse();
+        svc.FindByMembershipInCommunity(Guid.NewGuid(), member.MembershipId).ShouldBeNull();
     }
 
     [Fact]
@@ -93,11 +94,11 @@ public class MembershipSeamTests : BaseCommunityIntegrationTest
         audience.GetConfirmedAccountIds(community.Id, issuer.Id).ShouldBe([memberId]);
         audience.GetConfirmedCount(community.Id).ShouldBe(2);
 
-        Outcome(scope).Ban(member.MembershipId, Guid.NewGuid());
+        Command(scope).Ban(member.MembershipId, Guid.NewGuid());
 
         db.ChangeTracker.Clear();
         audience.GetConfirmedAccountIds(community.Id, null).ShouldBe([issuerId]);
-        Should.Throw<ForbiddenException>(() => Access(scope).RequireActiveMembershipId(memberId, community.Id));
+        Should.Throw<ForbiddenException>(() => Membership(scope).FindWithAccountInCommunity(memberId, community.Id).RequireActive());
     }
 
     [Fact]
@@ -110,17 +111,20 @@ public class MembershipSeamTests : BaseCommunityIntegrationTest
         Join(scope, memberId, QrToken(scope, issuerId, community.Id));
         var member = Certify(scope, issuerId, memberId, community.Id);
 
-        Outcome(scope).Mute(member.MembershipId);
+        Command(scope).Mute(member.MembershipId);
         Db(scope).ChangeTracker.Clear();
 
-        var access = Access(scope);
+        var svc = Membership(scope);
+        var now = DateTime.UtcNow;
 
-        access.RequireConfirmedMembershipId(memberId, community.Id).ShouldBe(member.MembershipId);
-        access.RequireActiveMembershipId(memberId, community.Id).ShouldBe(member.MembershipId);
-        Should.Throw<ForbiddenException>(() => access.RequireUnmutedConfirmedMembershipId(memberId, community.Id));
-        Should.Throw<ForbiddenException>(() => access.RequireUnmutedActiveMembershipId(memberId, community.Id));
+        svc.FindWithAccountInCommunity(memberId, community.Id).RequireConfirmed().MembershipId.ShouldBe(member.MembershipId);
+        svc.FindWithAccountInCommunity(memberId, community.Id).RequireActive().MembershipId.ShouldBe(member.MembershipId);
+        Should.Throw<ForbiddenException>(() =>
+            svc.FindWithAccountInCommunity(memberId, community.Id).RequireConfirmed().RequireUnmuted(now));
+        Should.Throw<ForbiddenException>(() =>
+            svc.FindWithAccountInCommunity(memberId, community.Id).RequireActive().RequireUnmuted(now));
 
-        access.RequireUnmutedConfirmedMembershipId(issuerId, community.Id).ShouldNotBe(Guid.Empty);
+        svc.FindWithAccountInCommunity(issuerId, community.Id).RequireConfirmed().RequireUnmuted(now).MembershipId.ShouldNotBe(Guid.Empty);
     }
 
     [Fact]
@@ -140,11 +144,11 @@ public class MembershipSeamTests : BaseCommunityIntegrationTest
         var audience = Audience(scope);
         audience.GetManagerAccountId(community.Id).ShouldBeNull();
 
-        Outcome(scope).ElectManager(first.Id);
+        Command(scope).ElectManager(first.Id);
         db.ChangeTracker.Clear();
         audience.GetManagerAccountId(community.Id).ShouldBe(firstId);
 
-        Outcome(scope).ElectManager(second.MembershipId);
+        Command(scope).ElectManager(second.MembershipId);
         db.ChangeTracker.Clear();
         audience.GetManagerAccountId(community.Id).ShouldBe(secondId);
     }

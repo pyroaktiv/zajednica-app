@@ -12,40 +12,40 @@ namespace Zajednica.Api.Controllers.Feed;
 [Route("api/communities/{communityId:guid}/intents")]
 public sealed class IntentController : ControllerBase
 {
-    private readonly IIntentService _intents;
+    private readonly IIntentCommandService _intentsCommand;
     private readonly IIntentQueryService _queries;
 
-    public IntentController(IIntentService intents, IIntentQueryService queries)
+    public IntentController(IIntentCommandService intentsCommand, IIntentQueryService queries)
     {
-        _intents = intents;
+        _intentsCommand = intentsCommand;
         _queries = queries;
     }
 
     [HttpPost("ban")]
-    public ActionResult<IntentDetailsDto> OpenBan(Guid communityId, [FromBody] OpenUserTargetingIntentRequest request)
+    public ActionResult<IntentDetailsDto> OpenBan(Guid communityId, [FromBody] OpenUserTargetingIntentRequestDto requestDto)
     {
-        var opened = _intents.OpenBan(User.AccountId(), communityId, request);
+        var opened = _intentsCommand.OpenBan(User.AccountId(), communityId, requestDto);
         return CreatedAtAction(nameof(Get), new { communityId, intentId = opened.Id }, opened);
     }
 
     [HttpPost("manager-election")]
-    public ActionResult<IntentDetailsDto> OpenManagerElection(Guid communityId, [FromBody] OpenUserTargetingIntentRequest request)
+    public ActionResult<IntentDetailsDto> OpenManagerElection(Guid communityId, [FromBody] OpenUserTargetingIntentRequestDto requestDto)
     {
-        var opened = _intents.OpenManagerElection(User.AccountId(), communityId, request);
+        var opened = _intentsCommand.OpenManagerElection(User.AccountId(), communityId, requestDto);
         return CreatedAtAction(nameof(Get), new { communityId, intentId = opened.Id }, opened);
     }
 
     [HttpPost("mute")]
-    public ActionResult<IntentDetailsDto> OpenMute(Guid communityId, [FromBody] OpenUserTargetingIntentRequest request)
+    public ActionResult<IntentDetailsDto> OpenMute(Guid communityId, [FromBody] OpenUserTargetingIntentRequestDto requestDto)
     {
-        var opened = _intents.OpenMute(User.AccountId(), communityId, request);
+        var opened = _intentsCommand.OpenMute(User.AccountId(), communityId, requestDto);
         return CreatedAtAction(nameof(Get), new { communityId, intentId = opened.Id }, opened);
     }
 
     [HttpPost("{intentId:guid}/votes")]
-    public ActionResult<IntentDetailsDto> Vote(Guid communityId, Guid intentId, [FromBody] CastVoteRequest request)
+    public ActionResult<IntentDetailsDto> Vote(Guid communityId, Guid intentId, [FromBody] CastVoteRequestDto requestDto)
     {
-        return Ok(_intents.Vote(User.AccountId(), communityId, intentId, request));
+        return Ok(_intentsCommand.Vote(User.AccountId(), communityId, intentId, requestDto));
     }
 
     [HttpGet("{intentId:guid}")]

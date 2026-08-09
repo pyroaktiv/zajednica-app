@@ -7,7 +7,7 @@ public interface IHelpRequestChatService
 {
     ChatDetailsDto Respond(Guid accountId, Guid communityId, Guid helpRequestId);
 
-    ChatDetailsDto ConcludeWithReward(Guid accountId, Guid communityId, Guid chatId, ConcludeWithRewardRequest request);
+    ChatDetailsDto ConcludeWithReward(Guid accountId, Guid communityId, Guid chatId, ConcludeWithRewardRequestDto requestDto);
     ChatDetailsDto ConcludeWithoutReward(Guid accountId, Guid communityId, Guid chatId);
     ChatDetailsDto Resign(Guid accountId, Guid communityId, Guid chatId);
 }

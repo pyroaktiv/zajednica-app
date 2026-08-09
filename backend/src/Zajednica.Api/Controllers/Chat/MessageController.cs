@@ -20,15 +20,15 @@ public sealed class MessageController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult<MessageDto> SendText(Guid communityId, Guid chatId, [FromBody] SendTextRequest request)
+    public ActionResult<MessageDto> SendText(Guid communityId, Guid chatId, [FromBody] SendTextRequestDto requestDto)
     {
-        return Ok(_messages.SendText(User.AccountId(), communityId, chatId, request));
+        return Ok(_messages.SendText(User.AccountId(), communityId, chatId, requestDto));
     }
 
     [HttpPost("voice")]
-    public ActionResult<MessageDto> SendVoice(Guid communityId, Guid chatId, [FromBody] SendVoiceRequest request)
+    public ActionResult<MessageDto> SendVoice(Guid communityId, Guid chatId, [FromBody] SendVoiceRequestDto requestDto)
     {
-        return Ok(_messages.SendVoice(User.AccountId(), communityId, chatId, request));
+        return Ok(_messages.SendVoice(User.AccountId(), communityId, chatId, requestDto));
     }
 
     [HttpPost("read")]

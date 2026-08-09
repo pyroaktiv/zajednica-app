@@ -42,7 +42,7 @@ public class BaseChatIntegrationTest : BaseWebIntegrationTest<ChatTestFactory>
     protected static (CommunityDetailsDto Community, Member Owner) CreateCommunity(IServiceScope scope)
     {
         var accountId = NewAccount(scope);
-        var request = new CreateCommunityRequest(
+        var request = new CreateCommunityRequestDto(
             $"Zgrada {Guid.NewGuid():N}", new AddressDto("Bulevar", "12", 45.25m, 19.83m), null, null, null);
 
         var community = Communities(scope).Create(accountId, request);
@@ -62,7 +62,7 @@ public class BaseChatIntegrationTest : BaseWebIntegrationTest<ChatTestFactory>
         var accountId = NewAccount(scope);
         var qr = Communities(scope).GetQr(issuerAccountId, communityId);
 
-        Communities(scope).Join(accountId, new JoinCommunityRequest(qr.QrToken));
+        Communities(scope).Join(accountId, new JoinCommunityRequestDto(qr.QrToken));
 
         return new Member(accountId, MembershipId(scope, accountId, communityId));
     }
@@ -72,29 +72,29 @@ public class BaseChatIntegrationTest : BaseWebIntegrationTest<ChatTestFactory>
         var certification = scope.ServiceProvider.GetRequiredService<ICertificationService>();
 
         var challenge = certification.CreateChallenge(issuerAccountId, communityId);
-        certification.Confirm(candidateAccountId, new ConfirmCertificationRequest(challenge.Token));
+        certification.Confirm(candidateAccountId, new ConfirmCertificationRequestDto(challenge.Token));
     }
 
     protected static ChatDetailsDto OpenDirect(IServiceScope scope, Guid accountId, Guid communityId,
         Guid targetMembershipId) =>
         Value<ChatDetailsDto>(Chats(scope, accountId)
-            .OpenDirect(communityId, new OpenDirectChatRequest(targetMembershipId)).Result!);
+            .OpenDirect(communityId, new OpenDirectChatRequestDto(targetMembershipId)).Result!);
 
     protected static ChatDetailsDto OpenTemporary(IServiceScope scope, Guid accountId, Guid communityId,
         Guid issuerMembershipId) =>
         Value<ChatDetailsDto>(Chats(scope, accountId)
-            .OpenTemporary(communityId, new OpenTemporaryChatRequest(issuerMembershipId)).Result!);
+            .OpenTemporary(communityId, new OpenTemporaryChatRequestDto(issuerMembershipId)).Result!);
 
     protected static MessageDto SendText(IServiceScope scope, Guid accountId, Guid communityId, Guid chatId,
         string text) =>
-        Value<MessageDto>(Messages(scope, accountId).SendText(communityId, chatId, new SendTextRequest(text)).Result!);
+        Value<MessageDto>(Messages(scope, accountId).SendText(communityId, chatId, new SendTextRequestDto(text)).Result!);
 
     protected static ChatDetailsDto Respond(IServiceScope scope, Guid accountId, Guid communityId,
         Guid helpRequestId) =>
         Value<ChatDetailsDto>(HelpChats(scope, accountId).Respond(communityId, helpRequestId).Result!);
 
     protected static PostDto CreateHelpRequest(IServiceScope scope, Guid accountId, Guid communityId, string text) =>
-        Posts(scope).CreateHelpRequest(accountId, communityId, new CreateHelpRequestRequest(text, null));
+        Posts(scope).CreateHelpRequest(accountId, communityId, new CreateHelpRequestPostDto(text, null));
 
     protected static void CloseHelpRequest(IServiceScope scope, Guid accountId, Guid communityId, Guid postId) =>
         Posts(scope).CloseHelpRequest(accountId, communityId, postId);

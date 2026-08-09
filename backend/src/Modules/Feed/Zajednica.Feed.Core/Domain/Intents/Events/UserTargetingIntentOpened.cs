@@ -14,12 +14,13 @@ public sealed class UserTargetingIntentOpened : IntentOpened
     public UserTargetingIntentOpened(UserTargetingInitiative initiative, DateTime now) : base(initiative, now)
     {
         Kind = initiative.Kind;
-        TargetMembershipId = initiative.TargetMembershipId;
-        TargetMembershipStatus = initiative.TargetMembershipStatus;
-        TargetMembershipRole = initiative.TargetMembershipRole;
+        TargetMembershipId = initiative.Target.MembershipId;
+        TargetMembershipStatus = initiative.Target.Status;
+        TargetMembershipRole = initiative.Target.Role;
     }
 
     public override Initiative ToInitiative() =>
-        new UserTargetingInitiative(Kind, TargetMembershipId, TargetMembershipStatus, TargetMembershipRole,
+        new UserTargetingInitiative(Kind,
+            new MemberStandingContext(TargetMembershipId, TargetMembershipStatus, TargetMembershipRole),
             CommunityId, AuthorMembershipId, EligibleVoterCount, Description);
 }

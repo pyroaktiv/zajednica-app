@@ -6,7 +6,7 @@ namespace Zajednica.Feed.Core.Mappers;
 
 public static class IntentMappers
 {
-    public static IntentSummaryDto ToSummaryDto(this IntentView view, AccountProfileDto? target) =>
+    public static IntentSummaryDto ToSummaryDto(this IntentView view, InternalProfileDto? target) =>
         new(view.Id,
             view.Kind,
             view.Status.ToString(),
@@ -21,7 +21,7 @@ public static class IntentMappers
             view.VotesAgainst);
 
     public static IntentDetailsDto ToDetailsDto(
-        this IntentView view, AccountProfileDto? author, AccountProfileDto? target, bool? myVote) =>
+        this IntentView view, InternalProfileDto? author, InternalProfileDto? target, bool? myVote) =>
         new(view.Id,
             view.Kind,
             view.Status.ToString(),
@@ -40,7 +40,7 @@ public static class IntentMappers
             myVote,
             view.VotesAreVisible);
 
-    public static IntentVoterDto ToVoterDto(this IntentVoteView vote, AccountProfileDto? voter) =>
+    public static IntentVoterDto ToVoterDto(this IntentVoteView vote, InternalProfileDto? voter) =>
         new(vote.VoterMembershipId,
             voter?.Username,
             vote.InFavor,

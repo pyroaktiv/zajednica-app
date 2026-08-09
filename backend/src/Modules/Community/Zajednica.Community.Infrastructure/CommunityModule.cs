@@ -41,19 +41,18 @@ public static class CommunityModule
 
     private static void AddApplicationServices(IServiceCollection services)
     {
-        services.AddScoped<MembershipAccess>();
+        services.AddScoped<MembershipRequirementsService>();
         services.AddScoped<MembershipNotifier>();
-        services.AddScoped<MuteExpiry>();
+        services.AddScoped<MuteExpiryService>();
         services.AddScoped<ICommunityService, CommunityService>();
         services.AddScoped<IMembershipService, MembershipService>();
         services.AddScoped<ICertificationService, Core.UseCases.CertificationService>();
         services.AddScoped<IDocumentService, DocumentService>();
-        services.AddScoped<IInternalMembershipAccessService, MembershipAccessService>();
-        services.AddScoped<IInternalMembershipDirectoryService, MembershipDirectoryService>();
-        services.AddScoped<IInternalMembershipAudienceService, MembershipAudienceService>();
-        services.AddScoped<MembershipWriteService>();
-        services.AddScoped<IInternalIntentOutcomeService>(sp => sp.GetRequiredService<MembershipWriteService>());
-        services.AddScoped<IInternalStarAwardService>(sp => sp.GetRequiredService<MembershipWriteService>());
+        services.AddScoped<IInternalMembershipFactsService, InternalMembershipFactsService>();
+        services.AddScoped<IInternalMembershipDirectoryService, InternalMembershipDirectoryService>();
+        services.AddScoped<IInternalMembershipAudienceService, InternalMembershipAudienceService>();
+        services.AddScoped<InternalMembershipCommandService>();
+        services.AddScoped<IInternalMembershipCommandService>(sp => sp.GetRequiredService<InternalMembershipCommandService>());
 
         services.AddHostedService<MembershipMuteExpiryWorker>();
     }

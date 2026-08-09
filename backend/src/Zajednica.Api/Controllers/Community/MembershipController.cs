@@ -25,9 +25,9 @@ public sealed class MembershipController : ControllerBase
     }
 
     [HttpPut("members/me/unit-number")]
-    public ActionResult<UnitNumberDto> SetUnitNumber(Guid communityId, [FromBody] SetUnitNumberRequest request)
+    public ActionResult<UnitNumberDto> SetUnitNumber(Guid communityId, [FromBody] SetUnitNumberRequestDto requestDto)
     {
-        return Ok(_memberships.SetUnitNumber(User.AccountId(), communityId, request));
+        return Ok(_memberships.SetUnitNumber(User.AccountId(), communityId, requestDto));
     }
 
     [HttpGet("members")]

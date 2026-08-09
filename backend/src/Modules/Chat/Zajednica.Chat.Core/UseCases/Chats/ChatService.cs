@@ -9,46 +9,46 @@ using ChatAggregate = Zajednica.Chat.Core.Domain.Chat;
 namespace Zajednica.Chat.Core.UseCases.Chats;
 
 public sealed class ChatService(
-    IChatRepository chats,
-    ChatAccess access,
-    ChatPresenter presenter) : IChatService
+    IChatRepository chatRepository,
+    ChatRequirementsService requirementsService,
+    ChatPresenterService presenterService) : IChatService
 {
-    public ChatDetailsDto OpenDirect(Guid accountId, Guid communityId, OpenDirectChatRequest request)
+    public ChatDetailsDto OpenDirect(Guid accountId, Guid communityId, OpenDirectChatRequestDto requestDto)
     {
-        var myMembershipId = access.RequireUnmutedConfirmed(accountId, communityId);
-        access.RequireCounterpart(communityId, request.TargetMembershipId);
+        var myMembershipId = requirementsService.RequireUnmutedConfirmed(accountId, communityId);
+        requirementsService.RequireCounterpart(communityId, requestDto.TargetMembershipId);
 
-        var existing = chats.GetDirect(communityId, myMembershipId, request.TargetMembershipId);
+        var existing = chatRepository.GetDirect(communityId, myMembershipId, requestDto.TargetMembershipId);
         if (existing is not null)
-            return presenter.Details(existing, myMembershipId);
+            return presenterService.Details(existing, myMembershipId);
 
-        var chat = new DirectChat(communityId, myMembershipId, request.TargetMembershipId, DateTime.UtcNow);
-        chats.Add(chat);
+        var chat = new DirectChat(communityId, myMembershipId, requestDto.TargetMembershipId, DateTime.UtcNow);
+        chatRepository.Add(chat);
 
-        return presenter.Details(chat, myMembershipId);
+        return presenterService.Details(chat, myMembershipId);
     }
 
-    public ChatDetailsDto OpenTemporary(Guid accountId, Guid communityId, OpenTemporaryChatRequest request)
+    public ChatDetailsDto OpenTemporary(Guid accountId, Guid communityId, OpenTemporaryChatRequestDto requestDto)
     {
-        var myMembershipId = access.RequireUnconfirmed(accountId, communityId);
-        access.RequireIssuer(communityId, request.IssuerMembershipId);
+        var myMembershipId = requirementsService.RequireUnconfirmed(accountId, communityId);
+        requirementsService.RequireIssuer(communityId, requestDto.IssuerMembershipId);
 
-        var existing = chats.GetTemporary(communityId, myMembershipId, request.IssuerMembershipId);
+        var existing = chatRepository.GetTemporary(communityId, myMembershipId, requestDto.IssuerMembershipId);
         if (existing is not null)
-            return presenter.Details(existing, myMembershipId);
+            return presenterService.Details(existing, myMembershipId);
 
-        var chat = new TemporaryChat(communityId, myMembershipId, request.IssuerMembershipId, DateTime.UtcNow);
-        chats.Add(chat);
+        var chat = new TemporaryChat(communityId, myMembershipId, requestDto.IssuerMembershipId, DateTime.UtcNow);
+        chatRepository.Add(chat);
 
-        return presenter.Details(chat, myMembershipId);
+        return presenterService.Details(chat, myMembershipId);
     }
 
     public ChatDetailsDto Get(Guid accountId, Guid communityId, Guid chatId)
     {
-        var myMembershipId = access.RequireMember(accountId, communityId);
-        var chat = access.RequireChat(communityId, chatId, myMembershipId);
+        var myMembershipId = requirementsService.RequireMember(accountId, communityId);
+        var chat = requirementsService.RequireChat(communityId, chatId, myMembershipId);
 
-        return presenter.Details(chat, myMembershipId);
+        return presenterService.Details(chat, myMembershipId);
     }
 
     public CursorPage<ChatSummaryDto, PageCursor> GetDirectPage(Guid accountId, Guid communityId, PageCursor? before, int limit) =>
@@ -63,9 +63,9 @@ public sealed class ChatService(
     private CursorPage<ChatSummaryDto, PageCursor> GetPage<TChat>(Guid accountId, Guid communityId, PageCursor? before, int limit)
         where TChat : ChatAggregate
     {
-        var myMembershipId = access.RequireMember(accountId, communityId);
-        var page = chats.GetPage<TChat>(communityId, myMembershipId, before, Paging.Clamp(limit));
+        var myMembershipId = requirementsService.RequireMember(accountId, communityId);
+        var page = chatRepository.GetPage<TChat>(communityId, myMembershipId, before, Paging.Clamp(limit));
 
-        return presenter.Summaries(page, myMembershipId);
+        return presenterService.Summaries(page, myMembershipId);
     }
 }

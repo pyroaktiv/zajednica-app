@@ -19,7 +19,7 @@ public class EmailVerificationTests : BaseIdentityIntegrationTest
         var db = Db(scope);
         var token = db.Verifications.Single(t => t.AccountId == accountId).Token;
 
-        Controller(scope).VerifyEmail(new VerifyEmailRequest(token));
+        Controller(scope).VerifyEmail(new VerifyEmailRequestDto(token));
 
         db.ChangeTracker.Clear();
         db.Accounts.Single(a => a.Id == accountId).IsEmailVerified.ShouldBeTrue();
@@ -32,7 +32,7 @@ public class EmailVerificationTests : BaseIdentityIntegrationTest
         using var scope = Factory.Services.CreateScope();
 
         Should.Throw<EntityValidationException>(() =>
-            Controller(scope).VerifyEmail(new VerifyEmailRequest("no-such-token")));
+            Controller(scope).VerifyEmail(new VerifyEmailRequestDto("no-such-token")));
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public class EmailVerificationTests : BaseIdentityIntegrationTest
         db.ChangeTracker.Clear();
 
         Should.Throw<EntityValidationException>(() =>
-            Controller(scope).VerifyEmail(new VerifyEmailRequest(tokenValue)));
+            Controller(scope).VerifyEmail(new VerifyEmailRequestDto(tokenValue)));
 
         db.ChangeTracker.Clear();
         db.Verifications.Any(t => t.Token == tokenValue).ShouldBeFalse();
@@ -69,6 +69,6 @@ public class EmailVerificationTests : BaseIdentityIntegrationTest
         db.ChangeTracker.Clear();
 
         Should.Throw<EntityValidationException>(() =>
-            Controller(scope).VerifyEmail(new VerifyEmailRequest(tokenValue)));
+            Controller(scope).VerifyEmail(new VerifyEmailRequestDto(tokenValue)));
     }
 }

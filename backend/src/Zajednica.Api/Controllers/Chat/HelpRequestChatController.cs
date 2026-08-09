@@ -26,9 +26,9 @@ public sealed class HelpRequestChatController : ControllerBase
     }
 
     [HttpPost("{chatId:guid}/conclude-with-reward")]
-    public ActionResult<ChatDetailsDto> ConcludeWithReward(Guid communityId, Guid chatId, [FromBody] ConcludeWithRewardRequest request)
+    public ActionResult<ChatDetailsDto> ConcludeWithReward(Guid communityId, Guid chatId, [FromBody] ConcludeWithRewardRequestDto requestDto)
     {
-        return Ok(_helpChats.ConcludeWithReward(User.AccountId(), communityId, chatId, request));
+        return Ok(_helpChats.ConcludeWithReward(User.AccountId(), communityId, chatId, requestDto));
     }
 
     [HttpPost("{chatId:guid}/conclude-without-reward")]

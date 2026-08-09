@@ -6,10 +6,10 @@ namespace Zajednica.Identity.Core.Mappers;
 
 public static class AccountMappers
 {
-    public static AccountUsernameDto ToUsernameDto(this Account account) =>
+    public static InternalUsernameDto ToUsernameDto(this Account account) =>
         new(account.Id, account.Username);
 
-    public static AccountProfileDto ToAccountProfileDto(this Account account, IFileUrlMapper urls) =>
+    public static InternalProfileDto ToAccountProfileDto(this Account account, IFileUrlMapper urls) =>
         new(
             account.Id,
             account.Username,

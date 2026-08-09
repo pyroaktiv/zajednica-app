@@ -5,8 +5,8 @@ namespace Zajednica.Chat.Api.Public;
 
 public interface IChatService
 {
-    ChatDetailsDto OpenDirect(Guid accountId, Guid communityId, OpenDirectChatRequest request);
-    ChatDetailsDto OpenTemporary(Guid accountId, Guid communityId, OpenTemporaryChatRequest request);
+    ChatDetailsDto OpenDirect(Guid accountId, Guid communityId, OpenDirectChatRequestDto requestDto);
+    ChatDetailsDto OpenTemporary(Guid accountId, Guid communityId, OpenTemporaryChatRequestDto requestDto);
 
     ChatDetailsDto Get(Guid accountId, Guid communityId, Guid chatId);
     CursorPage<ChatSummaryDto, PageCursor> GetDirectPage(Guid accountId, Guid communityId, PageCursor? before, int limit);

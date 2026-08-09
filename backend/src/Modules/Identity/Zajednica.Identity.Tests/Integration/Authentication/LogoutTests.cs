@@ -18,7 +18,7 @@ public class LogoutTests : BaseIdentityIntegrationTest
         var (email, _) = RegisterVerified(scope);
         var issued = Login(scope, email);
 
-        Controller(scope).Logout(new LogoutRequest(issued.RefreshToken));
+        Controller(scope).Logout(new LogoutRequestDto(issued.RefreshToken));
 
         var db = Db(scope);
         db.ChangeTracker.Clear();
@@ -30,7 +30,7 @@ public class LogoutTests : BaseIdentityIntegrationTest
     {
         using var scope = Factory.Services.CreateScope();
 
-        var result = Controller(scope).Logout(new LogoutRequest("no-such-token"));
+        var result = Controller(scope).Logout(new LogoutRequestDto("no-such-token"));
 
         result.ShouldBeOfType<OkResult>();
     }
@@ -41,9 +41,9 @@ public class LogoutTests : BaseIdentityIntegrationTest
         using var scope = Factory.Services.CreateScope();
         var (email, _) = RegisterVerified(scope);
         var issued = Login(scope, email);
-        Controller(scope).Logout(new LogoutRequest(issued.RefreshToken));
+        Controller(scope).Logout(new LogoutRequestDto(issued.RefreshToken));
 
         Should.Throw<EntityValidationException>(() =>
-            Controller(scope).Refresh(new RefreshRequest(issued.RefreshToken)));
+            Controller(scope).Refresh(new RefreshRequestDto(issued.RefreshToken)));
     }
 }

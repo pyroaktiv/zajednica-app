@@ -34,8 +34,8 @@ public static class ChatModule
     private static void AddApplicationServices(IServiceCollection services)
     {
         services.AddScoped<MemberDirectory>();
-        services.AddScoped<ChatAccess>();
-        services.AddScoped<ChatPresenter>();
+        services.AddScoped<ChatRequirementsService>();
+        services.AddScoped<ChatPresenterService>();
         services.AddScoped<ChatNotifier>();
 
         services.AddScoped<IChatService, ChatService>();

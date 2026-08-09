@@ -18,7 +18,7 @@ public sealed class IntentClosingWorker(IServiceScopeFactory scopes, ILogger<Int
             try
             {
                 using var scope = scopes.CreateScope();
-                scope.ServiceProvider.GetRequiredService<IntentClosing>().CloseDue();
+                scope.ServiceProvider.GetRequiredService<IntentClosingService>().CloseDue();
             }
             catch (Exception ex)
             {

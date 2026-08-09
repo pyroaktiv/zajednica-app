@@ -6,19 +6,16 @@ namespace Zajednica.Feed.Core.Domain.Intents.Initiatives;
 public sealed class UserTargetingInitiative : Initiative
 {
     public UserActionKind Kind { get; }
-    public Guid TargetMembershipId { get; }
-    public MembershipStatus TargetMembershipStatus { get; }
-    public MembershipRole TargetMembershipRole { get; }
+    public MemberStandingContext Target { get; }
 
-    public UserTargetingInitiative(UserActionKind kind, Guid targetMembershipId,
-        MembershipStatus targetMembershipStatus, MembershipRole targetMembershipRole, Guid communityId,
+    public Guid TargetMembershipId => Target.MembershipId;
+
+    public UserTargetingInitiative(UserActionKind kind, MemberStandingContext target, Guid communityId,
         Guid authorMembershipId, int eligibleVoterCount, string description)
         : base(communityId, authorMembershipId, eligibleVoterCount, description)
     {
         Kind = kind;
-        TargetMembershipId = targetMembershipId;
-        TargetMembershipStatus = targetMembershipStatus;
-        TargetMembershipRole = targetMembershipRole;
+        Target = target;
 
         EnsureValidTarget();
     }
@@ -31,15 +28,15 @@ public sealed class UserTargetingInitiative : Initiative
 
     private void EnsureValidTarget()
     {
-        if (TargetMembershipStatus == MembershipStatus.Unknown)
+        if (Target.Status == MembershipStatus.Unknown)
             throw new EntityValidationException("An initiative has to say what it is about.");
-        if (AuthorMembershipId == TargetMembershipId)
+        if (AuthorMembershipId == Target.MembershipId)
             throw new EntityValidationException("An initiative cannot be started by the member it is about.");
-        if (Kind == UserActionKind.Ban && TargetMembershipStatus == MembershipStatus.Banned)
+        if (Kind == UserActionKind.Ban && Target.Status == MembershipStatus.Banned)
             throw new EntityValidationException("This member is already banned.");
-        if (Kind == UserActionKind.ManagerElection && TargetMembershipRole == MembershipRole.Manager)
+        if (Kind == UserActionKind.ManagerElection && Target.Role == MembershipRole.Manager)
             throw new EntityValidationException("This member is already the manager.");
-        if (TargetMembershipStatus != MembershipStatus.Confirmed)
+        if (Target.Status != MembershipStatus.Confirmed)
             throw new EntityValidationException("An initiative can only be started about a confirmed member.");
     }
 
@@ -49,8 +46,6 @@ public sealed class UserTargetingInitiative : Initiative
             yield return component;
 
         yield return Kind;
-        yield return TargetMembershipId;
-        yield return TargetMembershipStatus;
-        yield return TargetMembershipRole;
+        yield return Target;
     }
 }

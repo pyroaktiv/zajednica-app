@@ -31,7 +31,7 @@ public class HelpRequestChatTests : BaseChatIntegrationTest
         var starsBefore = StarsOf(scope, helper.MembershipId);
 
         var concluded = Value<ChatDetailsDto>(HelpChats(scope, requester.AccountId)
-            .ConcludeWithReward(community.Id, chat.Id, new ConcludeWithRewardRequest(150)).Result!);
+            .ConcludeWithReward(community.Id, chat.Id, new ConcludeWithRewardRequestDto(150)).Result!);
 
         concluded.Status.ShouldBe("Concluded");
         concluded.AwardedStars.ShouldBe(150);

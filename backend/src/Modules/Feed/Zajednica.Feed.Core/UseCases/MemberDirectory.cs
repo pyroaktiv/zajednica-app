@@ -5,23 +5,23 @@ using Zajednica.Identity.Api.Internal.Dto;
 namespace Zajednica.Feed.Core.UseCases;
 
 public sealed class MemberDirectory(
-    IInternalMembershipDirectoryService memberships,
-    IInternalAccountService accounts)
+    IInternalMembershipDirectoryService internalDirectoryService,
+    IInternalProfileService internalProfileService)
 {
     public Guid? AccountId(Guid membershipId) =>
-        memberships.GetAccounts([membershipId]).SingleOrDefault()?.AccountId;
+        internalDirectoryService.GetAccountIdsByMembershipIds([membershipId]).SingleOrDefault()?.AccountId;
 
-    public IReadOnlyDictionary<Guid, AccountProfileDto> Profiles(IReadOnlyCollection<Guid> membershipIds)
+    public IReadOnlyDictionary<Guid, InternalProfileDto> Profiles(IReadOnlyCollection<Guid> membershipIds)
     {
-        var empty = new Dictionary<Guid, AccountProfileDto>();
+        var empty = new Dictionary<Guid, InternalProfileDto>();
         if (membershipIds.Count == 0)
             return empty;
 
-        var members = memberships.GetAccounts(membershipIds.Distinct().ToList());
+        var members = internalDirectoryService.GetAccountIdsByMembershipIds(membershipIds.Distinct().ToList());
         if (members.Count == 0)
             return empty;
 
-        var profiles = accounts.GetProfiles(members.Select(m => m.AccountId).Distinct().ToList())
+        var profiles = internalProfileService.GetProfiles(members.Select(m => m.AccountId).Distinct().ToList())
             .ToDictionary(p => p.AccountId);
 
         return members

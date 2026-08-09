@@ -9,7 +9,7 @@ namespace Zajednica.Community.Core.Mappers;
 
 public static class MembershipMappers
 {
-    public static MemberSummaryDto ToSummaryDto(this Membership membership, AccountProfileDto? profile) =>
+    public static MemberSummaryDto ToSummaryDto(this Membership membership, InternalProfileDto? profile) =>
         new(membership.Id,
             membership.AccountId,
             profile?.Username ?? string.Empty,
@@ -18,7 +18,7 @@ public static class MembershipMappers
             membership.IsConfirmed() ? membership.Stars : null,
             membership.Roles.Select(r => r.Role.ToString()).ToList());
 
-    public static MemberProfileDto ToProfileDto(this Membership membership, AccountProfileDto? profile,
+    public static MemberProfileDto ToProfileDto(this Membership membership, InternalProfileDto? profile,
         DateTime now) =>
         new(membership.Id,
             membership.AccountId,
@@ -50,11 +50,23 @@ public static class MembershipMappers
             membership.CommunityId,
             membership.Certificate!.Date);
 
-    public static MemberAccountDto ToAccountDto(this Membership membership) =>
+    public static InternalMembershipAccountIdDto ToAccountDto(this Membership membership) =>
         new(membership.Id, membership.AccountId);
 
+    public static InternalMembershipFactsDto ToFactsDto(this Membership membership) =>
+        new(membership.Id,
+            membership.AccountId,
+            membership.CommunityId,
+            membership.IsActive(),
+            membership.IsConfirmed(),
+            membership.State == MembershipState.Banned,
+            membership.MutedUntil,
+            membership.IsActive() && membership.IsConfirmed() && membership.HasRole(CommunityRole.Issuer),
+            membership.HasRole(CommunityRole.Manager),
+            membership.CertifiedAt ?? membership.DateJoined);
+
     public static IReadOnlyList<MemberSummaryDto> ToSummaryDtos(
-        this IEnumerable<Membership> memberships, IReadOnlyDictionary<Guid, AccountProfileDto> profiles) =>
+        this IEnumerable<Membership> memberships, IReadOnlyDictionary<Guid, InternalProfileDto> profiles) =>
         memberships
             .Select(m => m.ToSummaryDto(profiles.GetValueOrDefault(m.AccountId)))
             .ToList();

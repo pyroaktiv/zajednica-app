@@ -7,24 +7,24 @@ using Zajednica.Identity.Core.Mappers;
 
 namespace Zajednica.Identity.Core.UseCases;
 
-public sealed class ProfileService(IAccountRepository accounts, IFileUrlMapper urls) : IProfileService
+public sealed class ProfileService(IAccountRepository accountRepository, IFileUrlMapper urlMapper) : IProfileService
 {
     public ProfileDto Get(Guid accountId)
     {
-        var account = accounts.GetById(accountId)
+        var account = accountRepository.GetById(accountId)
             ?? throw new NotFoundException("Account not found.");
-        return account.ToProfileDto(urls);
+        return account.ToProfileDto(urlMapper);
     }
 
-    public ProfileDto Update(Guid accountId, UpdateProfileRequest request)
+    public ProfileDto Update(Guid accountId, UpdateProfileRequestDto requestDto)
     {
-        var account = accounts.GetById(accountId)
+        var account = accountRepository.GetById(accountId)
             ?? throw new NotFoundException("Account not found.");
 
-        account.UpdateProfile(request.FirstName, request.LastName, request.Phone, request.ContactEmail,
-            urls.ToKey(request.ImageUrl));
-        accounts.Update(account);
+        account.UpdateProfile(requestDto.FirstName, requestDto.LastName, requestDto.Phone, requestDto.ContactEmail,
+            urlMapper.ToKey(requestDto.ImageUrl));
+        accountRepository.Update(account);
 
-        return account.ToProfileDto(urls);
+        return account.ToProfileDto(urlMapper);
     }
 }

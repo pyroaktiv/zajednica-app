@@ -20,7 +20,7 @@ public sealed class MembershipMuteExpiryWorker(
             try
             {
                 using var scope = scopes.CreateScope();
-                scope.ServiceProvider.GetRequiredService<MuteExpiry>().EndExpired();
+                scope.ServiceProvider.GetRequiredService<MuteExpiryService>().EndExpired();
             }
             catch (Exception ex)
             {
