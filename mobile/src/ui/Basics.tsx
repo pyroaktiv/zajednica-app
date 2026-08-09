@@ -29,13 +29,19 @@ export function Button({
 }: {
   title: string;
   onPress: () => void;
-  variant?: "primary" | "secondary" | "danger";
+  variant?: "primary" | "secondary" | "danger" | "success";
   disabled?: boolean;
   loading?: boolean;
   style?: ViewStyle;
 }) {
   const background =
-    variant === "primary" ? colors.primary : variant === "danger" ? colors.danger : colors.card;
+    variant === "primary"
+      ? colors.primary
+      : variant === "danger"
+        ? colors.danger
+        : variant === "success"
+          ? colors.success
+          : colors.card;
   const color = variant === "secondary" ? colors.text : "#fff";
   return (
     <Pressable
