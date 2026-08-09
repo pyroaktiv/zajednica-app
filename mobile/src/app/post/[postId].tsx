@@ -4,6 +4,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Modal,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Platform,
@@ -107,6 +108,7 @@ export default function PostDetails() {
   const [replyTo, setReplyTo] = useState<CommentDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [zoomedImageUrl, setZoomedImageUrl] = useState<string | null>(null);
   const loadingComments = useRef(false);
 
   const isGeneral = post?.type === "GENERAL";
@@ -264,14 +266,19 @@ export default function PostDetails() {
               {formatDateTime(post.dateCreated)}
             </Text>
             <Text style={{ color: colors.text, fontSize: 15, lineHeight: 22 }}>{post.text}</Text>
-            {post.imageUrls.map((url) => (
-              <Image
-                key={url}
-                source={{ uri: url }}
-                style={{ width: "100%", height: 220, borderRadius: 8, marginTop: spacing.m }}
-                resizeMode="cover"
-              />
-            ))}
+            {post.imageUrls.length > 0 && (
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.s, marginTop: spacing.m }}>
+                {post.imageUrls.map((url) => (
+                  <Pressable key={url} onPress={() => setZoomedImageUrl(url)}>
+                    <Image
+                      source={{ uri: url }}
+                      style={{ width: 96, height: 96, borderRadius: 8 }}
+                      resizeMode="cover"
+                    />
+                  </Pressable>
+                ))}
+              </View>
+            )}
           </Card>
 
           <MutedNotice />
@@ -333,6 +340,31 @@ export default function PostDetails() {
           </View>
         )}
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={zoomedImageUrl != null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setZoomedImageUrl(null)}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.92)",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onPress={() => setZoomedImageUrl(null)}
+        >
+          {zoomedImageUrl && (
+            <Image
+              source={{ uri: zoomedImageUrl }}
+              style={{ width: "100%", height: "100%" }}
+              resizeMode="contain"
+            />
+          )}
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }
