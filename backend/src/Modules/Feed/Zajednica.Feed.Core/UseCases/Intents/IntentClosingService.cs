@@ -43,28 +43,33 @@ public sealed class IntentClosingService(
         {
             case UserTargetingInitiative { Kind: UserActionKind.Ban } ban:
                 internalCommandService.Ban(ban.TargetMembershipId, intent.Id);
-                SupersedeOthersAbout(intent, ban.TargetMembershipId, now);
+                SupersedeRest(intent, ban.TargetMembershipId, now, kind: null);
                 break;
 
             case UserTargetingInitiative { Kind: UserActionKind.ManagerElection } election:
                 internalCommandService.ElectManager(election.TargetMembershipId);
+                SupersedeRest(intent, election.TargetMembershipId, now, UserActionKind.ManagerElection);
                 break;
 
             case UserTargetingInitiative { Kind: UserActionKind.Mute } mute:
                 internalCommandService.Mute(mute.TargetMembershipId);
+                SupersedeRest(intent, mute.TargetMembershipId, now, UserActionKind.Mute);
                 break;
         }
     }
 
-    private void SupersedeOthersAbout(Intent ban, Guid targetMembershipId, DateTime now)
+    private void SupersedeRest(Intent decidedIntent, Guid targetMembershipId, DateTime now, UserActionKind? kind)
     {
-        var open = intentRepository.GetOpenByTarget(ban.Initiative.CommunityId, targetMembershipId);
+        var open = intentRepository.GetOpenByTarget(decidedIntent.Initiative.CommunityId, targetMembershipId);
 
-        foreach (var other in open.Where(i => i.Id != ban.Id))
+        foreach (var other in open.Where(i => i.Id != decidedIntent.Id && IsOfUserActionKind(i, kind)))
         {
             other.Supersede(now);
             intentRepository.Update(other);
             notifier.Changed(other);
         }
     }
+
+    private static bool IsOfUserActionKind(Intent intent, UserActionKind? kind) =>
+        kind is null || (intent.Initiative is UserTargetingInitiative targeting && targeting.Kind == kind);
 }

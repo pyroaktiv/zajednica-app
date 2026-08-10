@@ -204,6 +204,38 @@ public class IntentVotingTests : BaseFeedIntegrationTest
     }
 
     [Fact]
+    public void An_accepted_mute_intent_closes_only_the_other_mute_intents_about_the_member()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var (community, owner) = CreateCommunity(scope);
+        var second = AddConfirmedMember(scope, owner.AccountId, community.Id);
+        var third = AddConfirmedMember(scope, owner.AccountId, community.Id);
+        var fourth = AddConfirmedMember(scope, owner.AccountId, community.Id);
+        var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
+
+        var otherMute = Value<IntentDetailsDto>((Intents(scope, second.AccountId)
+            .OpenMute(community.Id, new OpenUserTargetingIntentRequestDto(target.MembershipId, "I ja ga cujem"))).Result!);
+        var ban = Value<IntentDetailsDto>((Intents(scope, third.AccountId)
+            .OpenBan(community.Id, new OpenUserTargetingIntentRequestDto(target.MembershipId, "Za izbacivanje"))).Result!);
+
+        var mute = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
+            .OpenMute(community.Id, new OpenUserTargetingIntentRequestDto(target.MembershipId, "Vredja komsije"))).Result!);
+
+        Intents(scope, owner.AccountId).Vote(community.Id, mute.Id, new CastVoteRequestDto(true));
+        Intents(scope, second.AccountId).Vote(community.Id, mute.Id, new CastVoteRequestDto(true));
+        Intents(scope, third.AccountId).Vote(community.Id, mute.Id, new CastVoteRequestDto(true));
+        var closed = Value<IntentDetailsDto>((Intents(scope, fourth.AccountId)
+            .Vote(community.Id, mute.Id, new CastVoteRequestDto(true))).Result!);
+
+        closed.Status.ShouldBe(nameof(IntentStatus.Accepted));
+
+        var db = Db(scope);
+        db.ChangeTracker.Clear();
+        db.IntentViews.Single(v => v.Id == otherMute.Id).Status.ShouldBe(IntentStatus.Rejected);
+        db.IntentViews.Single(v => v.Id == ban.Id).Status.ShouldBe(IntentStatus.Open);
+    }
+
+    [Fact]
     public void An_intent_cannot_be_opened_about_a_member_who_is_not_confirmed()
     {
         using var scope = Factory.Services.CreateScope();
