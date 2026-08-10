@@ -7,7 +7,7 @@ using ChatAggregate = Zajednica.Chat.Core.Domain.Chat;
 
 namespace Zajednica.Chat.Core.UseCases;
 
-public sealed class ChatPresenterService(MemberDirectory memberDirectory, IInternalHelpRequestService helpRequests)
+public sealed class ChatPresenterService(MemberDirectory memberDirectory, IInternalHelpRequestService helpRequestService)
 {
     private const int HelpRequestPreviewLength = 60;
 
@@ -16,7 +16,7 @@ public sealed class ChatPresenterService(MemberDirectory memberDirectory, IInter
         var profiles = memberDirectory.Profiles(chat.Participants.Select(p => p.MembershipId).ToList());
 
         var preview = chat is HelpRequestChat help
-            ? helpRequests.GetPreview(help.HelpRequestId, HelpRequestPreviewLength)
+            ? helpRequestService.GetPreview(help.HelpRequestId, HelpRequestPreviewLength)
             : null;
 
         return chat.ToDetailsDto(viewerMembershipId, profiles, preview);

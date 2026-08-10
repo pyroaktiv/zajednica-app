@@ -106,6 +106,6 @@ public sealed class CommentService(
             return;
 
         notificationSender.Send(
-            new NotificationRequest(recipientAccountId, title, body, NotificationPriority.Default));
+            new NotificationRequest(recipientAccountId, title, body, NotificationChannel.Posts));
     }
 }
