@@ -95,33 +95,35 @@ public sealed class PostService(
 
     private void Announce(Post post)
     {
-        var (title, body, priority) = Announcement(post);
+        var (title, body, channel) = Announcement(post);
         var recipients = internalAudienceService.GetConfirmedAccountIds(post.CommunityId, post.AuthorMembershipId);
 
-        notificationSender.Send(new NotificationRequest(recipients, title, body, priority));
+        notificationSender.Send(new NotificationRequest(recipients, title, body, channel, TargetOf(post)));
 
         if (post is GeneralTopicPost { Kind: GeneralPostKind.Problem })
-            NotifyManager(post.CommunityId);
+            NotifyManager(post);
     }
 
-    private void NotifyManager(Guid communityId)
+    private void NotifyManager(Post post)
     {
-        if (internalAudienceService.GetManagerAccountId(communityId) is not { } managerAccountId)
+        if (internalAudienceService.GetManagerAccountId(post.CommunityId) is not { } managerAccountId)
             return;
 
         notificationSender.Send(new NotificationRequest(managerAccountId, "Prijavljen problem",
-            "U zgradi je prijavljen problem koji traži reakciju upravnika.", NotificationPriority.Default));
+            "U zgradi je prijavljen problem koji traži reakciju upravnika.", NotificationChannel.Management, TargetOf(post)));
     }
 
-    private static (string Title, string Body, NotificationPriority Priority) Announcement(Post post) => post switch
+    private static NotificationTarget TargetOf(Post post) => new($"/post/{post.Id}", post.CommunityId);
+
+    private static (string Title, string Body, NotificationChannel Channel) Announcement(Post post) => post switch
     {
         GeneralTopicPost { Kind: GeneralPostKind.Emergency } =>
-            ("Hitan slučaj", "U zajednici je objavljen hitan slučaj.", NotificationPriority.High),
+            ("Hitan slučaj", "U zajednici je objavljen hitan slučaj.", NotificationChannel.Emergency),
         GeneralTopicPost { Kind: GeneralPostKind.Problem } =>
-            ("Prijavljen problem", "U zgradi je prijavljen problem.", NotificationPriority.Low),
+            ("Prijavljen problem", "U zgradi je prijavljen problem.", NotificationChannel.Posts),
         HelpRequest =>
-            ("Komšijska ispomoć", "Komšija traži pomoć.", NotificationPriority.Low),
+            ("Komšijska ispomoć", "Komšija traži pomoć.", NotificationChannel.Posts),
         _ =>
-            ("Nova objava", "U zajednici je objavljena nova objava.", NotificationPriority.Default)
+            ("Nova objava", "U zajednici je objavljena nova objava.", NotificationChannel.Posts)
     };
 }

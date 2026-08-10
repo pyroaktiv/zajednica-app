@@ -90,7 +90,8 @@ export const api = {
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "POST", ...(body !== undefined ? json(body) : {}) }),
   put: <T>(path: string, body: unknown) => request<T>(path, { method: "PUT", ...json(body) }),
-  delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  delete: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: "DELETE", ...(body !== undefined ? json(body) : {}) }),
   upload: <T>(path: string, file: { uri: string; name: string; type: string }) => {
     const form = new FormData();
     form.append("file", new File(file.uri) as unknown as Blob, file.name);

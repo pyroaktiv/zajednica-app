@@ -9,6 +9,11 @@ export const authApi = {
   logout: (refreshToken: string) => api.post<void>("/api/auth/logout", { refreshToken }),
 };
 
+export const deviceApi = {
+  register: (token: string) => api.post<void>("/api/devices", { token }),
+  unregister: (token: string) => api.delete<void>("/api/devices", { token }),
+};
+
 export const profileApi = {
   getMine: () => api.get<ProfileDto>("/api/profile/me"),
   update: (request: UpdateProfileRequest) => api.put<ProfileDto>("/api/profile", request),

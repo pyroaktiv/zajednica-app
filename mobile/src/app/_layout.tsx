@@ -1,4 +1,5 @@
 import { Stack } from "expo-router";
+import { NotificationRouter } from "../notifications/NotificationRouter";
 import { AuthProvider } from "../state/AuthContext";
 import { CommunityProvider } from "../state/CommunityContext";
 import { colors } from "../ui/theme";
@@ -7,6 +8,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <CommunityProvider>
+        <NotificationRouter />
         <Stack
           screenOptions={{
             headerTintColor: colors.text,

@@ -8,7 +8,10 @@
     "scheme": "zajednicaapp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "entitlements": {
+        "com.apple.developer.usernotifications.time-sensitive": true
+      }
     },
     "android": {
       "package": "app.zajednica",
@@ -54,6 +57,7 @@
         }
       ],
       "expo-image",
+      "expo-notifications",
       "expo-status-bar",
       "expo-web-browser"
     ],

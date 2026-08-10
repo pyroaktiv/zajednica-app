@@ -1,5 +1,4 @@
 using Zajednica.BuildingBlocks.Core.Exceptions;
-using Zajednica.BuildingBlocks.Core.Notifications;
 using Zajednica.BuildingBlocks.Core.Realtime;
 using Zajednica.BuildingBlocks.Core.Security;
 using Zajednica.Chat.Api.Internal;
@@ -17,7 +16,6 @@ public sealed class CertificationService(
     IMembershipRepository membershipRepository,
     ISecureTokenGenerator tokenGenerator,
     IInternalChatService internalChatService,
-    INotificationSender notificationSender,
     IRealtimePusher realtimePusher,
     DomainCertificationService certificationService,
     MembershipRequirementsService requirementsService) : ICertificationService
@@ -75,8 +73,6 @@ public sealed class CertificationService(
             new RealtimeMessage("certification.confirmed", new { challengeId = challenge.Id, membershipId = candidate.Id }));
         realtimePusher.PushToUser(accountId,
             new RealtimeMessage("membership.roles.changed", new { communityId = challenge.CommunityId }));
-        notificationSender.Send(new NotificationRequest(
-            accountId, "Potvrda članstva", "Vaše članstvo u zajednici je potvrđeno.", NotificationPriority.Default));
 
         return candidate.ToCertificationResultDto();
     }
