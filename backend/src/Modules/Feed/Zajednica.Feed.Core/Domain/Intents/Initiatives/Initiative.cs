@@ -15,6 +15,8 @@ public abstract class Initiative : ValueObject
 
     public virtual bool AreVotesPublic => true;
 
+    public virtual bool Supersedes(Initiative other) => false;
+
     protected Initiative(Guid communityId, Guid authorMembershipId, int eligibleVoterCount, string description)
     {
         if (string.IsNullOrWhiteSpace(description))

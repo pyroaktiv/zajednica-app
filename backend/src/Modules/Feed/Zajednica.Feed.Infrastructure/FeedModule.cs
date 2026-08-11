@@ -31,9 +31,10 @@ public static class FeedModule
     {
         services.AddScoped<IPostRepository, PostEfRepository>();
 
-        services.AddScoped<EventSourcedIntentRepository>();
-        services.AddScoped<IIntentRepository>(sp => sp.GetRequiredService<EventSourcedIntentRepository>());
-        services.AddScoped<IIntentQueryStore>(sp => sp.GetRequiredService<EventSourcedIntentRepository>());
+        services.AddScoped<IFeedUnitOfWork, FeedUnitOfWork>();
+
+        services.AddScoped<IIntentRepository, EventSourcedIntentRepository>();
+        services.AddScoped<IIntentQueryStore, IntentQueryStore>();
     }
 
     private static void AddApplicationServices(IServiceCollection services)

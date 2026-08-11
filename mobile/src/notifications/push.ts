@@ -23,6 +23,7 @@ const androidChannels = [
 ];
 
 export async function registerForPushNotifications() {
+  console.warn("[push] start", { isDevice: Device.isDevice, alreadyRegistered: !!registeredToken });
   if (!Device.isDevice || registeredToken) return;
 
   if (Platform.OS === "android") {
@@ -37,12 +38,16 @@ export async function registerForPushNotifications() {
   const existing = await Notifications.getPermissionsAsync();
   const granted =
     existing.status === "granted" || (await Notifications.requestPermissionsAsync()).status === "granted";
+  console.warn("[push] permission", { granted });
   if (!granted) return;
 
   const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+  console.warn("[push] projectId", { projectId });
   const token = (await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)).data;
+  console.warn("[push] token", { token });
 
   await deviceApi.register(token);
+  console.warn("[push] registered ok");
   registeredToken = token;
 }
 

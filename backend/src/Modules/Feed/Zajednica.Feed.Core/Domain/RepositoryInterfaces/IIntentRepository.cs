@@ -7,7 +7,6 @@ public interface IIntentRepository
     void Add(Intent intent);
     void Update(Intent intent);
 
-    Intent? LoadFromSource(Guid id);
-    IReadOnlyList<Guid> GetDueIds(DateTime now);
-    IReadOnlyList<Intent> GetOpenByTarget(Guid communityId, Guid targetMembershipId);
+    Intent? Load(Guid id);
+    IReadOnlyList<Intent> LoadOpenByTargetMembership(Guid communityId, Guid targetMembershipId);
 }

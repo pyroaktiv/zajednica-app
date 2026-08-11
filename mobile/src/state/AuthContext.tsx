@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadTokens().then((tokens) => {
       if (tokens) {
         startRealtime();
-        registerForPushNotifications().catch(() => {});
+        registerForPushNotifications().catch((e) => console.warn("[push] failed", e));
       }
       setStatus(tokens ? "signedIn" : "signedOut");
     });
@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const tokens = await authApi.login(usernameOrEmail, password);
     await saveTokens(tokens);
     startRealtime();
-    registerForPushNotifications().catch(() => {});
+    registerForPushNotifications().catch((e) => console.warn("[push] failed", e));
     setStatus("signedIn");
   };
 

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
+using Zajednica.Feed.Core.UseCases;
 using Zajednica.Community.Core.Domain;
 using Zajednica.Feed.Api.Dto.Intents;
 using Zajednica.Feed.Api.Dto.Posts;
@@ -298,21 +299,71 @@ public class IntentVotingTests : BaseFeedIntegrationTest
         using var first = Factory.Services.CreateScope();
         using var second = Factory.Services.CreateScope();
 
-        var one = Repository(first).LoadFromSource(intentId);
-        var other = Repository(second).LoadFromSource(intentId);
+        var one = Repository(first).Load(intentId);
+        var other = Repository(second).Load(intentId);
 
         one!.CastVote(new VoterContext(Guid.NewGuid(), DateTime.UtcNow.AddDays(-1)), true, DateTime.UtcNow);
         other!.CastVote(new VoterContext(Guid.NewGuid(), DateTime.UtcNow.AddDays(-1)), true, DateTime.UtcNow);
 
         Repository(first).Update(one);
-        Should.Throw<DbUpdateException>(() => Repository(second).Update(other));
+        UnitOfWork(first).Save();
+
+        Repository(second).Update(other);
+        Should.Throw<ConcurrencyConflictException>(() => UnitOfWork(second).Save());
 
         using var reader = Factory.Services.CreateScope();
-        var stored = Repository(reader).LoadFromSource(intentId);
+        var stored = Repository(reader).Load(intentId);
         stored!.VotesFor.ShouldBe(1);
         stored.Initiative.CommunityId.ShouldBe(communityId);
     }
 
+    [Fact]
+    public void A_unit_of_work_rolls_back_a_lost_race_and_commits_after_reloading()
+    {
+        Guid intentId;
+        using (var scope = Factory.Services.CreateScope())
+        {
+            var (community, owner) = CreateCommunity(scope);
+            AddConfirmedMember(scope, owner.AccountId, community.Id);
+            var target = AddConfirmedMember(scope, owner.AccountId, community.Id);
+
+            intentId = Value<IntentDetailsDto>((Intents(scope, owner.AccountId)
+                .OpenBan(community.Id, new OpenUserTargetingIntentRequestDto(target.MembershipId, "Razlog"))).Result!).Id;
+        }
+
+        using var work = Factory.Services.CreateScope();
+        var repository = Repository(work);
+        var unitOfWork = UnitOfWork(work);
+        var stale = repository.Load(intentId)!;
+
+        using (var competitor = Factory.Services.CreateScope())
+        {
+            var competing = Repository(competitor).Load(intentId)!;
+            competing.CastVote(new VoterContext(Guid.NewGuid(), DateTime.UtcNow.AddDays(-1)), true, DateTime.UtcNow);
+            Repository(competitor).Update(competing);
+            UnitOfWork(competitor).Save();
+        }
+
+        unitOfWork.BeginTransaction();
+        stale.CastVote(new VoterContext(Guid.NewGuid(), DateTime.UtcNow.AddDays(-1)), true, DateTime.UtcNow);
+        repository.Update(stale);
+        Should.Throw<ConcurrencyConflictException>(() => unitOfWork.Save());
+        unitOfWork.Rollback();
+
+        unitOfWork.BeginTransaction();
+        var fresh = repository.Load(intentId)!;
+        fresh.CastVote(new VoterContext(Guid.NewGuid(), DateTime.UtcNow.AddDays(-1)), true, DateTime.UtcNow);
+        repository.Update(fresh);
+        unitOfWork.Save();
+        unitOfWork.Commit();
+
+        using var reader = Factory.Services.CreateScope();
+        Repository(reader).Load(intentId)!.VotesFor.ShouldBe(2);
+    }
+
     private static IIntentRepository Repository(IServiceScope scope) =>
         scope.ServiceProvider.GetRequiredService<IIntentRepository>();
+
+    private static IFeedUnitOfWork UnitOfWork(IServiceScope scope) =>
+        scope.ServiceProvider.GetRequiredService<IFeedUnitOfWork>();
 }
