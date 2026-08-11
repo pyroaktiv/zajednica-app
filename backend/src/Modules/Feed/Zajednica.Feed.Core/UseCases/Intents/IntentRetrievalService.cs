@@ -9,7 +9,7 @@ public sealed class IntentRetrievalService(IIntentRepository intentRepository, I
 {
     public Intent RequireAggregate(Guid intentId, Guid communityId)
     {
-        var intent = intentRepository.LoadFromSource(intentId);
+        var intent = intentRepository.Load(intentId);
         if (intent is null || intent.Initiative.CommunityId != communityId)
             throw new NotFoundException("Intent not found in this community.");
 

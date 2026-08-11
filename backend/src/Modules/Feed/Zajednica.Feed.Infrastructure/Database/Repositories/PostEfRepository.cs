@@ -32,7 +32,7 @@ internal sealed class PostEfRepository(FeedDbContext db) : IPostRepository
 
         if (before is { } cursor)
             query = query.Where(p => p.DateCreated < cursor.At
-                                     || (p.DateCreated == cursor.At && p.Id.CompareTo(cursor.Id) < 0));
+                                     || (p.DateCreated == cursor.At && p.Id < cursor.Id));
 
         var items = query
             .OrderByDescending(p => p.DateCreated)
@@ -51,7 +51,7 @@ internal sealed class PostEfRepository(FeedDbContext db) : IPostRepository
 
         if (after is { } cursor)
             query = query.Where(c => c.Date > cursor.At
-                                     || (c.Date == cursor.At && c.Id.CompareTo(cursor.Id) > 0));
+                                     || (c.Date == cursor.At && c.Id > cursor.Id));
 
         var items = query
             .OrderBy(c => c.Date)

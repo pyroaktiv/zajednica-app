@@ -59,9 +59,7 @@ export default function IntentDetails() {
     if (!activeCommunityId) return;
     setBusy(true);
     try {
-      const updated = await intentApi.vote(activeCommunityId, intent.id, value);
-      setIntent(updated);
-      if (updated.areVotesPublic) setVoters(await intentApi.getVotes(activeCommunityId, intent.id));
+      setIntent(await intentApi.vote(activeCommunityId, intent.id, value));
     } catch (e: any) {
       Alert.alert("Greška", e.message);
     } finally {

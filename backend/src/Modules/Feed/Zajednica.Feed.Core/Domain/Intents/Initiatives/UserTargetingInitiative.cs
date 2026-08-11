@@ -24,6 +24,12 @@ public sealed class UserTargetingInitiative : Initiative
 
     public override bool AreVotesPublic => Kind is UserActionKind.ManagerElection;
 
+    public override bool Supersedes(Initiative other) =>
+        other is UserTargetingInitiative o
+        && o.CommunityId == CommunityId
+        && o.TargetMembershipId == TargetMembershipId
+        && (Kind == UserActionKind.Ban || o.Kind == Kind);
+
     public override IntentOpened ToOpenedEvent(DateTime now) => new UserTargetingIntentOpened(this, now);
 
     private void EnsureValidTarget()

@@ -38,6 +38,7 @@ public class ExceptionHandlingMiddleware
             UnauthorizedAccessException ex => (HttpStatusCode.Unauthorized, ex.Message),
             ForbiddenException ex => (HttpStatusCode.Forbidden, ex.Message),
             NotFoundException ex => (HttpStatusCode.NotFound, ex.Message),
+            ConcurrencyConflictException ex => (HttpStatusCode.Conflict, ex.Message),
             EntityValidationException ex => (HttpStatusCode.UnprocessableEntity, ex.Message),
             _ => (HttpStatusCode.InternalServerError, "An internal server error occurred.")
         };

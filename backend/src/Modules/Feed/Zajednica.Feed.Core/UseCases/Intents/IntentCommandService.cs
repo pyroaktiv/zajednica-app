@@ -9,6 +9,7 @@ namespace Zajednica.Feed.Core.UseCases.Intents;
 
 public sealed class IntentCommandService(
     IIntentRepository intentRepository,
+    IFeedUnitOfWork unitOfWork,
     IInternalMembershipAudienceService internalAudienceService,
     MemberRequirementsService requirementsService,
     IntentRetrievalService retrievalService,
@@ -50,6 +51,7 @@ public sealed class IntentCommandService(
         if (!closingService.CloseIfDue(intent, now))
         {
             intentRepository.Update(intent);
+            unitOfWork.Save();
             notifier.Changed(intent);
         }
 
@@ -70,6 +72,7 @@ public sealed class IntentCommandService(
         var intent = Intent.Open(initiative, DateTime.UtcNow);
 
         intentRepository.Add(intent);
+        unitOfWork.Save();
         notifier.Opened(intent);
 
         return presenterService.Details(retrievalService.RequireView(intent.Id, communityId), null);

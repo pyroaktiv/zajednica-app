@@ -186,6 +186,37 @@ public class IntentTests
     }
 
     [Fact]
+    public void A_passed_ban_supersedes_every_kind_of_open_intent_about_the_same_member()
+    {
+        UserTargetingInitiative About(UserActionKind kind, Guid target) =>
+            new(kind, new MemberStandingContext(target, MembershipStatus.Confirmed, MembershipRole.None), Community,
+                Author, 10, "Razlog.");
+
+        var ban = About(UserActionKind.Ban, Target);
+
+        ban.Supersedes(About(UserActionKind.Ban, Target)).ShouldBeTrue();
+        ban.Supersedes(About(UserActionKind.Mute, Target)).ShouldBeTrue();
+        ban.Supersedes(About(UserActionKind.ManagerElection, Target)).ShouldBeTrue();
+        ban.Supersedes(About(UserActionKind.Ban, Guid.NewGuid())).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void A_passed_mute_or_election_supersedes_only_open_intents_of_its_own_kind()
+    {
+        UserTargetingInitiative About(UserActionKind kind) =>
+            new(kind, new MemberStandingContext(Target, MembershipStatus.Confirmed, MembershipRole.None), Community,
+                Author, 10, "Razlog.");
+
+        About(UserActionKind.Mute).Supersedes(About(UserActionKind.Mute)).ShouldBeTrue();
+        About(UserActionKind.Mute).Supersedes(About(UserActionKind.Ban)).ShouldBeFalse();
+        About(UserActionKind.Mute).Supersedes(About(UserActionKind.ManagerElection)).ShouldBeFalse();
+
+        About(UserActionKind.ManagerElection).Supersedes(About(UserActionKind.ManagerElection)).ShouldBeTrue();
+        About(UserActionKind.ManagerElection).Supersedes(About(UserActionKind.Ban)).ShouldBeFalse();
+        About(UserActionKind.ManagerElection).Supersedes(About(UserActionKind.Mute)).ShouldBeFalse();
+    }
+
+    [Fact]
     public void A_superseded_intent_is_rejected_and_the_stream_says_it_was_not_a_decision()
     {
         var intent = Ban();

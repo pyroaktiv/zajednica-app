@@ -30,7 +30,7 @@ internal sealed class ChatEfRepository(ChatDbContext db) : IChatRepository
 
         if (before is { } cursor)
             query = query.Where(c => c.LastActivityAt < cursor.At
-                                     || (c.LastActivityAt == cursor.At && c.Id.CompareTo(cursor.Id) < 0));
+                                     || (c.LastActivityAt == cursor.At && c.Id < cursor.Id));
 
         var items = query
             .OrderByDescending(c => c.LastActivityAt)
@@ -88,7 +88,7 @@ internal sealed class ChatEfRepository(ChatDbContext db) : IChatRepository
 
         if (before is { } cursor)
             query = query.Where(m => m.Date < cursor.At
-                                     || (m.Date == cursor.At && m.Id.CompareTo(cursor.Id) < 0));
+                                     || (m.Date == cursor.At && m.Id < cursor.Id));
 
         var items = query
             .OrderByDescending(m => m.Date)
