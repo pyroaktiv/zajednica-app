@@ -480,3 +480,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+#Uploaded files - local file storage provider.
+src/Zajednica.Api/uploads/

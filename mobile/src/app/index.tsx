@@ -1,27 +1,9 @@
-import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Redirect } from "expo-router";
+import { useAuth } from "../state/AuthContext";
+import { Loading } from "../ui/Basics";
 
 export default function Index() {
-  const [status, setStatus] = useState("checking...");
-
-  useEffect(() => {
-    fetch(`${process.env.EXPO_PUBLIC_API_URL}/health`)
-      .then((r) => r.text())
-      .then(setStatus)
-      .catch(() => setStatus("no connection"));
-  }, []);
-
-  return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-      <Text>Backend: {status}</Text>
-    </View>
-  );
+  const { status } = useAuth();
+  if (status === "loading") return <Loading />;
+  return <Redirect href={status === "signedIn" ? "/home" : "/login"} />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
