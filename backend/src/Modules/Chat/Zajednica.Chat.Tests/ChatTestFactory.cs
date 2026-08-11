@@ -26,6 +26,6 @@ public class ChatTestFactory : BaseTestFactory<ChatDbContext>
     {
         var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<TDbContext>));
         if (descriptor is not null) services.Remove(descriptor);
-        services.AddDbContext<TDbContext>(SetupTestContext());
+        services.AddDbContext<TDbContext>(SetupTestContext(services));
     }
 }

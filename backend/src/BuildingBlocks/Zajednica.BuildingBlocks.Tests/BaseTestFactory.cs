@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -79,16 +80,11 @@ public abstract class BaseTestFactory<TDbContext> : WebApplicationFactory<Progra
     // against the test database (see SetupTestContext).
     protected abstract IServiceCollection ReplaceNeededDbContexts(IServiceCollection services);
 
-    protected static Action<DbContextOptionsBuilder> SetupTestContext()
+    protected static Action<DbContextOptionsBuilder> SetupTestContext(IServiceCollection services)
     {
-        var host = Environment.GetEnvironmentVariable("TEST_DATABASE_HOST") ?? "localhost";
-        var port = Environment.GetEnvironmentVariable("TEST_DATABASE_PORT") ?? "5432";
-        var database = Environment.GetEnvironmentVariable("TEST_DATABASE_NAME") ?? "zajednica-test";
-        var user = Environment.GetEnvironmentVariable("TEST_DATABASE_USERNAME") ?? "zajednica";
-        var password = Environment.GetEnvironmentVariable("TEST_DATABASE_PASSWORD") ?? "devpassword";
-
-        var connectionString =
-            $"Host={host};Port={port};Database={database};Username={user};Password={password};Include Error Detail=True";
+        var connectionString = Environment.GetEnvironmentVariable("TEST_DATABASE_CONNECTION")
+            ?? services.BuildServiceProvider().GetRequiredService<IConfiguration>().GetConnectionString("TestConnection")
+            ?? "Host=localhost;Port=5432;Database=zajednica-test;Username=zajednica;Password=devpassword;Include Error Detail=True";
 
         return opt => opt.UseNpgsql(connectionString);
     }
