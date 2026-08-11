@@ -11,7 +11,7 @@ public class IdentityTestFactory : BaseTestFactory<IdentityDbContext>
     {
         var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<IdentityDbContext>));
         if (descriptor is not null) services.Remove(descriptor);
-        services.AddDbContext<IdentityDbContext>(SetupTestContext());
+        services.AddDbContext<IdentityDbContext>(SetupTestContext(services));
         return services;
     }
 }
