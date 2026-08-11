@@ -1,15 +1,8 @@
 #!/usr/bin/env bash
-# Regenerates each module's schema from scratch.
-#
-# Migrations are not committed (see .gitignore): while the domain model is still moving, every
-# module gets a single Initial migration generated against a dropped schema. Existing data in the
-# target schemas is destroyed.
-#
-#   ./reset-db.sh                  all modules
-#   ./reset-db.sh Identity Feed    only the named ones
 set -euo pipefail
 
-cd "$(dirname "$0")"
+BACKEND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$BACKEND_DIR"
 
 set -a; . ./.env; set +a
 
@@ -30,17 +23,10 @@ for MODULE in "${MODULES[@]}"; do
   docker exec "$CONTAINER" psql -U "$DB_USER" -d "$DATABASE" -q \
     -c "DROP SCHEMA IF EXISTS \"$SCHEMA\" CASCADE;"
 
-  rm -rf "$PROJECT/Migrations"
-
-  ASPNETCORE_ENVIRONMENT=Development dotnet ef migrations add Initial \
-    --project "$PROJECT" \
-    --startup-project src/Zajednica.Api \
-    --context "${MODULE}DbContext" >/dev/null
-
   ASPNETCORE_ENVIRONMENT=Development dotnet ef database update \
     --project "$PROJECT" \
     --startup-project src/Zajednica.Api \
     --context "${MODULE}DbContext" >/dev/null
 
-  echo "    schema '$SCHEMA' recreated"
+  echo "    schema '$SCHEMA' recreated from committed migrations"
 done
