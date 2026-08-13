@@ -18,4 +18,5 @@ public interface IChatRepository
     void RemoveTemporary(Guid communityId, Guid membershipId);
 
     CursorPage<Message, PageCursor> GetMessagePage(Guid chatId, PageCursor? before, int limit);
+    Message? GetMessage(Guid id);
 }

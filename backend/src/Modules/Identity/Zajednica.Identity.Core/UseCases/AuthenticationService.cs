@@ -36,7 +36,7 @@ public sealed class AuthenticationService(
             throw new EntityValidationException("Email is already registered.");
 
         if (HasProfileData(requestDto))
-            account.UpdateProfile(requestDto.FirstName, requestDto.LastName, requestDto.Phone, requestDto.ContactEmail, imageUrl: null);
+            account.UpdateProfile(requestDto.FirstName, requestDto.LastName, requestDto.Phone, requestDto.ContactEmail);
 
         accountRepository.Add(account);
 

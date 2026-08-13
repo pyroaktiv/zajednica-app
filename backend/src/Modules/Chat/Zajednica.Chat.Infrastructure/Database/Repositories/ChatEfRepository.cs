@@ -98,4 +98,7 @@ internal sealed class ChatEfRepository(ChatDbContext db) : IChatRepository
 
         return Paging.ToPage(items, limit, m => new PageCursor(m.Date, m.Id));
     }
+
+    public Message? GetMessage(Guid id) =>
+        db.Messages.AsNoTracking().FirstOrDefault(m => m.Id == id);
 }

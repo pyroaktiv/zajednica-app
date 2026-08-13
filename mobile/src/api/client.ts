@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { File } from "expo-file-system";
+import { Directory, File, Paths } from "expo-file-system";
 import type { AuthTokens } from "./types";
 
 export const BASE_URL = process.env.EXPO_PUBLIC_API_URL!;
@@ -27,6 +27,21 @@ export async function saveTokens(next: AuthTokens | null) {
 
 export function currentTokens() {
   return tokens;
+}
+
+export function authorizedFile(path: string) {
+  return {
+    uri: `${BASE_URL}/${path}`,
+    headers: tokens ? { Authorization: `Bearer ${tokens.accessToken}` } : undefined,
+  };
+}
+
+export async function downloadAuthorizedFile(path: string): Promise<string> {
+  const source = authorizedFile(path);
+  const downloaded = await File.downloadFileAsync(source.uri, new Directory(Paths.cache), {
+    headers: source.headers,
+  });
+  return downloaded.uri;
 }
 
 export class ApiError extends Error {

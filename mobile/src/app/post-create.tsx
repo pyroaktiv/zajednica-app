@@ -65,7 +65,7 @@ export default function PostCreate() {
   const [type, setType] = useState<PostType>("general");
   const [kind, setKind] = useState<Kind>("Plain");
   const [text, setText] = useState("");
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [images, setImages] = useState<{ key: string; uri: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -80,7 +80,7 @@ export default function PostCreate() {
         name: asset.fileName ?? "image.jpg",
         type: asset.mimeType ?? "image/jpeg",
       });
-      setImageUrls((current) => [...current, uploaded.url]);
+      setImages((current) => [...current, { key: uploaded.key, uri: asset.uri }]);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -93,8 +93,9 @@ export default function PostCreate() {
     setError(null);
     setBusy(true);
     try {
-      if (type === "general") await postApi.createGeneral(activeCommunityId, text.trim(), kind, imageUrls);
-      else await postApi.createHelpRequest(activeCommunityId, text.trim(), imageUrls);
+      const imageKeys = images.map((i) => i.key);
+      if (type === "general") await postApi.createGeneral(activeCommunityId, text.trim(), kind, imageKeys);
+      else await postApi.createHelpRequest(activeCommunityId, text.trim(), imageKeys);
       router.back();
     } catch (e: any) {
       setError(e.message);
@@ -149,10 +150,10 @@ export default function PostCreate() {
           }}
         />
 
-        {imageUrls.length > 0 && (
+        {images.length > 0 && (
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.s, marginBottom: spacing.m }}>
-            {imageUrls.map((url) => (
-              <Image key={url} source={{ uri: url }} style={{ width: 72, height: 72, borderRadius: 8 }} />
+            {images.map((img) => (
+              <Image key={img.key} source={{ uri: img.uri }} style={{ width: 72, height: 72, borderRadius: 8 }} />
             ))}
           </View>
         )}

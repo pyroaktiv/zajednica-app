@@ -1,8 +1,8 @@
+import { Image } from "expo-image";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
-  Image,
   KeyboardAvoidingView,
   Modal,
   type NativeScrollEvent,
@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { helpChatApi } from "../../api/chat";
+import { authorizedFile } from "../../api/client";
 import { commentApi, postApi } from "../../api/feed";
 import type { CommentDto, PostDto } from "../../api/types";
 import { useCommunity } from "../../state/CommunityContext";
@@ -278,9 +279,9 @@ export default function PostDetails() {
                 {post.imageUrls.map((url) => (
                   <Pressable key={url} onPress={() => setZoomedImageUrl(url)}>
                     <Image
-                      source={{ uri: url }}
+                      source={authorizedFile(url)}
                       style={{ width: 96, height: 96, borderRadius: 8 }}
-                      resizeMode="cover"
+                      contentFit="cover"
                     />
                   </Pressable>
                 ))}
@@ -367,9 +368,9 @@ export default function PostDetails() {
         >
           {zoomedImageUrl && (
             <Image
-              source={{ uri: zoomedImageUrl }}
+              source={authorizedFile(zoomedImageUrl)}
               style={{ width: "100%", height: "100%" }}
-              resizeMode="contain"
+              contentFit="contain"
             />
           )}
         </Pressable>

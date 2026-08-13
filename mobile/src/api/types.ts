@@ -24,7 +24,6 @@ export type UpdateProfileRequest = {
   lastName: string | null;
   phone: string | null;
   contactEmail: string | null;
-  imageUrl: string | null;
 };
 
 export type AddressDto = {
@@ -116,7 +115,7 @@ export type CertificationResultDto = {
 export type DocumentDto = {
   id: string;
   name: string;
-  url: string;
+  contentUrl: string;
   postedByMembershipId: string;
   date: string;
 };
@@ -231,6 +230,6 @@ export type CursorPage<T> = { items: T[]; nextCursor: string | null };
 
 export type PagedResult<T> = { results: T[]; totalCount: number };
 
-export type UploadedFileDto = { url: string };
+export type UploadedFileDto = { key: string };
 
 export const RoleNames = { Issuer: "Issuer", Manager: "Manager" } as const;

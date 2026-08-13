@@ -1,7 +1,9 @@
+import { Image } from "expo-image";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Image, ScrollView, Text, View } from "react-native";
+import { Alert, ScrollView, Text, View } from "react-native";
 import { chatApi } from "../../api/chat";
+import { authorizedFile } from "../../api/client";
 import { memberApi } from "../../api/community";
 import type { MemberProfileDto } from "../../api/types";
 import { RoleNames } from "../../api/types";
@@ -86,7 +88,7 @@ export default function MemberProfile() {
         <Card style={{ alignItems: "center" }}>
           {member.imageUrl ? (
             <Image
-              source={{ uri: member.imageUrl }}
+              source={authorizedFile(member.imageUrl)}
               style={{ width: 88, height: 88, borderRadius: 44, marginBottom: spacing.m }}
             />
           ) : (

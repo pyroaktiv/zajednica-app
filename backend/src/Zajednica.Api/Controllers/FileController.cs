@@ -11,12 +11,10 @@ namespace Zajednica.Api.Controllers;
 public sealed class FileController : ControllerBase
 {
     private readonly IFileStorage _storage;
-    private readonly IFileUrlMapper _urls;
 
-    public FileController(IFileStorage storage, IFileUrlMapper urls)
+    public FileController(IFileStorage storage)
     {
         _storage = storage;
-        _urls = urls;
     }
 
     [HttpPost("images")]
@@ -49,6 +47,6 @@ public sealed class FileController : ControllerBase
 
         using var content = file.OpenReadStream();
         var key = _storage.Save(content, stored);
-        return new UploadedFileDto(_urls.ToUrl(key)!);
+        return new UploadedFileDto(key);
     }
 }

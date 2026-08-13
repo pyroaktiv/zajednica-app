@@ -1,5 +1,4 @@
 using Zajednica.BuildingBlocks.Core.Exceptions;
-using Zajednica.BuildingBlocks.Core.Storage;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Chat.Api.Dto.Messages;
 using Zajednica.Chat.Core.Domain;
@@ -9,17 +8,20 @@ namespace Zajednica.Chat.Core.Mappers;
 
 public static class MessageMappers
 {
-    public static MessageDto ToDto(this Message message, InternalProfileDto? sender, IFileUrlMapper urls) => message switch
+    public static MessageDto ToDto(this Message message, InternalProfileDto? sender, Guid communityId) => message switch
     {
         TextMessage text => ToDto(message, sender, "TEXT", text.Text, null, null),
-        VoiceMessage voice => ToDto(message, sender, "VOICE", null, urls.ToUrl(voice.AudioUrl), voice.DurationSeconds),
+        VoiceMessage voice => ToDto(message, sender, "VOICE", null, AudioUrl(voice, communityId), voice.DurationSeconds),
         _ => throw new EntityValidationException("Unknown message type.")
     };
 
     public static CursorPage<MessageDto, PageCursor> ToDtoPage(this CursorPage<Message, PageCursor> page,
-        IReadOnlyDictionary<Guid, InternalProfileDto> senders, IFileUrlMapper urls) =>
-        new(page.Items.Select(m => m.ToDto(senders.GetValueOrDefault(m.SenderMembershipId), urls)).ToList(),
+        IReadOnlyDictionary<Guid, InternalProfileDto> senders, Guid communityId) =>
+        new(page.Items.Select(m => m.ToDto(senders.GetValueOrDefault(m.SenderMembershipId), communityId)).ToList(),
             page.NextCursor);
+
+    private static string AudioUrl(VoiceMessage voice, Guid communityId) =>
+        $"api/communities/{communityId}/chats/{voice.ChatId}/messages/{voice.Id}/audio";
 
     private static MessageDto ToDto(Message message, InternalProfileDto? sender, string type, string? text,
         string? audioUrl, int? durationSeconds) =>

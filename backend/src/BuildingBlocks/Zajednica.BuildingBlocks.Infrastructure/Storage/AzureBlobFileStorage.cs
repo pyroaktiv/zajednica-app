@@ -16,7 +16,7 @@ public sealed class AzureBlobFileStorage : IFileStorage
         _container = new BlobContainerClient(
             configuration["Storage:ConnectionString"],
             string.IsNullOrWhiteSpace(container) ? "uploads" : container);
-        _container.CreateIfNotExists(PublicAccessType.Blob);
+        _container.CreateIfNotExists(PublicAccessType.None);
     }
 
     public string Save(Stream content, StoredFile file)
@@ -29,4 +29,17 @@ public sealed class AzureBlobFileStorage : IFileStorage
 
         return file.ObjectName;
     }
+
+    public StoredFileContent? Open(string key)
+    {
+        var blob = _container.GetBlobClient(key);
+        if (!blob.Exists())
+            return null;
+
+        var download = blob.DownloadStreaming().Value;
+        return new StoredFileContent(download.Content, download.Details.ContentType);
+    }
+
+    public void Delete(string key) =>
+        _container.GetBlobClient(key).DeleteIfExists();
 }

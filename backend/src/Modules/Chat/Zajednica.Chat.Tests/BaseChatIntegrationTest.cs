@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Zajednica.Api.Controllers.Chat;
+using Zajednica.BuildingBlocks.Core.Storage;
 using Zajednica.BuildingBlocks.Tests;
 using Zajednica.Chat.Api.Dto.Chats;
 using Zajednica.Chat.Api.Dto.Messages;
@@ -33,7 +34,9 @@ public class BaseChatIntegrationTest : BaseWebIntegrationTest<ChatTestFactory>
         As(new ChatController(scope.ServiceProvider.GetRequiredService<IChatService>()), accountId);
 
     protected static MessageController Messages(IServiceScope scope, Guid accountId) =>
-        As(new MessageController(scope.ServiceProvider.GetRequiredService<IMessageService>()), accountId);
+        As(new MessageController(
+            scope.ServiceProvider.GetRequiredService<IMessageService>(),
+            scope.ServiceProvider.GetRequiredService<IFileStorage>()), accountId);
 
     protected static HelpRequestChatController HelpChats(IServiceScope scope, Guid accountId) =>
         As(new HelpRequestChatController(

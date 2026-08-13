@@ -1,5 +1,7 @@
+import { Image } from "expo-image";
 import { router } from "expo-router";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { authorizedFile } from "../api/client";
 import type { PostDto } from "../api/types";
 import { formatDateTime, postKindLabel } from "./labels";
 import { colors, spacing } from "./theme";
@@ -15,7 +17,7 @@ export function PostCard({ post }: { post: PostDto }) {
     >
       <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.s }}>
         {post.authorImageUrl ? (
-          <Image source={{ uri: post.authorImageUrl }} style={styles.avatar} />
+          <Image source={authorizedFile(post.authorImageUrl)} style={styles.avatar} />
         ) : (
           <View style={[styles.avatar, styles.avatarFallback]}>
             <Text style={{ color: colors.muted, fontSize: 12, fontWeight: "700" }}>

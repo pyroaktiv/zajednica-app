@@ -2,7 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, Linking, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import * as WebBrowser from "expo-web-browser";
+import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { downloadAuthorizedFile } from "../../api/client";
 import { communityApi, documentApi, memberApi } from "../../api/community";
 import { fileApi } from "../../api/files";
 import type { CommunityDetailsDto, DocumentDto, MemberSummaryDto } from "../../api/types";
@@ -68,8 +70,17 @@ export default function Home() {
         name: asset.name,
         type: asset.mimeType ?? "application/pdf",
       });
-      await documentApi.add(activeCommunityId!, asset.name, uploaded.url);
+      await documentApi.add(activeCommunityId!, asset.name, uploaded.key);
       await load();
+    } catch (e: any) {
+      Alert.alert("Greška", e.message);
+    }
+  };
+
+  const openDocument = async (doc: DocumentDto) => {
+    try {
+      const localUri = await downloadAuthorizedFile(doc.contentUrl);
+      await WebBrowser.openBrowserAsync(localUri);
     } catch (e: any) {
       Alert.alert("Greška", e.message);
     }
@@ -146,7 +157,7 @@ export default function Home() {
               style={{ flexDirection: "row", alignItems: "center", paddingVertical: spacing.s }}
             >
               <Ionicons name="document-text-outline" size={20} color={colors.muted} />
-              <Pressable style={{ flex: 1, marginLeft: spacing.s }} onPress={() => Linking.openURL(doc.url)}>
+              <Pressable style={{ flex: 1, marginLeft: spacing.s }} onPress={() => openDocument(doc)}>
                 <Text style={{ color: colors.primary }}>{doc.name}</Text>
               </Pressable>
               {isManager && (

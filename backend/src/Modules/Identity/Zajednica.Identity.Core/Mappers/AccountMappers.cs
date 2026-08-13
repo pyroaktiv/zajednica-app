@@ -1,4 +1,3 @@
-using Zajednica.BuildingBlocks.Core.Storage;
 using Zajednica.Identity.Api.Internal.Dto;
 using Zajednica.Identity.Core.Domain;
 
@@ -9,7 +8,7 @@ public static class AccountMappers
     public static InternalUsernameDto ToUsernameDto(this Account account) =>
         new(account.Id, account.Username);
 
-    public static InternalProfileDto ToAccountProfileDto(this Account account, IFileUrlMapper urls) =>
+    public static InternalProfileDto ToAccountProfileDto(this Account account) =>
         new(
             account.Id,
             account.Username,
@@ -17,5 +16,5 @@ public static class AccountMappers
             account.Profile?.LastName,
             account.Profile?.Phone,
             account.Profile?.Email,
-            urls.ToUrl(account.Profile?.ImageUrl));
+            account.ImageUrl());
 }

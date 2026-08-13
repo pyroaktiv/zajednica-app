@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Zajednica.BuildingBlocks.Core.Storage;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Chat.Api.Dto.Messages;
 using Zajednica.Chat.Api.Public;
@@ -13,10 +14,12 @@ namespace Zajednica.Api.Controllers.Chat;
 public sealed class MessageController : ControllerBase
 {
     private readonly IMessageService _messages;
+    private readonly IFileStorage _storage;
 
-    public MessageController(IMessageService messages)
+    public MessageController(IMessageService messages, IFileStorage storage)
     {
         _messages = messages;
+        _storage = storage;
     }
 
     [HttpPost]
@@ -42,5 +45,17 @@ public sealed class MessageController : ControllerBase
     public ActionResult<CursorPage<MessageDto, PageCursor>> GetPage(Guid communityId, Guid chatId, [FromQuery] PageCursor? before, [FromQuery] int limit)
     {
         return Ok(_messages.GetPage(User.AccountId(), communityId, chatId, before, limit));
+    }
+
+    [HttpGet("{messageId:guid}/audio")]
+    public IActionResult Audio(Guid communityId, Guid chatId, Guid messageId)
+    {
+        var reference = _messages.GetAudioContent(User.AccountId(), communityId, chatId, messageId);
+        var file = _storage.Open(reference.Key);
+        if (file is null)
+            return NotFound();
+
+        Response.Headers.CacheControl = "private, max-age=300";
+        return File(file.Content, file.ContentType, reference.DownloadName, enableRangeProcessing: true);
     }
 }

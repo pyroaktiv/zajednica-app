@@ -1,6 +1,8 @@
+import { Image } from "expo-image";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Image, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
+import { authorizedFile } from "../../api/client";
 import { profileApi } from "../../api/identity";
 import type { ProfileDto } from "../../api/types";
 import { useAuth } from "../../state/AuthContext";
@@ -26,19 +28,18 @@ export default function Profile() {
 
   useFocusEffect(
     useCallback(() => {
-      if (me) return;
       profileApi.getMine().then(setProfile).catch((e) => setError(e.message));
-    }, [me])
+    }, [])
   );
 
-  if (!me && !profile && !error) return <Loading />;
+  if (!profile && !error) return <Loading />;
 
-  const username = me?.username ?? profile?.username ?? "";
-  const imageUrl = me?.imageUrl ?? profile?.imageUrl ?? null;
-  const firstName = me?.firstName ?? profile?.firstName ?? null;
-  const lastName = me?.lastName ?? profile?.lastName ?? null;
-  const phone = me?.phone ?? profile?.phone ?? null;
-  const contactEmail = me?.contactEmail ?? profile?.contactEmail ?? null;
+  const username = profile?.username ?? "";
+  const imageUrl = profile?.imageUrl ?? null;
+  const firstName = profile?.firstName ?? null;
+  const lastName = profile?.lastName ?? null;
+  const phone = profile?.phone ?? null;
+  const contactEmail = profile?.contactEmail ?? null;
 
   return (
     <Screen style={{ padding: 0 }}>
@@ -47,7 +48,7 @@ export default function Profile() {
         <Card style={{ alignItems: "center" }}>
           {imageUrl ? (
             <Image
-              source={{ uri: imageUrl }}
+              source={authorizedFile(imageUrl)}
               style={{ width: 88, height: 88, borderRadius: 44, marginBottom: spacing.m }}
             />
           ) : (

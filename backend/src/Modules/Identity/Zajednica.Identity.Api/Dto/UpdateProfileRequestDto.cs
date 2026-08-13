@@ -4,5 +4,4 @@ public record UpdateProfileRequestDto(
     string? FirstName,
     string? LastName,
     string? Phone,
-    string? ContactEmail,
-    string? ImageUrl);
+    string? ContactEmail);
