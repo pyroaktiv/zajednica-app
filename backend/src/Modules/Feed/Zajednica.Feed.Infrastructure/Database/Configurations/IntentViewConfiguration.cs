@@ -21,8 +21,5 @@ public class IntentViewConfiguration : IEntityTypeConfiguration<IntentView>
 
         builder.HasIndex(v => v.Deadline)
             .HasFilter($"\"Status\" = '{nameof(IntentStatus.Open)}'");
-
-        builder.HasIndex(v => new { v.CommunityId, v.TargetMembershipId })
-            .HasFilter($"\"Status\" = '{nameof(IntentStatus.Open)}'");
     }
 }

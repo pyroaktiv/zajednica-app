@@ -8,5 +8,5 @@ public interface IIntentRepository
     void Update(Intent intent);
 
     Intent? Load(Guid id);
-    IReadOnlyList<Intent> LoadOpenByTargetMembership(Guid communityId, Guid targetMembershipId);
+    IReadOnlyList<Intent> LoadOpenInCommunity(Guid communityId);
 }

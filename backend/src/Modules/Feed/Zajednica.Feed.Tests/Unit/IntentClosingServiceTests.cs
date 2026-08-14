@@ -35,7 +35,7 @@ public class IntentClosingServiceTests
     {
         var accepted = AcceptedBan();
         _queryStore.Setup(r => r.GetDueIds(It.IsAny<DateTime>())).Returns([accepted.Id]);
-        _repository.Setup(r => r.LoadOpenByTargetMembership(Community, Target)).Returns([]);
+        _repository.Setup(r => r.LoadOpenInCommunity(Community)).Returns([]);
         _repository.SetupSequence(r => r.Load(accepted.Id))
             .Returns(Reload(accepted))
             .Returns(Reload(accepted));
@@ -56,7 +56,7 @@ public class IntentClosingServiceTests
     {
         var accepted = AcceptedBan();
         _queryStore.Setup(r => r.GetDueIds(It.IsAny<DateTime>())).Returns([accepted.Id]);
-        _repository.Setup(r => r.LoadOpenByTargetMembership(Community, Target)).Returns([]);
+        _repository.Setup(r => r.LoadOpenInCommunity(Community)).Returns([]);
         _repository.SetupSequence(r => r.Load(accepted.Id))
             .Returns(Reload(accepted))
             .Returns(ClosedByVote(accepted));

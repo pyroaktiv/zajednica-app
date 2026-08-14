@@ -76,22 +76,18 @@ public sealed class IntentClosingService(
 
     private IReadOnlyList<Intent> SupersedeConflicting(Intent decided, DateTime now)
     {
-        switch (decided.Initiative)
+        var conflicting = intentRepository
+            .LoadOpenInCommunity(decided.Initiative.CommunityId)
+            .Where(other => other.Id != decided.Id && decided.Initiative.Supersedes(other.Initiative))
+            .ToList();
+
+        foreach (var other in conflicting)
         {
-            case UserTargetingInitiative userTargeting:
-                var conflicting = intentRepository
-                    .LoadOpenByTargetMembership(userTargeting.CommunityId, userTargeting.TargetMembershipId)
-                    .Where(other => other.Id != decided.Id && decided.Initiative.Supersedes(other.Initiative))
-                    .ToList();
-                foreach (var other in conflicting)
-                {
-                    other.Supersede(now);
-                    intentRepository.Update(other);
-                }
-                return conflicting;
-            default:
-                return [];
+            other.Supersede(now);
+            intentRepository.Update(other);
         }
+
+        return conflicting;
     }
 
     private void ApplyConsequences(StagedOutcome outcome)
