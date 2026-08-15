@@ -120,7 +120,7 @@ public sealed class PostService(
             "U zgradi je prijavljen problem koji traži reakciju upravnika.", NotificationChannel.Management, TargetOf(post)));
     }
 
-    private static NotificationTarget TargetOf(Post post) => new($"/post/{post.Id}", post.CommunityId);
+    private static NotificationTarget TargetOf(Post post) => new("post", post.Id, post.CommunityId);
 
     private static (string Title, string Body, NotificationChannel Channel) Announcement(Post post) => post switch
     {
