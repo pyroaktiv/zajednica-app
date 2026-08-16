@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.Community.Api.Internal;
 using Zajednica.Community.Api.Internal.Dto;
 
@@ -21,7 +20,7 @@ public class MembershipSeamTests : BaseCommunityIntegrationTest
         scope.ServiceProvider.GetRequiredService<IInternalMembershipCommandService>();
 
     [Fact]
-    public void An_unconfirmed_member_passes_only_the_membership_requirement()
+    public void An_unconfirmed_member_is_active_but_not_confirmed()
     {
         using var scope = Factory.Services.CreateScope();
         var issuerId = NewAccount(scope);
@@ -31,22 +30,24 @@ public class MembershipSeamTests : BaseCommunityIntegrationTest
 
         var svc = Membership(scope);
 
-        svc.FindWithAccountInCommunity(newcomerId, community.Id).RequireActive().MembershipId.ShouldNotBe(Guid.Empty);
-        svc.FindWithAccountInCommunity(newcomerId, community.Id).RequireUnconfirmed().MembershipId.ShouldNotBe(Guid.Empty);
-        Should.Throw<ForbiddenException>(() => svc.FindWithAccountInCommunity(newcomerId, community.Id).RequireConfirmed());
-        Should.Throw<ForbiddenException>(() => svc.FindWithAccountInCommunity(issuerId, community.Id).RequireUnconfirmed());
+        var newcomer = svc.FindWithAccountInCommunity(newcomerId, community.Id);
+        newcomer.ShouldNotBeNull();
+        newcomer.IsActive.ShouldBeTrue();
+        newcomer.IsConfirmed.ShouldBeFalse();
+        newcomer.MembershipId.ShouldNotBe(Guid.Empty);
+
+        svc.FindWithAccountInCommunity(issuerId, community.Id)!.IsConfirmed.ShouldBeTrue();
     }
 
     [Fact]
-    public void A_stranger_is_not_a_member()
+    public void A_stranger_has_no_membership_facts()
     {
         using var scope = Factory.Services.CreateScope();
         var issuerId = NewAccount(scope);
         var strangerId = NewAccount(scope);
         var community = CreateCommunity(scope, issuerId);
 
-        Should.Throw<ForbiddenException>(() =>
-            Membership(scope).FindWithAccountInCommunity(strangerId, community.Id).RequireActive());
+        Membership(scope).FindWithAccountInCommunity(strangerId, community.Id).ShouldBeNull();
     }
 
     [Fact]
@@ -77,7 +78,7 @@ public class MembershipSeamTests : BaseCommunityIntegrationTest
     }
 
     [Fact]
-    public void A_banned_membership_leaves_the_audience_and_every_requirement()
+    public void A_banned_membership_leaves_the_audience_and_is_no_longer_active()
     {
         using var scope = Factory.Services.CreateScope();
         var issuerId = NewAccount(scope);
@@ -98,11 +99,11 @@ public class MembershipSeamTests : BaseCommunityIntegrationTest
 
         db.ChangeTracker.Clear();
         audience.GetConfirmedAccountIds(community.Id, null).ShouldBe([issuerId]);
-        Should.Throw<ForbiddenException>(() => Membership(scope).FindWithAccountInCommunity(memberId, community.Id).RequireActive());
+        (Membership(scope).FindWithAccountInCommunity(memberId, community.Id) is { IsActive: true }).ShouldBeFalse();
     }
 
     [Fact]
-    public void A_muted_member_may_still_read_and_vote_but_fails_every_requirement_that_writes()
+    public void A_muted_member_stays_confirmed_and_active_but_carries_a_future_mute()
     {
         using var scope = Factory.Services.CreateScope();
         var issuerId = NewAccount(scope);
@@ -117,14 +118,14 @@ public class MembershipSeamTests : BaseCommunityIntegrationTest
         var svc = Membership(scope);
         var now = DateTime.UtcNow;
 
-        svc.FindWithAccountInCommunity(memberId, community.Id).RequireConfirmed().MembershipId.ShouldBe(member.MembershipId);
-        svc.FindWithAccountInCommunity(memberId, community.Id).RequireActive().MembershipId.ShouldBe(member.MembershipId);
-        Should.Throw<ForbiddenException>(() =>
-            svc.FindWithAccountInCommunity(memberId, community.Id).RequireConfirmed().RequireUnmuted(now));
-        Should.Throw<ForbiddenException>(() =>
-            svc.FindWithAccountInCommunity(memberId, community.Id).RequireActive().RequireUnmuted(now));
+        var memberFacts = svc.FindWithAccountInCommunity(memberId, community.Id);
+        memberFacts!.MembershipId.ShouldBe(member.MembershipId);
+        memberFacts.IsActive.ShouldBeTrue();
+        memberFacts.IsConfirmed.ShouldBeTrue();
+        (memberFacts.MutedUntil is { } until && until > now).ShouldBeTrue();
 
-        svc.FindWithAccountInCommunity(issuerId, community.Id).RequireConfirmed().RequireUnmuted(now).MembershipId.ShouldNotBe(Guid.Empty);
+        var issuerFacts = svc.FindWithAccountInCommunity(issuerId, community.Id);
+        (issuerFacts!.MutedUntil is { } issuerUntil && issuerUntil > now).ShouldBeFalse();
     }
 
     [Fact]

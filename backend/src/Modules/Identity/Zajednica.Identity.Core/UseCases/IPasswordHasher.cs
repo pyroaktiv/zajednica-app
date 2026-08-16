@@ -1,4 +1,4 @@
-namespace Zajednica.Identity.Core.Domain;
+namespace Zajednica.Identity.Core.UseCases;
 
 public interface IPasswordHasher
 {
