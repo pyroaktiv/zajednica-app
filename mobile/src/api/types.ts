@@ -24,7 +24,6 @@ export type UpdateProfileRequest = {
   lastName: string | null;
   phone: string | null;
   contactEmail: string | null;
-  imageUrl: string | null;
 };
 
 export type AddressDto = {
@@ -116,9 +115,16 @@ export type CertificationResultDto = {
 export type DocumentDto = {
   id: string;
   name: string;
-  url: string;
+  contentUrl: string;
   postedByMembershipId: string;
   date: string;
+};
+
+export type PostRatingDto = {
+  intentId: string;
+  zone: string;
+  approved: boolean;
+  approvalPercentage: number;
 };
 
 export type PostDto = {
@@ -132,6 +138,7 @@ export type PostDto = {
   text: string;
   imageUrls: string[];
   dateCreated: string;
+  rating: PostRatingDto | null;
 };
 
 export type CommentDto = {
@@ -153,6 +160,7 @@ export type IntentSummaryDto = {
   authorMembershipId: string;
   targetMembershipId: string | null;
   targetUsername: string | null;
+  postId: string | null;
   text: string;
   dateCreated: string;
   deadline: string;
@@ -169,6 +177,7 @@ export type IntentDetailsDto = {
   authorUsername: string | null;
   targetMembershipId: string | null;
   targetUsername: string | null;
+  postId: string | null;
   text: string;
   dateCreated: string;
   deadline: string;
@@ -231,6 +240,6 @@ export type CursorPage<T> = { items: T[]; nextCursor: string | null };
 
 export type PagedResult<T> = { results: T[]; totalCount: number };
 
-export type UploadedFileDto = { url: string };
+export type UploadedFileDto = { key: string };
 
 export const RoleNames = { Issuer: "Issuer", Manager: "Manager" } as const;

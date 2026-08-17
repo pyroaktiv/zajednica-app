@@ -12,17 +12,18 @@ public class Profile : Entity
 
     private Profile() { }
 
-    internal Profile(string? firstName, string? lastName, string? phone, string? contactEmail, string? imageUrl)
-        => Update(firstName, lastName, phone, contactEmail, imageUrl);
+    internal Profile(string? firstName, string? lastName, string? phone, string? contactEmail)
+        => Update(firstName, lastName, phone, contactEmail);
 
-    internal void Update(string? firstName, string? lastName, string? phone, string? contactEmail, string? imageUrl)
+    internal void Update(string? firstName, string? lastName, string? phone, string? contactEmail)
     {
         FirstName = Clean(firstName);
         LastName = Clean(lastName);
         Phone = Clean(phone);
         Email = Clean(contactEmail);
-        ImageUrl = Clean(imageUrl);
     }
+
+    internal void SetImage(string? imageKey) => ImageUrl = Clean(imageKey);
 
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

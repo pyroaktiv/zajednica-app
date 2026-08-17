@@ -30,13 +30,24 @@ public class Account : AggregateRoot
         IsEmailVerified = true;
     }
 
-    public void UpdateProfile(string? firstName, string? lastName, string? phone, string? contactEmail, string? imageUrl)
+    public void UpdateProfile(string? firstName, string? lastName, string? phone, string? contactEmail)
     {
         if (Profile is null)
-            Profile = new Profile(firstName, lastName, phone, contactEmail, imageUrl);
+            Profile = new Profile(firstName, lastName, phone, contactEmail);
         else
-            Profile.Update(firstName, lastName, phone, contactEmail, imageUrl);
+            Profile.Update(firstName, lastName, phone, contactEmail);
     }
+
+    public void SetProfileImage(string imageKey)
+    {
+        if (string.IsNullOrWhiteSpace(imageKey))
+            throw new EntityValidationException("An image key is required.");
+
+        Profile ??= new Profile(null, null, null, null);
+        Profile.SetImage(imageKey);
+    }
+
+    public void RemoveProfileImage() => Profile?.SetImage(null);
 
     private static string NormalizeUsername(string username)
     {

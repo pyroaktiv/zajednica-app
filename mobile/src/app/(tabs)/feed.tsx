@@ -21,7 +21,8 @@ function IntentCard({ intent }: { intent: IntentSummaryDto }) {
       <Card style={{ marginBottom: spacing.s, padding: spacing.m }}>
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.xs }}>
           <Text style={{ fontWeight: "700", color: colors.text, flex: 1 }}>
-            {intentKindLabel(intent.kind)}: {intent.targetUsername ?? "?"}
+            {intentKindLabel(intent.kind)}
+            {intent.kind === "PostRating" ? "" : `: ${intent.targetUsername ?? "?"}`}
           </Text>
           <Text
             style={{

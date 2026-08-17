@@ -35,9 +35,9 @@ internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRe
         return stream.Count == 0 ? null : Intent.Load(stream);
     }
 
-    public IReadOnlyList<Intent> LoadOpenByTargetMembership(Guid communityId, Guid targetMembershipId) =>
+    public IReadOnlyList<Intent> LoadOpenInCommunity(Guid communityId) =>
         LoadStreams(db.IntentViews.AsNoTracking()
-            .Where(v => v.CommunityId == communityId && v.TargetMembershipId == targetMembershipId && v.Status == IntentStatus.Open)
+            .Where(v => v.CommunityId == communityId && v.Status == IntentStatus.Open)
             .Select(v => v.Id));
 
     private IReadOnlyList<Intent> LoadStreams(IQueryable<Guid> streamIds) =>

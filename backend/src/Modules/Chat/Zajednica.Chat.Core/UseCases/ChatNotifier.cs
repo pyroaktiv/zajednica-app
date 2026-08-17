@@ -66,5 +66,5 @@ public sealed class ChatNotifier(
             NotificationChannel.Chat, TargetOf(chat)));
     }
 
-    private static NotificationTarget TargetOf(ChatAggregate chat) => new($"/chat/{chat.Id}", chat.CommunityId);
+    private static NotificationTarget TargetOf(ChatAggregate chat) => new("chat", chat.Id, chat.CommunityId);
 }

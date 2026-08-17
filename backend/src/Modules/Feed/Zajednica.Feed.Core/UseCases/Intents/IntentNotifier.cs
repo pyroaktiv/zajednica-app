@@ -42,7 +42,7 @@ public sealed class IntentNotifier(
         if (memberDirectory.AccountId(targeting.TargetMembershipId) is not { } targetAccountId)
             return;
 
-        var target = new NotificationTarget($"/intent/{intent.Id}", intent.Initiative.CommunityId);
+        var target = new NotificationTarget("intent", intent.Id, intent.Initiative.CommunityId);
         notificationSender.Send(new NotificationRequest(targetAccountId, title, body, NotificationChannel.Posts, target));
     }
 }

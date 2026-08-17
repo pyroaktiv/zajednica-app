@@ -17,4 +17,6 @@ export const deviceApi = {
 export const profileApi = {
   getMine: () => api.get<ProfileDto>("/api/profile/me"),
   update: (request: UpdateProfileRequest) => api.put<ProfileDto>("/api/profile", request),
+  setImage: (key: string) => api.put<ProfileDto>("/api/profile/image", { key }),
+  removeImage: () => api.delete<void>("/api/profile/image"),
 };

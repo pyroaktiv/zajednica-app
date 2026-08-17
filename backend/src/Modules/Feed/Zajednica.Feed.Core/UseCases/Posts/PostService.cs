@@ -14,10 +14,10 @@ namespace Zajednica.Feed.Core.UseCases.Posts;
 
 public sealed class PostService(
     IPostRepository postRepository,
+    IFeedUnitOfWork unitOfWork,
     IInternalMembershipAudienceService internalAudienceService,
     INotificationSender notificationSender,
     MemberDirectory memberDirectory,
-    IFileUrlMapper urlMapper,
     MemberRequirementsService requirementsService) : IPostService
 {
     public PostDto CreateGeneral(Guid accountId, Guid communityId, CreateGeneralPostRequestDto requestDto)
@@ -25,8 +25,9 @@ public sealed class PostService(
         var authorMembershipId = requirementsService.RequireUnmutedConfirmed(accountId, communityId);
 
         var post = new GeneralTopicPost(communityId, authorMembershipId, requestDto.Text,
-            PostMappers.ToKind(requestDto.Kind), ToKeys(requestDto.ImageUrls), DateTime.UtcNow);
+            PostMappers.ToKind(requestDto.Kind), requestDto.ImageKeys, DateTime.UtcNow);
         postRepository.Add(post);
+        unitOfWork.Save();
 
         Announce(post);
 
@@ -37,12 +38,24 @@ public sealed class PostService(
     {
         var authorMembershipId = requirementsService.RequireUnmutedConfirmed(accountId, communityId);
 
-        var post = new HelpRequest(communityId, authorMembershipId, request.Text, ToKeys(request.ImageUrls), DateTime.UtcNow);
+        var post = new HelpRequest(communityId, authorMembershipId, request.Text, request.ImageKeys, DateTime.UtcNow);
         postRepository.Add(post);
+        unitOfWork.Save();
 
         Announce(post);
 
         return Single(post);
+    }
+
+    public FileReference GetImageContent(Guid accountId, Guid communityId, Guid postId, int index)
+    {
+        requirementsService.RequireConfirmed(accountId, communityId);
+
+        var post = Require(postId, communityId);
+        if (index < 0 || index >= post.Images.Count)
+            throw new NotFoundException("Image not found.");
+
+        return new FileReference(post.Images[index].Url, null);
     }
 
     public PostDto CloseHelpRequest(Guid accountId, Guid communityId, Guid postId)
@@ -53,7 +66,7 @@ public sealed class PostService(
             throw new EntityValidationException("Only a help request can be closed for further responses.");
 
         help.Close(actorMembershipId);
-        postRepository.Update(help);
+        unitOfWork.Save();
 
         return Single(help);
     }
@@ -72,11 +85,8 @@ public sealed class PostService(
         var page = postRepository.GetPage(communityId, before, Paging.Clamp(limit));
         var profiles = memberDirectory.Profiles(page.Items.Select(p => p.AuthorMembershipId).ToList());
 
-        return new CursorPage<PostDto, PageCursor>(page.Items.ToDtos(profiles, urlMapper), page.NextCursor);
+        return new CursorPage<PostDto, PageCursor>(page.Items.ToDtos(profiles), page.NextCursor);
     }
-
-    private IEnumerable<string>? ToKeys(IReadOnlyList<string>? imageUrls) =>
-        imageUrls?.Select(u => urlMapper.ToKey(u)!);
 
     private Post Require(Guid postId, Guid communityId)
     {
@@ -90,7 +100,7 @@ public sealed class PostService(
     private PostDto Single(Post post)
     {
         var profiles = memberDirectory.Profiles([post.AuthorMembershipId]);
-        return post.ToDto(profiles.GetValueOrDefault(post.AuthorMembershipId), urlMapper);
+        return post.ToDto(profiles.GetValueOrDefault(post.AuthorMembershipId));
     }
 
     private void Announce(Post post)
@@ -113,7 +123,7 @@ public sealed class PostService(
             "U zgradi je prijavljen problem koji traži reakciju upravnika.", NotificationChannel.Management, TargetOf(post)));
     }
 
-    private static NotificationTarget TargetOf(Post post) => new($"/post/{post.Id}", post.CommunityId);
+    private static NotificationTarget TargetOf(Post post) => new("post", post.Id, post.CommunityId);
 
     private static (string Title, string Body, NotificationChannel Channel) Announcement(Post post) => post switch
     {

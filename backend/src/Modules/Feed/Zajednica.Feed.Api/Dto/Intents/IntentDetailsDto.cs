@@ -8,6 +8,7 @@ public record IntentDetailsDto(
     string? AuthorUsername,
     Guid? TargetMembershipId,
     string? TargetUsername,
+    Guid? PostId,
     string Text,
     DateTime DateCreated,
     DateTime Deadline,

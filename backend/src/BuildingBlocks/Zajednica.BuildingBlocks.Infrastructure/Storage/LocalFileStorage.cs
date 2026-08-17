@@ -5,8 +5,6 @@ namespace Zajednica.BuildingBlocks.Infrastructure.Storage;
 
 public sealed class LocalFileStorage : IFileStorage
 {
-    public const string PublicPath = "/uploads";
-
     public LocalFileStorage(IConfiguration configuration)
     {
         var path = configuration["Storage:LocalPath"];
@@ -18,7 +16,7 @@ public sealed class LocalFileStorage : IFileStorage
 
     public string Save(Stream content, StoredFile file)
     {
-        var target = Path.Combine(Root, file.ObjectName.Replace('/', Path.DirectorySeparatorChar));
+        var target = PathFor(file.ObjectName);
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
 
         using var destination = File.Create(target);
@@ -26,4 +24,22 @@ public sealed class LocalFileStorage : IFileStorage
 
         return file.ObjectName;
     }
+
+    public StoredFileContent? Open(string key)
+    {
+        var path = PathFor(key);
+        return File.Exists(path)
+            ? new StoredFileContent(File.OpenRead(path), FileKind.ContentTypeFor(key))
+            : null;
+    }
+
+    public void Delete(string key)
+    {
+        var path = PathFor(key);
+        if (File.Exists(path))
+            File.Delete(path);
+    }
+
+    private string PathFor(string key) =>
+        Path.Combine(Root, key.Replace('/', Path.DirectorySeparatorChar));
 }

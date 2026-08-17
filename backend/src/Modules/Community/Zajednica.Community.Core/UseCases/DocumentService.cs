@@ -11,17 +11,16 @@ namespace Zajednica.Community.Core.UseCases;
 
 public sealed class DocumentService(
     IDocumentRepository documentRepository,
-    IFileUrlMapper urlMapper,
     MembershipRequirementsService requirementsService) : IDocumentService
 {
     public DocumentDto Add(Guid accountId, Guid communityId, AddDocumentRequestDto requestDto)
     {
         var (_, actor) = requirementsService.RequireRole(accountId, communityId, CommunityRole.Manager);
 
-        var document = new Document(communityId, actor.Id, requestDto.Name, urlMapper.ToKey(requestDto.Url)!, DateTime.UtcNow);
+        var document = new Document(communityId, actor.Id, requestDto.Name, requestDto.Key, DateTime.UtcNow);
         documentRepository.Add(document);
 
-        return document.ToDto(urlMapper);
+        return document.ToDto();
     }
 
     public PagedResult<DocumentDto> GetPaged(Guid accountId, Guid communityId, int page, int pageSize)
@@ -29,7 +28,18 @@ public sealed class DocumentService(
         requirementsService.RequireConfirmed(accountId, communityId);
 
         var paged = documentRepository.GetPaged(communityId, page, pageSize);
-        return new PagedResult<DocumentDto>(paged.Results.Select(d => d.ToDto(urlMapper)).ToList(), paged.TotalCount);
+        return new PagedResult<DocumentDto>(paged.Results.Select(d => d.ToDto()).ToList(), paged.TotalCount);
+    }
+
+    public FileReference GetContent(Guid accountId, Guid communityId, Guid documentId)
+    {
+        requirementsService.RequireConfirmed(accountId, communityId);
+
+        var document = documentRepository.GetById(documentId);
+        if (document is null || document.CommunityId != communityId)
+            throw new NotFoundException("Document not found in this community.");
+
+        return new FileReference(document.Url, $"{document.Name}.pdf");
     }
 
     public void Remove(Guid accountId, Guid communityId, Guid documentId)

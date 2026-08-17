@@ -9,6 +9,7 @@ public class IntentView
     public Guid CommunityId { get; private set; }
     public Guid AuthorMembershipId { get; private set; }
     public Guid? TargetMembershipId { get; private set; }
+    public Guid? PostId { get; private set; }
     public string Kind { get; private set; } = null!;
     public string Text { get; private set; } = null!;
     public DateTime DateCreated { get; private set; }
@@ -29,6 +30,7 @@ public class IntentView
         CommunityId = intent.Initiative.CommunityId;
         AuthorMembershipId = intent.Initiative.AuthorMembershipId;
         TargetMembershipId = (intent.Initiative as UserTargetingInitiative)?.TargetMembershipId;
+        PostId = (intent.Initiative as PostTargetingInitiative)?.PostId;
         Kind = intent.Initiative.KindName;
         Text = intent.Initiative.Description;
         VotesAreVisible = intent.Initiative.AreVotesPublic;

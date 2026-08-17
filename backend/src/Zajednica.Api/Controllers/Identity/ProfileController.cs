@@ -29,4 +29,17 @@ public sealed class ProfileController : ControllerBase
     {
         return Ok(_profiles.Update(User.AccountId(), requestDto));
     }
+
+    [HttpPut("image")]
+    public ActionResult<ProfileDto> SetImage([FromBody] SetProfileImageRequestDto requestDto)
+    {
+        return Ok(_profiles.SetImage(User.AccountId(), requestDto));
+    }
+
+    [HttpDelete("image")]
+    public IActionResult RemoveImage()
+    {
+        _profiles.RemoveImage(User.AccountId());
+        return NoContent();
+    }
 }

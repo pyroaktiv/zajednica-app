@@ -1,14 +1,19 @@
+using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.Community.Api.Internal;
 using Zajednica.Feed.Api.Dto.Intents;
 using Zajednica.Feed.Api.Public;
 using Zajednica.Feed.Core.Domain.Intents;
 using Zajednica.Feed.Core.Domain.Intents.Initiatives;
+using Zajednica.Feed.Core.Domain.Posts;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
+using Zajednica.Feed.Core.UseCases.Queries;
 
 namespace Zajednica.Feed.Core.UseCases.Intents;
 
 public sealed class IntentCommandService(
     IIntentRepository intentRepository,
+    IPostRepository postRepository,
+    IIntentQueryStore intentQueryStore,
     IFeedUnitOfWork unitOfWork,
     IInternalMembershipAudienceService internalAudienceService,
     MemberRequirementsService requirementsService,
@@ -17,6 +22,8 @@ public sealed class IntentCommandService(
     IntentNotifier notifier,
     IntentPresenterService presenterService) : IIntentCommandService
 {
+    private const int PostPreviewLength = 60;
+
     public IntentDetailsDto OpenBan(Guid accountId, Guid communityId, OpenUserTargetingIntentRequestDto requestDto)
     {
         var authorMembershipId = requirementsService.RequireUnmutedConfirmed(accountId, communityId);
@@ -56,6 +63,31 @@ public sealed class IntentCommandService(
         }
 
         return presenterService.Details(retrievalService.RequireView(intentId, communityId), requestDto.Value);
+    }
+
+    public IntentDetailsDto OpenPostRating(Guid accountId, Guid communityId, Guid postId)
+    {
+        var authorMembershipId = requirementsService.RequireUnmutedConfirmed(accountId, communityId);
+
+        if (postRepository.Get(postId) is not GeneralTopicPost post || post.CommunityId != communityId)
+            throw new NotFoundException("Post not found in this community.");
+        if (intentQueryStore.PostRatingIntentExists(postId))
+            throw new EntityValidationException("A community rating for this post has already occurred.");
+
+        var initiative = new PostTargetingInitiative(
+            postId,
+            communityId,
+            authorMembershipId,
+            internalAudienceService.GetConfirmedCount(communityId),
+            TextPreview.Truncate(post.Text, PostPreviewLength));
+
+        var intent = Intent.Open(initiative, DateTime.UtcNow);
+
+        intentRepository.Add(intent);
+        unitOfWork.Save();
+        notifier.Opened(intent);
+
+        return presenterService.Details(retrievalService.RequireView(intent.Id, communityId), null);
     }
 
     private IntentDetailsDto Open(

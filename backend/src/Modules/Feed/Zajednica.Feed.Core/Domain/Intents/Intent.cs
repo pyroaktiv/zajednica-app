@@ -74,11 +74,10 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
         RegisterEvent(new IntentClosed(IntentStatus.Rejected, ClosureReason.Superseded, now));
     }
 
-    public bool? VoteOf(Guid membershipId) => _votes.TryGetValue(membershipId, out var vote) ? vote : null;
-
     public bool QuorumReached() => _votes.Count >= Initiative.GetQuorum();
 
-    public bool HasDecisiveMajority() => IsThreeQuarters(VotesFor) || IsThreeQuarters(VotesAgainst);
+    public bool HasDecisiveMajority() => VotesFor >= Initiative.GetDecisiveThreshold() ||
+                                         VotesAgainst >= Initiative.GetDecisiveThreshold();
 
     public bool ShouldClose(DateTime now) => Status == IntentStatus.Open && (now >= Deadline || HasDecisiveMajority());
 
@@ -110,6 +109,4 @@ public class Intent : EventSourcedAggregateRoot<IntentEvent>
 
         return VotesFor > VotesAgainst ? IntentStatus.Accepted : IntentStatus.Rejected;
     }
-
-    private bool IsThreeQuarters(int votes) => votes >= Initiative.GetDecisiveThreshold();
 }

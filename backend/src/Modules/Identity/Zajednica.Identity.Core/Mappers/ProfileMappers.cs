@@ -1,4 +1,3 @@
-using Zajednica.BuildingBlocks.Core.Storage;
 using Zajednica.Identity.Api.Dto;
 using Zajednica.Identity.Core.Domain;
 
@@ -6,12 +5,15 @@ namespace Zajednica.Identity.Core.Mappers;
 
 public static class ProfileMappers
 {
-    public static ProfileDto ToProfileDto(this Account account, IFileUrlMapper urls) =>
+    public static ProfileDto ToProfileDto(this Account account) =>
         new(
             account.Username,
             account.Profile?.FirstName,
             account.Profile?.LastName,
             account.Profile?.Phone,
             account.Profile?.Email,
-            urls.ToUrl(account.Profile?.ImageUrl));
+            account.ImageUrl());
+
+    public static string? ImageUrl(this Account account) =>
+        account.Profile?.ImageUrl is null ? null : $"api/profiles/{account.Id}/image";
 }

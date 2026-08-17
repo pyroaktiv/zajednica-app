@@ -42,6 +42,13 @@ public sealed class IntentController : ControllerBase
         return CreatedAtAction(nameof(Get), new { communityId, intentId = opened.Id }, opened);
     }
 
+    [HttpPost("post-ratings")]
+    public ActionResult<IntentDetailsDto> OpenPostRating(Guid communityId, [FromBody] OpenPostRatingRequestDto requestDto)
+    {
+        var opened = _intentsCommand.OpenPostRating(User.AccountId(), communityId, requestDto.PostId);
+        return CreatedAtAction(nameof(Get), new { communityId, intentId = opened.Id }, opened);
+    }
+
     [HttpPost("{intentId:guid}/votes")]
     public ActionResult<IntentDetailsDto> Vote(Guid communityId, Guid intentId, [FromBody] CastVoteRequestDto requestDto)
     {

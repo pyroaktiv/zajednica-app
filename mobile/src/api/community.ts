@@ -56,8 +56,8 @@ export const certificationApi = {
 };
 
 export const documentApi = {
-  add: (communityId: string, name: string, url: string) =>
-    api.post<DocumentDto>(`/api/communities/${communityId}/documents`, { name, url }),
+  add: (communityId: string, name: string, key: string) =>
+    api.post<DocumentDto>(`/api/communities/${communityId}/documents`, { name, key }),
   getPaged: (communityId: string, page: number, pageSize: number) =>
     api.get<PagedResult<DocumentDto>>(
       `/api/communities/${communityId}/documents?page=${page}&pageSize=${pageSize}`

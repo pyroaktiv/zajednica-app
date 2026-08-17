@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Zajednica.BuildingBlocks.Core.Storage;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Feed.Api.Dto.Posts;
 using Zajednica.Feed.Api.Public;
@@ -13,10 +14,12 @@ namespace Zajednica.Api.Controllers.Feed;
 public sealed class PostController : ControllerBase
 {
     private readonly IPostService _posts;
+    private readonly IFileStorage _storage;
 
-    public PostController(IPostService posts)
+    public PostController(IPostService posts, IFileStorage storage)
     {
         _posts = posts;
+        _storage = storage;
     }
 
     [HttpPost]
@@ -49,5 +52,17 @@ public sealed class PostController : ControllerBase
     public ActionResult<CursorPage<PostDto, PageCursor>> GetPage(Guid communityId, [FromQuery] PageCursor? before, [FromQuery] int limit)
     {
         return Ok(_posts.GetPage(User.AccountId(), communityId, before, limit));
+    }
+
+    [HttpGet("{postId:guid}/images/{index:int}/content")]
+    public IActionResult ImageContent(Guid communityId, Guid postId, int index)
+    {
+        var reference = _posts.GetImageContent(User.AccountId(), communityId, postId, index);
+        var file = _storage.Open(reference.Key);
+        if (file is null)
+            return NotFound();
+
+        Response.Headers.CacheControl = "private, max-age=300";
+        return File(file.Content, file.ContentType, reference.DownloadName, enableRangeProcessing: true);
     }
 }

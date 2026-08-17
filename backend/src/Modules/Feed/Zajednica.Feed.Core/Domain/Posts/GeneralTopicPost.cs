@@ -1,8 +1,11 @@
+using Zajednica.BuildingBlocks.Core.Exceptions;
+
 namespace Zajednica.Feed.Core.Domain.Posts;
 
 public class GeneralTopicPost : Post
 {
     public GeneralPostKind Kind { get; private set; }
+    public CommunityRating? Rating { get; private set; }
 
     private GeneralTopicPost() { }
 
@@ -14,4 +17,12 @@ public class GeneralTopicPost : Post
     }
 
     public override bool AllowsComments() => true;
+
+    public void RateByCommunity(CommunityRating rating)
+    {
+        if (Rating is not null)
+            throw new EntityValidationException("This post already has a community rating.");
+
+        Rating = rating;
+    }
 }

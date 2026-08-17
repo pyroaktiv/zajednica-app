@@ -7,5 +7,6 @@ public interface IIntentCommandService
     IntentDetailsDto OpenBan(Guid accountId, Guid communityId, OpenUserTargetingIntentRequestDto requestDto);
     IntentDetailsDto OpenManagerElection(Guid accountId, Guid communityId, OpenUserTargetingIntentRequestDto requestDto);
     IntentDetailsDto OpenMute(Guid accountId, Guid communityId, OpenUserTargetingIntentRequestDto requestDto);
+    IntentDetailsDto OpenPostRating(Guid accountId, Guid communityId, Guid postId);
     IntentDetailsDto Vote(Guid accountId, Guid communityId, Guid intentId, CastVoteRequestDto requestDto);
 }

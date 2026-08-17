@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Zajednica.Api.Controllers.Feed;
+using Zajednica.BuildingBlocks.Core.Storage;
 using Zajednica.BuildingBlocks.Tests;
 using Zajednica.Community.Api.Dto.Certification;
 using Zajednica.Community.Api.Dto.Communities;
@@ -26,7 +27,9 @@ public class BaseFeedIntegrationTest : BaseWebIntegrationTest<FeedTestFactory>
         scope.ServiceProvider.GetRequiredService<CommunityDbContext>();
 
     protected static PostController Posts(IServiceScope scope, Guid accountId) =>
-        As(new PostController(scope.ServiceProvider.GetRequiredService<IPostService>()), accountId);
+        As(new PostController(
+            scope.ServiceProvider.GetRequiredService<IPostService>(),
+            scope.ServiceProvider.GetRequiredService<IFileStorage>()), accountId);
 
     protected static CommentController Comments(IServiceScope scope, Guid accountId) =>
         As(new CommentController(scope.ServiceProvider.GetRequiredService<ICommentService>()), accountId);

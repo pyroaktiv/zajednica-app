@@ -1,3 +1,4 @@
+using Zajednica.BuildingBlocks.Core.Storage;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Chat.Api.Dto.Messages;
 
@@ -10,4 +11,5 @@ public interface IMessageService
     void MarkRead(Guid accountId, Guid communityId, Guid chatId);
 
     CursorPage<MessageDto, PageCursor> GetPage(Guid accountId, Guid communityId, Guid chatId, PageCursor? before, int limit);
+    FileReference GetAudioContent(Guid accountId, Guid communityId, Guid chatId, Guid messageId);
 }

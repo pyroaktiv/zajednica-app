@@ -1,3 +1,4 @@
+using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.BuildingBlocks.Core.Storage;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Chat.Api.Dto.Messages;
@@ -13,7 +14,6 @@ public sealed class MessageService(
     IChatRepository chatRepository,
     MemberDirectory memberDirectory,
     ChatRequirementsService requirementsService,
-    IFileUrlMapper urlMapper,
     ChatNotifier notifier) : IMessageService
 {
     public MessageDto SendText(Guid accountId, Guid communityId, Guid chatId, SendTextRequestDto requestDto)
@@ -30,7 +30,7 @@ public sealed class MessageService(
     {
         var (myMembershipId, chat) = RequireForWriting(accountId, communityId, chatId);
 
-        var message = chat.SendVoice(myMembershipId, urlMapper.ToKey(requestDto.AudioUrl)!, requestDto.DurationSeconds, DateTime.UtcNow);
+        var message = chat.SendVoice(myMembershipId, requestDto.AudioKey, requestDto.DurationSeconds, DateTime.UtcNow);
         chatRepository.Update(chat);
 
         return Announce(chat, message, myMembershipId);
@@ -51,7 +51,18 @@ public sealed class MessageService(
         var page = chatRepository.GetMessagePage(chatId, before, Paging.Clamp(limit));
         var senders = memberDirectory.Profiles(page.Items.Select(m => m.SenderMembershipId).ToList());
 
-        return page.ToDtoPage(senders, urlMapper);
+        return page.ToDtoPage(senders, communityId);
+    }
+
+    public FileReference GetAudioContent(Guid accountId, Guid communityId, Guid chatId, Guid messageId)
+    {
+        var myMembershipId = requirementsService.RequireMember(accountId, communityId);
+        requirementsService.RequireChat(communityId, chatId, myMembershipId);
+
+        if (chatRepository.GetMessage(messageId) is not VoiceMessage voice || voice.ChatId != chatId)
+            throw new NotFoundException("Voice message not found.");
+
+        return new FileReference(voice.AudioUrl, null);
     }
 
     private (Guid MyMembershipId, ChatAggregate Chat) Require(Guid accountId, Guid communityId, Guid chatId)
@@ -71,7 +82,7 @@ public sealed class MessageService(
     private MessageDto Announce(ChatAggregate chat, Message message, Guid senderMembershipId)
     {
         var profiles = memberDirectory.Profiles([senderMembershipId]);
-        var dto = message.ToDto(profiles.GetValueOrDefault(senderMembershipId), urlMapper);
+        var dto = message.ToDto(profiles.GetValueOrDefault(senderMembershipId), chat.CommunityId);
 
         notifier.MessageSent(chat, dto);
 

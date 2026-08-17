@@ -6,7 +6,6 @@ namespace Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 public interface IPostRepository
 {
     void Add(Post post);
-    void Update(Post post);
 
     Post? Get(Guid id);
     Post? GetWithComment(Guid postId, Guid commentId);

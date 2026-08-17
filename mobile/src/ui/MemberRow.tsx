@@ -1,5 +1,7 @@
+import { Image } from "expo-image";
 import { router } from "expo-router";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { authorizedFile } from "../api/client";
 import type { MemberSummaryDto } from "../api/types";
 import { RoleNames } from "../api/types";
 import { colors, spacing } from "./theme";
@@ -18,7 +20,7 @@ export function MemberRow({ member }: { member: MemberSummaryDto }) {
       onPress={() => router.push({ pathname: "/member/[membershipId]", params: { membershipId: member.membershipId } })}
     >
       {member.imageUrl ? (
-        <Image source={{ uri: member.imageUrl }} style={styles.avatar} />
+        <Image source={authorizedFile(member.imageUrl)} style={styles.avatar} />
       ) : (
         <View style={[styles.avatar, styles.avatarFallback]}>
           <Text style={{ color: colors.muted, fontWeight: "700" }}>

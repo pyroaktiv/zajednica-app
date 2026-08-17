@@ -50,9 +50,9 @@ export const helpChatApi = {
 export const messageApi = {
   sendText: (communityId: string, chatId: string, text: string) =>
     api.post<MessageDto>(`/api/communities/${communityId}/chats/${chatId}/messages`, { text }),
-  sendVoice: (communityId: string, chatId: string, audioUrl: string, durationSeconds: number) =>
+  sendVoice: (communityId: string, chatId: string, audioKey: string, durationSeconds: number) =>
     api.post<MessageDto>(`/api/communities/${communityId}/chats/${chatId}/messages/voice`, {
-      audioUrl,
+      audioKey,
       durationSeconds,
     }),
   markRead: (communityId: string, chatId: string) =>

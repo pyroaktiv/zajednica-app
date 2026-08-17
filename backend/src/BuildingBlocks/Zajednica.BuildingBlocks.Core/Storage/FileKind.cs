@@ -35,6 +35,16 @@ public sealed class FileKind
 
     public static IEnumerable<FileKind> All => [Image, Audio, Document];
 
+    public static string ContentTypeFor(string key)
+    {
+        var extension = Path.GetExtension(key).ToLowerInvariant();
+        foreach (var kind in All)
+            if (kind.ContentTypes.TryGetValue(extension, out var contentType))
+                return contentType;
+
+        return "application/octet-stream";
+    }
+
     public string Name { get; }
     public string Folder { get; }
     public long MaxSizeBytes { get; }

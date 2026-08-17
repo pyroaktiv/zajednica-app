@@ -13,10 +13,10 @@ public class AccountTests
     public void UpdateProfile_mutates_the_existing_profile_in_place()
     {
         var account = NewAccount();
-        account.UpdateProfile("Pera", "Peric", "0641234567", null, null);
+        account.UpdateProfile("Pera", "Peric", "0641234567", null);
         var profileId = account.Profile!.Id;
 
-        account.UpdateProfile("Petar", "Peric", "0649999999", null, null);
+        account.UpdateProfile("Petar", "Peric", "0649999999", null);
 
         account.Profile!.Id.ShouldBe(profileId);
         account.Profile.FirstName.ShouldBe("Petar");

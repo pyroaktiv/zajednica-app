@@ -18,6 +18,7 @@ import {
   View,
 } from "react-native";
 import { chatApi, helpChatApi, messageApi } from "../../api/chat";
+import { authorizedFile } from "../../api/client";
 import { fileApi } from "../../api/files";
 import type { ChatDetailsDto, MessageDto } from "../../api/types";
 import { useChannel } from "../../realtime/connection";
@@ -28,7 +29,7 @@ import { helpStatusColor, helpStatusLabel } from "../../ui/labels";
 import { colors, spacing } from "../../ui/theme";
 
 function VoiceBubble({ url, durationSeconds }: { url: string; durationSeconds: number | null }) {
-  const player = useAudioPlayer(url);
+  const player = useAudioPlayer(authorizedFile(url));
   return (
     <Pressable
       onPress={() => {
@@ -189,7 +190,7 @@ export default function ChatScreen() {
         name: "voice.m4a",
         type: "audio/mp4",
       });
-      const sent = await messageApi.sendVoice(activeCommunityId, chat.id, uploaded.url, durationSeconds);
+      const sent = await messageApi.sendVoice(activeCommunityId, chat.id, uploaded.key, durationSeconds);
       setMessages((current) =>
         current.some((m) => m.id === sent.id) ? current : [sent, ...current]
       );

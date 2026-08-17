@@ -1,6 +1,6 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { intentApi } from "../../api/feed";
 import type { IntentDetailsDto, IntentVoterDto } from "../../api/types";
 import { useChannel } from "../../realtime/connection";
@@ -68,6 +68,7 @@ export default function IntentDetails() {
   };
 
   const open = intent.status === "Open";
+  const isPostRating = intent.kind === "PostRating";
   const quorumTarget = Math.floor(intent.eligibleVoterCount / 2) + 1;
 
   return (
@@ -76,10 +77,28 @@ export default function IntentDetails() {
       <ScrollView contentContainerStyle={{ padding: spacing.l }}>
         <Card>
           <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text, marginBottom: spacing.l }}>
-            {intentKindLabel(intent.kind)}: {intent.targetUsername ?? "?"}
+            {intentKindLabel(intent.kind)}
+            {isPostRating ? "" : `: ${intent.targetUsername ?? "?"}`}
           </Text>
-          <SectionTitle>Obrazloženje</SectionTitle>
-          <Text style={{ color: colors.text, lineHeight: 22 }}>{intent.text}</Text>
+          {isPostRating && intent.postId ? (
+            <>
+              <SectionTitle>Objava</SectionTitle>
+              <Pressable
+                onPress={() =>
+                  router.push({ pathname: "/post/[postId]", params: { postId: intent.postId! } })
+                }
+              >
+                <Text style={{ color: colors.primary, lineHeight: 22, textDecorationLine: "underline" }}>
+                  {intent.text}
+                </Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <SectionTitle>Obrazloženje</SectionTitle>
+              <Text style={{ color: colors.text, lineHeight: 22 }}>{intent.text}</Text>
+            </>
+          )}
         </Card>
 
         <Card>

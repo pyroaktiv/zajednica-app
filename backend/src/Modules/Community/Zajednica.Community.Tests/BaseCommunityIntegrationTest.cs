@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Zajednica.Api.Controllers.Community;
+using Zajednica.BuildingBlocks.Core.Storage;
 using Zajednica.BuildingBlocks.Tests;
 using Zajednica.Community.Api.Dto.Certification;
 using Zajednica.Community.Api.Dto.Communities;
@@ -28,7 +29,9 @@ public class BaseCommunityIntegrationTest : BaseWebIntegrationTest<CommunityTest
         As(new CertificationController(scope.ServiceProvider.GetRequiredService<ICertificationService>()), accountId);
 
     protected static DocumentController Documents(IServiceScope scope, Guid accountId) =>
-        As(new DocumentController(scope.ServiceProvider.GetRequiredService<IDocumentService>()), accountId);
+        As(new DocumentController(
+            scope.ServiceProvider.GetRequiredService<IDocumentService>(),
+            scope.ServiceProvider.GetRequiredService<IFileStorage>()), accountId);
 
     protected static Guid NewAccount(IServiceScope scope)
     {

@@ -15,10 +15,10 @@ function cursorQuery(name: "before" | "after", cursor: string | null, limit = 20
 }
 
 export const postApi = {
-  createGeneral: (communityId: string, text: string, kind: string, imageUrls: string[]) =>
-    api.post<PostDto>(`/api/communities/${communityId}/posts`, { text, kind, imageUrls }),
-  createHelpRequest: (communityId: string, text: string, imageUrls: string[]) =>
-    api.post<PostDto>(`/api/communities/${communityId}/posts/help-requests`, { text, imageUrls }),
+  createGeneral: (communityId: string, text: string, kind: string, imageKeys: string[]) =>
+    api.post<PostDto>(`/api/communities/${communityId}/posts`, { text, kind, imageKeys }),
+  createHelpRequest: (communityId: string, text: string, imageKeys: string[]) =>
+    api.post<PostDto>(`/api/communities/${communityId}/posts/help-requests`, { text, imageKeys }),
   closeHelpRequest: (communityId: string, postId: string) =>
     api.post<PostDto>(`/api/communities/${communityId}/posts/${postId}/close`),
   get: (communityId: string, postId: string) =>
@@ -62,6 +62,10 @@ export const intentApi = {
     api.post<IntentDetailsDto>(`/api/communities/${communityId}/intents/mute`, {
       targetMembershipId,
       text,
+    }),
+  openPostRating: (communityId: string, postId: string) =>
+    api.post<IntentDetailsDto>(`/api/communities/${communityId}/intents/post-ratings`, {
+      postId,
     }),
   vote: (communityId: string, intentId: string, value: boolean) =>
     api.post<IntentDetailsDto>(`/api/communities/${communityId}/intents/${intentId}/votes`, {

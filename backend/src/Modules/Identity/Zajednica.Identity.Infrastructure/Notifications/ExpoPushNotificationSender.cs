@@ -84,7 +84,12 @@ public sealed class ExpoPushNotificationSender : INotificationSender
     private static IReadOnlyDictionary<string, string>? DataOf(NotificationTarget? target) =>
         target is null
             ? null
-            : new Dictionary<string, string> { ["route"] = target.Route, ["communityId"] = target.CommunityId.ToString() };
+            : new Dictionary<string, string>
+            {
+                ["kind"] = target.Kind,
+                ["id"] = target.EntityId.ToString(),
+                ["communityId"] = target.CommunityId.ToString()
+            };
 
     private sealed record ExpoMessage(
         string To, string Title, string Body, string ChannelId, string Priority, string InterruptionLevel,

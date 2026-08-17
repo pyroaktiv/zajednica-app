@@ -11,6 +11,8 @@ public interface IIntentQueryStore
     IReadOnlyList<IntentVoteView> GetVotes(Guid intentId);
 
     bool? GetVote(Guid intentId, Guid voterMembershipId);
-    
+
+    bool PostRatingIntentExists(Guid postId);
+
     IReadOnlyList<Guid> GetDueIds(DateTime now);
 }

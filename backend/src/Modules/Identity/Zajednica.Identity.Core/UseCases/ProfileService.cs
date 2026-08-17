@@ -7,24 +7,46 @@ using Zajednica.Identity.Core.Mappers;
 
 namespace Zajednica.Identity.Core.UseCases;
 
-public sealed class ProfileService(IAccountRepository accountRepository, IFileUrlMapper urlMapper) : IProfileService
+public sealed class ProfileService(IAccountRepository accountRepository) : IProfileService
 {
-    public ProfileDto Get(Guid accountId)
-    {
-        var account = accountRepository.GetById(accountId)
-            ?? throw new NotFoundException("Account not found.");
-        return account.ToProfileDto(urlMapper);
-    }
+    public ProfileDto Get(Guid accountId) => Require(accountId).ToProfileDto();
 
     public ProfileDto Update(Guid accountId, UpdateProfileRequestDto requestDto)
     {
-        var account = accountRepository.GetById(accountId)
-            ?? throw new NotFoundException("Account not found.");
+        var account = Require(accountId);
 
-        account.UpdateProfile(requestDto.FirstName, requestDto.LastName, requestDto.Phone, requestDto.ContactEmail,
-            urlMapper.ToKey(requestDto.ImageUrl));
+        account.UpdateProfile(requestDto.FirstName, requestDto.LastName, requestDto.Phone, requestDto.ContactEmail);
         accountRepository.Update(account);
 
-        return account.ToProfileDto(urlMapper);
+        return account.ToProfileDto();
     }
+
+    public ProfileDto SetImage(Guid accountId, SetProfileImageRequestDto requestDto)
+    {
+        var account = Require(accountId);
+
+        account.SetProfileImage(requestDto.Key);
+        accountRepository.Update(account);
+
+        return account.ToProfileDto();
+    }
+
+    public void RemoveImage(Guid accountId)
+    {
+        var account = Require(accountId);
+
+        account.RemoveProfileImage();
+        accountRepository.Update(account);
+    }
+
+    public FileReference GetImageContent(Guid accountId)
+    {
+        if (accountRepository.GetById(accountId)?.Profile?.ImageUrl is not { } key)
+            throw new NotFoundException("Profile image not found.");
+
+        return new FileReference(key, null);
+    }
+
+    private Domain.Account Require(Guid accountId) =>
+        accountRepository.GetById(accountId) ?? throw new NotFoundException("Account not found.");
 }
