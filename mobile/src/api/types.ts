@@ -120,6 +120,13 @@ export type DocumentDto = {
   date: string;
 };
 
+export type PostRatingDto = {
+  intentId: string;
+  zone: string;
+  approved: boolean;
+  approvalPercentage: number;
+};
+
 export type PostDto = {
   id: string;
   type: string;
@@ -131,6 +138,7 @@ export type PostDto = {
   text: string;
   imageUrls: string[];
   dateCreated: string;
+  rating: PostRatingDto | null;
 };
 
 export type CommentDto = {
@@ -152,6 +160,7 @@ export type IntentSummaryDto = {
   authorMembershipId: string;
   targetMembershipId: string | null;
   targetUsername: string | null;
+  postId: string | null;
   text: string;
   dateCreated: string;
   deadline: string;
@@ -168,6 +177,7 @@ export type IntentDetailsDto = {
   authorUsername: string | null;
   targetMembershipId: string | null;
   targetUsername: string | null;
+  postId: string | null;
   text: string;
   dateCreated: string;
   deadline: string;

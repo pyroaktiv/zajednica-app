@@ -63,6 +63,10 @@ export const intentApi = {
       targetMembershipId,
       text,
     }),
+  openPostRating: (communityId: string, postId: string) =>
+    api.post<IntentDetailsDto>(`/api/communities/${communityId}/intents/post-ratings`, {
+      postId,
+    }),
   vote: (communityId: string, intentId: string, value: boolean) =>
     api.post<IntentDetailsDto>(`/api/communities/${communityId}/intents/${intentId}/votes`, {
       value,

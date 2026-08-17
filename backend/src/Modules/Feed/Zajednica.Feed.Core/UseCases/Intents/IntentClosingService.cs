@@ -2,6 +2,7 @@ using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.Community.Api.Internal;
 using Zajednica.Feed.Core.Domain.Intents;
 using Zajednica.Feed.Core.Domain.Intents.Initiatives;
+using Zajednica.Feed.Core.Domain.Posts;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 using Zajednica.Feed.Core.UseCases.Queries;
 
@@ -9,6 +10,7 @@ namespace Zajednica.Feed.Core.UseCases.Intents;
 
 public sealed class IntentClosingService(
     IIntentRepository intentRepository,
+    IPostRepository postRepository,
     IIntentQueryStore intentQueryStore,
     IFeedUnitOfWork unitOfWork,
     IInternalMembershipCommandService internalCommandService,
@@ -92,31 +94,43 @@ public sealed class IntentClosingService(
 
     private void ApplyConsequences(StagedOutcome outcome)
     {
-        if (outcome.Status == IntentStatus.Accepted)
-            Execute(outcome.Decided);
+        Execute(outcome.Decided, outcome.Status);
 
         notifier.Closed(outcome.Decided, outcome.Status);
 
         foreach (var other in outcome.Superseded)
             notifier.Changed(other);
     }
-
-    private void Execute(Intent intent)
+    
+    private void Execute(Intent intent, IntentStatus status)
     {
         switch (intent.Initiative)
         {
-            case UserTargetingInitiative { Kind: UserActionKind.Ban } ban:
+            case UserTargetingInitiative { Kind: UserActionKind.Ban } ban when status == IntentStatus.Accepted:
                 internalCommandService.Ban(ban.TargetMembershipId, intent.Id);
                 break;
 
-            case UserTargetingInitiative { Kind: UserActionKind.ManagerElection } election:
+            case UserTargetingInitiative { Kind: UserActionKind.ManagerElection } election when status == IntentStatus.Accepted:
                 internalCommandService.ElectManager(election.TargetMembershipId);
                 break;
 
-            case UserTargetingInitiative { Kind: UserActionKind.Mute } mute:
+            case UserTargetingInitiative { Kind: UserActionKind.Mute } mute when status == IntentStatus.Accepted:
                 internalCommandService.Mute(mute.TargetMembershipId);
                 break;
+
+            case PostTargetingInitiative post when status is IntentStatus.Accepted or IntentStatus.Rejected:
+                RatePost(post, intent.Id, status == IntentStatus.Accepted, intent.VotesFor, intent.VotesAgainst);
+                break;
         }
+    }
+
+    private void RatePost(PostTargetingInitiative initiative, Guid intentId, bool approved, int votesFor, int votesAgainst)
+    {
+        if (postRepository.Get(initiative.PostId) is not GeneralTopicPost post)
+            return;
+
+        post.RateByCommunity(new CommunityRating(intentId, approved, votesFor, votesAgainst));
+        unitOfWork.Save();
     }
 
     private sealed record StagedOutcome(Intent Decided, IntentStatus Status, IReadOnlyList<Intent> Superseded);

@@ -22,10 +22,6 @@ public sealed class InternalHelpRequestService(IPostRepository postRepository) :
         if (postRepository.Get(helpRequestId) is not HelpRequest help)
             return null;
 
-        var text = help.Text.Trim();
-        if (text.Length <= maxLength)
-            return text;
-
-        return text[..maxLength].TrimEnd() + "…";
+        return TextPreview.Truncate(help.Text, maxLength);
     }
 }

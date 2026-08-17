@@ -7,6 +7,7 @@ public record IntentSummaryDto(
     Guid AuthorMembershipId,
     Guid? TargetMembershipId,
     string? TargetUsername,
+    Guid? PostId,
     string Text,
     DateTime DateCreated,
     DateTime Deadline,

@@ -12,6 +12,7 @@ namespace Zajednica.Feed.Core.UseCases.Comments;
 
 public sealed class CommentService(
     IPostRepository postRepository,
+    IFeedUnitOfWork unitOfWork,
     INotificationSender notificationSender,
     MemberDirectory memberDirectory,
     MemberRequirementsService access) : ICommentService
@@ -22,7 +23,7 @@ public sealed class CommentService(
         var post = Require(postId, communityId);
 
         var comment = post.AddComment(authorMembershipId, requestDto.Text, DateTime.UtcNow);
-        postRepository.Update(post);
+        unitOfWork.Save();
 
         Notify(post.AuthorMembershipId, authorMembershipId, "Novi komentar",
             "Neko je komentarisao vašu objavu.");
@@ -37,7 +38,7 @@ public sealed class CommentService(
         var post = RequireWithComment(postId, communityId, commentId);
 
         var reply = post.AddReply(commentId, authorMembershipId, requestDto.Text, DateTime.UtcNow);
-        postRepository.Update(post);
+        unitOfWork.Save();
 
         Notify(post.Comments.Single(c => c.Id == commentId).AuthorMembershipId, authorMembershipId,
             "Novi odgovor", "Neko je odgovorio na vaš komentar.");

@@ -19,8 +19,8 @@ public static class PostMappers
 
     public static PostDto ToDto(this Post post, InternalProfileDto? author) => post switch
     {
-        GeneralTopicPost general => ToDto(post, author, "GENERAL", general.Kind.ToString(), null),
-        HelpRequest help => ToDto(post, author, "HELP_REQUEST", null, help.Closed),
+        GeneralTopicPost general => ToDto(post, author, "GENERAL", general.Kind.ToString(), null, ToRatingDto(general.Rating)),
+        HelpRequest help => ToDto(post, author, "HELP_REQUEST", null, help.Closed, null),
         _ => throw new EntityValidationException("Unknown post type.")
     };
 
@@ -30,7 +30,8 @@ public static class PostMappers
             .Select(p => p.ToDto(authors.GetValueOrDefault(p.AuthorMembershipId)))
             .ToList();
 
-    private static PostDto ToDto(Post post, InternalProfileDto? author, string type, string? kind, bool? closed) =>
+    private static PostDto ToDto(
+        Post post, InternalProfileDto? author, string type, string? kind, bool? closed, PostRatingDto? rating) =>
         new(post.Id,
             type,
             kind,
@@ -40,7 +41,13 @@ public static class PostMappers
             author?.ImageUrl,
             post.Text,
             ImageUrls(post),
-            post.DateCreated);
+            post.DateCreated,
+            rating);
+
+    private static PostRatingDto? ToRatingDto(CommunityRating? rating) =>
+        rating is null
+            ? null
+            : new PostRatingDto(rating.IntentId, rating.Zone.ToString(), rating.Approved, rating.ApprovalPercentage);
 
     private static IReadOnlyList<string> ImageUrls(Post post) =>
         Enumerable.Range(0, post.Images.Count)

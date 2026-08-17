@@ -8,7 +8,22 @@ export function intentKindLabel(kind: string) {
   if (kind === "Ban") return "Izbacivanje člana";
   if (kind === "ManagerElection") return "Izbor upravnika";
   if (kind === "Mute") return "Utišavanje člana";
+  if (kind === "PostRating") return "Ocena objave";
   return kind;
+}
+
+export function ratingZoneLabel(zone: string) {
+  if (zone === "Green") return "prihvaćeno";
+  if (zone === "Yellow") return "podeljeno";
+  if (zone === "Red") return "odbijeno";
+  return zone;
+}
+
+export function ratingZoneColor(zone: string): { text: string; background: string } {
+  if (zone === "Green") return { text: "#1d8a4a", background: "#e3f5ea" };
+  if (zone === "Yellow") return { text: "#8a6d1d", background: "#fbf3d9" };
+  if (zone === "Red") return { text: "#d13438", background: "#fbe3e4" };
+  return { text: "#6b7280", background: "#eceef2" };
 }
 
 export function intentStatusLabel(status: string) {

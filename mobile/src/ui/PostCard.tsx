@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { authorizedFile } from "../api/client";
 import type { PostDto } from "../api/types";
-import { formatDateTime, postKindLabel } from "./labels";
+import { formatDateTime, postKindLabel, ratingZoneColor, ratingZoneLabel } from "./labels";
 import { colors, spacing } from "./theme";
 
 export function PostCard({ post }: { post: PostDto }) {
@@ -39,6 +39,24 @@ export function PostCard({ post }: { post: PostDto }) {
       <Text style={{ color: colors.text }} numberOfLines={4}>
         {post.text}
       </Text>
+      {post.rating && (
+        <View style={{ flexDirection: "row", marginTop: spacing.s }}>
+          <Text
+            style={{
+              backgroundColor: ratingZoneColor(post.rating.zone).background,
+              color: ratingZoneColor(post.rating.zone).text,
+              fontWeight: "700",
+              fontSize: 11,
+              borderRadius: 6,
+              paddingHorizontal: 6,
+              paddingVertical: 2,
+              overflow: "hidden",
+            }}
+          >
+            Ocena zajednice · {ratingZoneLabel(post.rating.zone)}
+          </Text>
+        </View>
+      )}
       {post.imageUrls.length > 0 && (
         <Text style={{ color: colors.muted, fontSize: 12, marginTop: spacing.s }}>
           📷 {post.imageUrls.length} {post.imageUrls.length === 1 ? "slika" : "slike"}

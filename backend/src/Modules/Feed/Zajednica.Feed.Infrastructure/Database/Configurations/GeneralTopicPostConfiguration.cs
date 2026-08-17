@@ -10,5 +10,15 @@ public class GeneralTopicPostConfiguration : IEntityTypeConfiguration<GeneralTop
     {
         builder.ToTable("GeneralTopicPosts");
         builder.Property(p => p.Kind).HasConversion<string>().IsRequired();
+
+        builder.OwnsOne(p => p.Rating, rating =>
+        {
+            rating.ToTable("CommunityRatings");
+            rating.Ignore(r => r.Id);
+            rating.Property(r => r.IntentId).IsRequired();
+            rating.Property(r => r.Zone).HasConversion<string>().IsRequired();
+        });
+
+        builder.Navigation(p => p.Rating).IsRequired(false);
     }
 }

@@ -10,4 +10,5 @@ public record PostDto(
     string? AuthorImageUrl,
     string Text,
     IReadOnlyList<string> ImageUrls,
-    DateTime DateCreated);
+    DateTime DateCreated,
+    PostRatingDto? Rating);

@@ -7,13 +7,7 @@ namespace Zajednica.Feed.Infrastructure.Database.Repositories;
 
 internal sealed class PostEfRepository(FeedDbContext db) : IPostRepository
 {
-    public void Add(Post post)
-    {
-        db.Posts.Add(post);
-        db.SaveChanges();
-    }
-
-    public void Update(Post post) => db.SaveChanges();
+    public void Add(Post post) => db.Posts.Add(post);
 
     public Post? Get(Guid id) =>
         db.Posts.FirstOrDefault(p => p.Id == id);

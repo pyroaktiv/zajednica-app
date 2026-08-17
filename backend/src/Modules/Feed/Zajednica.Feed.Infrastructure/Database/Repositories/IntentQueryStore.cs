@@ -45,6 +45,9 @@ internal sealed class IntentQueryStore(FeedDbContext db) : IIntentQueryStore
             .Select(e => (bool?)e.InFavor)
             .FirstOrDefault();
     
+    public bool PostRatingIntentExists(Guid postId) =>
+        db.IntentViews.AsNoTracking().Any(v => v.PostId == postId);
+
     public IReadOnlyList<Guid> GetDueIds(DateTime now) =>
         db.IntentViews.AsNoTracking()
             .Where(v => v.Deadline <= now && v.Status == IntentStatus.Open)

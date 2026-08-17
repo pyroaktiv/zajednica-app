@@ -14,6 +14,7 @@ public class IntentEventConfiguration : IEntityTypeConfiguration<IntentEvent>
 
         builder.HasDiscriminator<string>("Type")
             .HasValue<UserTargetingIntentOpened>(nameof(UserTargetingIntentOpened))
+            .HasValue<PostTargetingIntentOpened>(nameof(PostTargetingIntentOpened))
             .HasValue<VoteCast>(nameof(VoteCast))
             .HasValue<IntentClosed>(nameof(IntentClosed));
     }

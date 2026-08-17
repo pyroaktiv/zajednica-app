@@ -16,12 +16,12 @@ import {
 } from "react-native";
 import { helpChatApi } from "../../api/chat";
 import { authorizedFile } from "../../api/client";
-import { commentApi, postApi } from "../../api/feed";
+import { commentApi, intentApi, postApi } from "../../api/feed";
 import type { CommentDto, PostDto } from "../../api/types";
 import { useCommunity } from "../../state/CommunityContext";
 import { Button, Card, EmptyState, ErrorText, Loading, Screen, SectionTitle } from "../../ui/Basics";
 import { MutedNotice } from "../../ui/MutedNotice";
-import { formatDateTime, postKindLabel } from "../../ui/labels";
+import { formatDateTime, postKindLabel, ratingZoneColor, ratingZoneLabel } from "../../ui/labels";
 import { colors, spacing } from "../../ui/theme";
 
 const MAX_INDENT_DEPTH = 4;
@@ -250,6 +250,30 @@ export default function PostDetails() {
     }
   };
 
+  const startRating = async () => {
+    if (!activeCommunityId) return;
+    setBusy(true);
+    try {
+      const opened = await intentApi.openPostRating(activeCommunityId, post.id);
+      router.push({ pathname: "/intent/[intentId]", params: { intentId: opened.id } });
+    } catch (e: any) {
+      Alert.alert("Greška", e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmRating = () => {
+    Alert.alert(
+      "Ocena zajednice",
+      "Pokrenuti glasanje o stavu iznesenom u ovoj objavi?",
+      [
+        { text: "Odustani", style: "cancel" },
+        { text: "Pokreni", onPress: startRating },
+      ]
+    );
+  };
+
   return (
     <Screen style={{ padding: 0 }}>
       <Stack.Screen options={{ title: isHelp ? "Ispomoć" : "Objava" }} />
@@ -287,6 +311,24 @@ export default function PostDetails() {
                 ))}
               </View>
             )}
+            {isGeneral && post.rating && (
+              <View style={{ flexDirection: "row", marginTop: spacing.m }}>
+                <Text
+                  style={{
+                    backgroundColor: ratingZoneColor(post.rating.zone).background,
+                    color: ratingZoneColor(post.rating.zone).text,
+                    fontWeight: "700",
+                    fontSize: 12,
+                    borderRadius: 6,
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    overflow: "hidden",
+                  }}
+                >
+                  Ocena zajednice · {ratingZoneLabel(post.rating.zone)} ({post.rating.approvalPercentage}%)
+                </Text>
+              </View>
+            )}
           </Card>
 
           <MutedNotice />
@@ -295,6 +337,14 @@ export default function PostDetails() {
           )}
           {isHelp && !post.closed && isAuthor && (
             <Button title="Zatvori ispomoć" variant="danger" onPress={close} loading={busy} />
+          )}
+          {isGeneral && !isMuted && !post.rating && (
+            <Button
+              title="Pokreni ocenu zajednice"
+              variant="secondary"
+              onPress={confirmRating}
+              loading={busy}
+            />
           )}
 
           {isGeneral && (

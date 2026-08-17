@@ -14,6 +14,7 @@ namespace Zajednica.Feed.Core.UseCases.Posts;
 
 public sealed class PostService(
     IPostRepository postRepository,
+    IFeedUnitOfWork unitOfWork,
     IInternalMembershipAudienceService internalAudienceService,
     INotificationSender notificationSender,
     MemberDirectory memberDirectory,
@@ -26,6 +27,7 @@ public sealed class PostService(
         var post = new GeneralTopicPost(communityId, authorMembershipId, requestDto.Text,
             PostMappers.ToKind(requestDto.Kind), requestDto.ImageKeys, DateTime.UtcNow);
         postRepository.Add(post);
+        unitOfWork.Save();
 
         Announce(post);
 
@@ -38,6 +40,7 @@ public sealed class PostService(
 
         var post = new HelpRequest(communityId, authorMembershipId, request.Text, request.ImageKeys, DateTime.UtcNow);
         postRepository.Add(post);
+        unitOfWork.Save();
 
         Announce(post);
 
@@ -63,7 +66,7 @@ public sealed class PostService(
             throw new EntityValidationException("Only a help request can be closed for further responses.");
 
         help.Close(actorMembershipId);
-        postRepository.Update(help);
+        unitOfWork.Save();
 
         return Single(help);
     }
