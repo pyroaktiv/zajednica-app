@@ -106,7 +106,7 @@ function CommentView({
 
 export default function PostDetails() {
   const { postId } = useLocalSearchParams<{ postId: string }>();
-  const { activeCommunityId, me, isMuted } = useCommunity();
+  const { activeCommunityId, isMuted } = useCommunity();
   const [post, setPost] = useState<PostDto | null>(null);
   const [comments, setComments] = useState<CommentDto[]>([]);
   const [commentsCursor, setCommentsCursor] = useState<string | null>(null);
@@ -121,7 +121,7 @@ export default function PostDetails() {
 
   const isGeneral = post?.type === "GENERAL";
   const isHelp = post?.type === "HELP_REQUEST";
-  const isAuthor = post != null && me?.membershipId === post.authorMembershipId;
+  const isAuthor = post?.mine ?? false;
 
   const load = useCallback(async () => {
     if (!activeCommunityId || !postId) return;
@@ -285,7 +285,7 @@ export default function PostDetails() {
           <Card>
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.s }}>
               <Text style={{ fontWeight: "700", color: colors.text, flex: 1 }}>
-                {post.authorUsername}
+                {post.authorUsername ?? "Anonimni komšija"}
               </Text>
               {kind && <Text style={{ color: kind.color, fontWeight: "700" }}>{kind.text}</Text>}
               {isHelp && (

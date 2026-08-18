@@ -85,7 +85,7 @@ public sealed class IntentCommandService(
 
         intentRepository.Add(intent);
         unitOfWork.Save();
-        notifier.Opened(intent);
+        notifier.Changed(intent);
 
         return presenterService.Details(retrievalService.RequireView(intent.Id, communityId), null);
     }
@@ -105,7 +105,7 @@ public sealed class IntentCommandService(
 
         intentRepository.Add(intent);
         unitOfWork.Save();
-        notifier.Opened(intent);
+        notifier.Changed(intent);
 
         return presenterService.Details(retrievalService.RequireView(intent.Id, communityId), null);
     }

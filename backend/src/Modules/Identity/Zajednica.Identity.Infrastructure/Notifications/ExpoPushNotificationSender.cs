@@ -78,6 +78,8 @@ public sealed class ExpoPushNotificationSender : INotificationSender
             NotificationChannel.Emergency => ("emergency", "high", "timeSensitive"),
             NotificationChannel.Management => ("management", "high", "timeSensitive"),
             NotificationChannel.Chat => ("chat", "high", "active"),
+            NotificationChannel.Problems => ("problems", "default", "active"),
+            NotificationChannel.HelpRequests => ("help-requests", "default", "active"),
             _ => ("posts", "default", "active")
         };
 

@@ -19,6 +19,8 @@ const androidChannels = [
   { id: "emergency", name: "Hitni slučajevi", importance: Notifications.AndroidImportance.HIGH },
   { id: "management", name: "Upravnik", importance: Notifications.AndroidImportance.HIGH },
   { id: "chat", name: "Poruke", importance: Notifications.AndroidImportance.HIGH },
+  { id: "problems", name: "Problemi", importance: Notifications.AndroidImportance.DEFAULT },
+  { id: "help-requests", name: "Komšijska ispomoć", importance: Notifications.AndroidImportance.DEFAULT },
   { id: "posts", name: "Objave", importance: Notifications.AndroidImportance.DEFAULT },
 ];
 

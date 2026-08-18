@@ -132,9 +132,10 @@ export type PostDto = {
   type: string;
   kind: string | null;
   closed: boolean | null;
-  authorMembershipId: string;
-  authorUsername: string;
+  authorMembershipId: string | null;
+  authorUsername: string | null;
   authorImageUrl: string | null;
+  mine: boolean;
   text: string;
   imageUrls: string[];
   dateCreated: string;

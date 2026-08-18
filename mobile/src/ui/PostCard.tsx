@@ -21,12 +21,14 @@ export function PostCard({ post }: { post: PostDto }) {
         ) : (
           <View style={[styles.avatar, styles.avatarFallback]}>
             <Text style={{ color: colors.muted, fontSize: 12, fontWeight: "700" }}>
-              {post.authorUsername.slice(0, 1).toUpperCase()}
+              {(post.authorUsername ?? "?").slice(0, 1).toUpperCase()}
             </Text>
           </View>
         )}
         <View style={{ flex: 1, marginLeft: spacing.s }}>
-          <Text style={{ fontWeight: "600", color: colors.text }}>{post.authorUsername}</Text>
+          <Text style={{ fontWeight: "600", color: colors.text }}>
+            {post.authorUsername ?? "Anonimni komšija"}
+          </Text>
           <Text style={{ color: colors.muted, fontSize: 11 }}>{formatDateTime(post.dateCreated)}</Text>
         </View>
         {kind && <Text style={[styles.badge, { color: kind.color, borderColor: kind.color }]}>{kind.text}</Text>}

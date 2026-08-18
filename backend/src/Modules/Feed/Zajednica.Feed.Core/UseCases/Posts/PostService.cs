@@ -9,6 +9,7 @@ using Zajednica.Feed.Core.Domain.Posts;
 using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 using Zajednica.Feed.Core.Mappers;
 using Zajednica.Feed.Core.UseCases.Queries;
+using Zajednica.Identity.Api.Internal.Dto;
 
 namespace Zajednica.Feed.Core.UseCases.Posts;
 
@@ -31,7 +32,7 @@ public sealed class PostService(
 
         Announce(post);
 
-        return Single(post);
+        return Single(post, authorMembershipId);
     }
 
     public PostDto CreateHelpRequest(Guid accountId, Guid communityId, CreateHelpRequestPostDto request)
@@ -44,7 +45,7 @@ public sealed class PostService(
 
         Announce(post);
 
-        return Single(post);
+        return Single(post, authorMembershipId);
     }
 
     public FileReference GetImageContent(Guid accountId, Guid communityId, Guid postId, int index)
@@ -68,24 +69,26 @@ public sealed class PostService(
         help.Close(actorMembershipId);
         unitOfWork.Save();
 
-        return Single(help);
+        return Single(help, actorMembershipId);
     }
 
     public PostDto Get(Guid accountId, Guid communityId, Guid postId)
     {
-        requirementsService.RequireConfirmed(accountId, communityId);
+        var viewerMembershipId = requirementsService.RequireConfirmed(accountId, communityId);
 
-        return Single(Require(postId, communityId));
+        return Single(Require(postId, communityId), viewerMembershipId);
     }
 
     public CursorPage<PostDto, PageCursor> GetPage(Guid accountId, Guid communityId, PageCursor? before, int limit)
     {
-        requirementsService.RequireConfirmed(accountId, communityId);
+        var viewerMembershipId = requirementsService.RequireConfirmed(accountId, communityId);
 
         var page = postRepository.GetPage(communityId, before, Paging.Clamp(limit));
-        var profiles = memberDirectory.Profiles(page.Items.Select(p => p.AuthorMembershipId).ToList());
+        var profiles = memberDirectory.Profiles(
+            page.Items.Where(p => p is not HelpRequest).Select(p => p.AuthorMembershipId).ToList());
 
-        return new CursorPage<PostDto, PageCursor>(page.Items.ToDtos(profiles), page.NextCursor);
+        var dtos = page.Items.Select(p => Present(p, profiles, viewerMembershipId)).ToList();
+        return new CursorPage<PostDto, PageCursor>(dtos, page.NextCursor);
     }
 
     private Post Require(Guid postId, Guid communityId)
@@ -97,11 +100,23 @@ public sealed class PostService(
         return post;
     }
 
-    private PostDto Single(Post post)
+    private PostDto Single(Post post, Guid viewerMembershipId)
     {
-        var profiles = memberDirectory.Profiles([post.AuthorMembershipId]);
-        return post.ToDto(profiles.GetValueOrDefault(post.AuthorMembershipId));
+        var profiles = post is HelpRequest
+            ? EmptyProfiles
+            : memberDirectory.Profiles([post.AuthorMembershipId]);
+
+        return Present(post, profiles, viewerMembershipId);
     }
+
+    private static PostDto Present(
+        Post post, IReadOnlyDictionary<Guid, InternalProfileDto> profiles, Guid viewerMembershipId) =>
+        post is HelpRequest
+            ? post.ToDto(null, null, viewerMembershipId)
+            : post.ToDto(post.AuthorMembershipId, profiles.GetValueOrDefault(post.AuthorMembershipId), viewerMembershipId);
+
+    private static readonly IReadOnlyDictionary<Guid, InternalProfileDto> EmptyProfiles =
+        new Dictionary<Guid, InternalProfileDto>();
 
     private void Announce(Post post)
     {
@@ -130,9 +145,9 @@ public sealed class PostService(
         GeneralTopicPost { Kind: GeneralPostKind.Emergency } =>
             ("Hitan slučaj", "U zajednici je objavljen hitan slučaj.", NotificationChannel.Emergency),
         GeneralTopicPost { Kind: GeneralPostKind.Problem } =>
-            ("Prijavljen problem", "U zgradi je prijavljen problem.", NotificationChannel.Posts),
+            ("Prijavljen problem", "U zgradi je prijavljen problem.", NotificationChannel.Problems),
         HelpRequest =>
-            ("Komšijska ispomoć", "Komšija traži pomoć.", NotificationChannel.Posts),
+            ("Komšijska ispomoć", "Komšija traži pomoć.", NotificationChannel.HelpRequests),
         _ =>
             ("Nova objava", "U zajednici je objavljena nova objava.", NotificationChannel.Posts)
     };
