@@ -111,6 +111,15 @@ public class FeedTests : BaseFeedIntegrationTest
             .CreateHelpRequest(community.Id, new CreateHelpRequestPostDto("Treba mi pomoc", null))).Result!);
         help.Type.ShouldBe("HELP_REQUEST");
         help.Closed.ShouldBe(false);
+        help.AuthorMembershipId.ShouldBeNull();
+        help.AuthorUsername.ShouldBeNull();
+        help.AuthorImageUrl.ShouldBeNull();
+        help.Mine.ShouldBeTrue();
+
+        var neighbourView = Value<PostDto>((Posts(scope, neighbour.AccountId).Get(community.Id, help.Id)).Result!);
+        neighbourView.AuthorMembershipId.ShouldBeNull();
+        neighbourView.AuthorUsername.ShouldBeNull();
+        neighbourView.Mine.ShouldBeFalse();
 
         Should.Throw<EntityValidationException>(() => Comments(scope, neighbour.AccountId)
             .Add(community.Id, help.Id, new AddCommentRequestDto("Javljam se")));

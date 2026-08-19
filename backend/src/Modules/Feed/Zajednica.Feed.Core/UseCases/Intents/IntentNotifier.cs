@@ -1,28 +1,10 @@
-using Zajednica.BuildingBlocks.Core.Notifications;
 using Zajednica.BuildingBlocks.Core.Realtime;
 using Zajednica.Feed.Core.Domain.Intents;
-using Zajednica.Feed.Core.Domain.Intents.Initiatives;
 
 namespace Zajednica.Feed.Core.UseCases.Intents;
 
-public sealed class IntentNotifier(
-    MemberDirectory memberDirectory,
-    INotificationSender notificationSender,
-    IRealtimePusher realtimePusher)
+public sealed class IntentNotifier(IRealtimePusher realtimePusher)
 {
-    public void Opened(Intent intent)
-    {
-        NotifyTarget(intent, "Pokrenuta namera", "U zajednici je pokrenuta namera koja se odnosi na vas.");
-        Changed(intent);
-    }
-
-    public void Closed(Intent intent, IntentStatus status)
-    {
-        NotifyTarget(intent, "Namera je zaključena",
-            $"Namera koja se odnosi na vas je zaključena sa ishodom {status}.");
-        Changed(intent);
-    }
-
     public void Changed(Intent intent)
     {
         realtimePusher.PushToChannel(Channels.Intent(intent.Id), new RealtimeMessage("intent.updated", new
@@ -32,17 +14,5 @@ public sealed class IntentNotifier(
             votesAgainst = intent.VotesAgainst,
             status = intent.Status.ToString()
         }));
-    }
-
-    private void NotifyTarget(Intent intent, string title, string body)
-    {
-        if (intent.Initiative is not UserTargetingInitiative targeting)
-            return;
-
-        if (memberDirectory.AccountId(targeting.TargetMembershipId) is not { } targetAccountId)
-            return;
-
-        var target = new NotificationTarget("intent", intent.Id, intent.Initiative.CommunityId);
-        notificationSender.Send(new NotificationRequest(targetAccountId, title, body, NotificationChannel.Posts, target));
     }
 }

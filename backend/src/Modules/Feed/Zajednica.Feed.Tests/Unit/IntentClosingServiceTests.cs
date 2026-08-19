@@ -1,7 +1,6 @@
 using Moq;
 using Shouldly;
 using Zajednica.BuildingBlocks.Core.Exceptions;
-using Zajednica.BuildingBlocks.Core.Notifications;
 using Zajednica.BuildingBlocks.Core.Realtime;
 using Zajednica.Community.Api.Internal;
 using Zajednica.Feed.Core.Domain;
@@ -12,7 +11,6 @@ using Zajednica.Feed.Core.Domain.RepositoryInterfaces;
 using Zajednica.Feed.Core.UseCases;
 using Zajednica.Feed.Core.UseCases.Intents;
 using Zajednica.Feed.Core.UseCases.Queries;
-using Zajednica.Identity.Api.Internal;
 
 namespace Zajednica.Feed.Tests.Unit;
 
@@ -155,14 +153,5 @@ public class IntentClosingServiceTests
         return Intent.Load([.. intent.NewEvents, .. reloaded.NewEvents]);
     }
 
-    private static IntentNotifier Notifier()
-    {
-        var directory = new Mock<IInternalMembershipDirectoryService>();
-        directory.Setup(d => d.GetAccountIdsByMembershipIds(It.IsAny<IReadOnlyCollection<Guid>>())).Returns([]);
-
-        return new IntentNotifier(
-            new MemberDirectory(directory.Object, new Mock<IInternalProfileService>().Object),
-            Mock.Of<INotificationSender>(),
-            Mock.Of<IRealtimePusher>());
-    }
+    private static IntentNotifier Notifier() => new(Mock.Of<IRealtimePusher>());
 }

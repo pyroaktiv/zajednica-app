@@ -17,28 +17,27 @@ public static class PostMappers
             : throw new EntityValidationException($"Unknown general post kind: {value}.");
     }
 
-    public static PostDto ToDto(this Post post, InternalProfileDto? author) => post switch
+    public static PostDto ToDto(
+        this Post post, Guid? authorMembershipId, InternalProfileDto? author, Guid viewerMembershipId) => post switch
     {
-        GeneralTopicPost general => ToDto(post, author, "GENERAL", general.Kind.ToString(), null, ToRatingDto(general.Rating)),
-        HelpRequest help => ToDto(post, author, "HELP_REQUEST", null, help.Closed, null),
+        GeneralTopicPost general =>
+            Build(post, authorMembershipId, author, viewerMembershipId, "GENERAL", general.Kind.ToString(), null, ToRatingDto(general.Rating)),
+        HelpRequest help =>
+            Build(post, authorMembershipId, author, viewerMembershipId, "HELP_REQUEST", null, help.Closed, null),
         _ => throw new EntityValidationException("Unknown post type.")
     };
 
-    public static IReadOnlyList<PostDto> ToDtos(
-        this IEnumerable<Post> posts, IReadOnlyDictionary<Guid, InternalProfileDto> authors) =>
-        posts
-            .Select(p => p.ToDto(authors.GetValueOrDefault(p.AuthorMembershipId)))
-            .ToList();
-
-    private static PostDto ToDto(
-        Post post, InternalProfileDto? author, string type, string? kind, bool? closed, PostRatingDto? rating) =>
+    private static PostDto Build(
+        Post post, Guid? authorMembershipId, InternalProfileDto? author, Guid viewerMembershipId,
+        string type, string? kind, bool? closed, PostRatingDto? rating) =>
         new(post.Id,
             type,
             kind,
             closed,
-            post.AuthorMembershipId,
-            author?.Username ?? string.Empty,
+            authorMembershipId,
+            author?.Username,
             author?.ImageUrl,
+            post.AuthorMembershipId == viewerMembershipId,
             post.Text,
             ImageUrls(post),
             post.DateCreated,

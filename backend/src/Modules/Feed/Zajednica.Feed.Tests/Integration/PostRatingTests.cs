@@ -34,7 +34,8 @@ public class PostRatingTests : BaseFeedIntegrationTest
 
         Intents(scope, owner.AccountId).Vote(community.Id, intent.Id, new CastVoteRequestDto(true));
         Intents(scope, second.AccountId).Vote(community.Id, intent.Id, new CastVoteRequestDto(true));
-        var closed = Value<IntentDetailsDto>((Intents(scope, third.AccountId)
+        Intents(scope, third.AccountId).Vote(community.Id, intent.Id, new CastVoteRequestDto(true));
+        var closed = Value<IntentDetailsDto>((Intents(scope, fourth.AccountId)
             .Vote(community.Id, intent.Id, new CastVoteRequestDto(true))).Result!);
 
         closed.Status.ShouldBe(nameof(IntentStatus.Accepted));

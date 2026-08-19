@@ -96,7 +96,7 @@ public sealed class IntentClosingService(
     {
         Execute(outcome.Decided, outcome.Status);
 
-        notifier.Closed(outcome.Decided, outcome.Status);
+        notifier.Changed(outcome.Decided);
 
         foreach (var other in outcome.Superseded)
             notifier.Changed(other);

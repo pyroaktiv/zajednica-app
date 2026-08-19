@@ -4,6 +4,8 @@ public enum NotificationChannel
 {
     Emergency,
     Posts,
+    Problems,
+    HelpRequests,
     Chat,
     Management
 }
