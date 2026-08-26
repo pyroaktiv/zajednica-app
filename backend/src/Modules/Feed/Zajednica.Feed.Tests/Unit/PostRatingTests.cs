@@ -13,7 +13,7 @@ public class PostRatingTests
     private static readonly Guid Author = Guid.NewGuid();
     private static readonly Guid Post = Guid.NewGuid();
 
-    private static PostTargetingInitiative Initiative(Guid? postId = null, int eligibleVoterCount = 10) =>
+    private static PostRatingInitiative Initiative(Guid? postId = null, int eligibleVoterCount = 10) =>
         new(postId ?? Post, Community, Author, eligibleVoterCount, "Predlog iz objave…");
 
     [Fact]
@@ -45,7 +45,7 @@ public class PostRatingTests
 
         var replayed = Intent.Load(intent.NewEvents);
 
-        var initiative = replayed.Initiative.ShouldBeOfType<PostTargetingInitiative>();
+        var initiative = replayed.Initiative.ShouldBeOfType<PostRatingInitiative>();
         initiative.PostId.ShouldBe(Post);
         initiative.ShouldBe(intent.Initiative);
     }

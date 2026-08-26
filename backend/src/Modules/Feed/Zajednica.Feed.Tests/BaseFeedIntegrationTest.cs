@@ -34,10 +34,13 @@ public class BaseFeedIntegrationTest : BaseWebIntegrationTest<FeedTestFactory>
     protected static CommentController Comments(IServiceScope scope, Guid accountId) =>
         As(new CommentController(scope.ServiceProvider.GetRequiredService<ICommentService>()), accountId);
 
-    protected static IntentController Intents(IServiceScope scope, Guid accountId) =>
-        As(new IntentController(
+    protected static IntentController Intents(IServiceScope scope, Guid accountId)
+    {
+        Db(scope).ChangeTracker.Clear();
+        return As(new IntentController(
             scope.ServiceProvider.GetRequiredService<IIntentCommandService>(),
             scope.ServiceProvider.GetRequiredService<IIntentQueryService>()), accountId);
+    }
 
     protected static (CommunityDetailsDto Community, Member Owner) CreateCommunity(IServiceScope scope)
     {

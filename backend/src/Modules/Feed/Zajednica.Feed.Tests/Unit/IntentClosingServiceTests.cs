@@ -119,7 +119,7 @@ public class IntentClosingServiceTests
 
     private static Intent PostRating(Guid postId, int eligibleVoterCount, int votesFor, int votesAgainst)
     {
-        var initiative = new PostTargetingInitiative(postId, Community, Author, eligibleVoterCount, "Predlazem da...");
+        var initiative = new PostRatingInitiative(postId, Community, Author, eligibleVoterCount, "Predlazem da...");
         var intent = Intent.Open(initiative, Now);
 
         foreach (var _ in Enumerable.Range(0, votesFor))
@@ -132,7 +132,7 @@ public class IntentClosingServiceTests
 
     private static Intent AcceptedBan()
     {
-        var initiative = new UserTargetingInitiative(UserActionKind.Ban,
+        var initiative = new BanInitiative(
             new MemberStandingContext(Target, MembershipStatus.Confirmed, MembershipRole.None),
             Community, Author, 2, "Ne postuje kucni red.");
 

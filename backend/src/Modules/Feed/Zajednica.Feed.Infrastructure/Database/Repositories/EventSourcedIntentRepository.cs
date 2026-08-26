@@ -13,6 +13,7 @@ internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRe
     {
         db.IntentViews.Add(new IntentView(intent));
         db.IntentEvents.AddRange(intent.NewEvents);
+        ProjectVotes(intent);
     }
 
     public void Update(Intent intent)
@@ -20,9 +21,15 @@ internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRe
         if (intent.NewEvents.Count == 0)
             return;
 
-        Reproject(intent);
+        db.IntentViews.Update(new IntentView(intent));
         db.IntentEvents.AddRange(intent.NewEvents);
+        ProjectVotes(intent);
     }
+
+    private void ProjectVotes(Intent intent) =>
+        db.IntentVoteViews.AddRange(intent.NewEvents
+            .OfType<VoteCast>()
+            .Select(e => new IntentVoteView(intent.Id, e.VoterMembershipId, e.InFavor, e.OccurredAt)));
 
     public Intent? Load(Guid id)
     {
@@ -49,12 +56,4 @@ internal sealed class EventSourcedIntentRepository(FeedDbContext db) : IIntentRe
             .GroupBy(e => e.StreamId)
             .Select(stream => Intent.Load(stream.ToList()))
             .ToList();
-
-    private void Reproject(Intent intent)
-    {
-        if (db.IntentViews.Local.FirstOrDefault(v => v.Id == intent.Id) is { } tracked)
-            tracked.Update(intent);
-        else
-            db.IntentViews.Update(new IntentView(intent));
-    }
 }

@@ -106,25 +106,25 @@ public sealed class IntentClosingService(
     {
         switch (intent.Initiative)
         {
-            case UserTargetingInitiative { Kind: UserActionKind.Ban } ban when status == IntentStatus.Accepted:
+            case BanInitiative ban when status == IntentStatus.Accepted:
                 internalCommandService.Ban(ban.TargetMembershipId, intent.Id);
                 break;
 
-            case UserTargetingInitiative { Kind: UserActionKind.ManagerElection } election when status == IntentStatus.Accepted:
+            case ManagerElectionInitiative election when status == IntentStatus.Accepted:
                 internalCommandService.ElectManager(election.TargetMembershipId);
                 break;
 
-            case UserTargetingInitiative { Kind: UserActionKind.Mute } mute when status == IntentStatus.Accepted:
+            case MuteInitiative mute when status == IntentStatus.Accepted:
                 internalCommandService.Mute(mute.TargetMembershipId);
                 break;
 
-            case PostTargetingInitiative post when status is IntentStatus.Accepted or IntentStatus.Rejected:
+            case PostRatingInitiative post when status is IntentStatus.Accepted or IntentStatus.Rejected:
                 RatePost(post, intent.Id, status == IntentStatus.Accepted, intent.VotesFor, intent.VotesAgainst);
                 break;
         }
     }
 
-    private void RatePost(PostTargetingInitiative initiative, Guid intentId, bool approved, int votesFor, int votesAgainst)
+    private void RatePost(PostRatingInitiative initiative, Guid intentId, bool approved, int votesFor, int votesAgainst)
     {
         if (postRepository.Get(initiative.PostId) is not GeneralTopicPost post)
             return;

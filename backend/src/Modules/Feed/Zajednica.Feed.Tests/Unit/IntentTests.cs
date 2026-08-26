@@ -14,13 +14,16 @@ public class IntentTests
     private static readonly Guid Author = Guid.NewGuid();
     private static readonly Guid Target = Guid.NewGuid();
 
-    private static UserTargetingInitiative BanInitiative(Guid author, int eligibleVoterCount,
+    private static MemberStandingContext Standing(Guid target,
+        MembershipStatus status = MembershipStatus.Confirmed, MembershipRole role = MembershipRole.None) =>
+        new(target, status, role);
+
+    private static BanInitiative NewBan(Guid author, int eligibleVoterCount,
         MembershipStatus targetStatus = MembershipStatus.Confirmed, MembershipRole targetRole = MembershipRole.None) =>
-        new(UserActionKind.Ban, new MemberStandingContext(Target, targetStatus, targetRole), Community, author,
-            eligibleVoterCount, "Ne postuje kucni red.");
+        new(Standing(Target, targetStatus, targetRole), Community, author, eligibleVoterCount, "Ne postuje kucni red.");
 
     private static Intent Ban(int eligibleVoterCount = 10) =>
-        Intent.Open(BanInitiative(Author, eligibleVoterCount), Now);
+        Intent.Open(NewBan(Author, eligibleVoterCount), Now);
 
     private static Intent Replay(Intent intent) => Intent.Load(intent.NewEvents);
 
@@ -29,62 +32,56 @@ public class IntentTests
     [Fact]
     public void An_intent_can_only_be_opened_about_a_confirmed_member()
     {
-        Should.Throw<EntityValidationException>(() => BanInitiative(Author, 10, MembershipStatus.Unconfirmed));
+        Should.Throw<EntityValidationException>(() => NewBan(Author, 10, MembershipStatus.Unconfirmed));
     }
 
     [Fact]
     public void An_initiative_refuses_the_data_that_is_silent_about_what_its_own_rules_need()
     {
-        Should.Throw<EntityValidationException>(() => BanInitiative(Author, 10, MembershipStatus.Unknown));
-        Should.Throw<EntityValidationException>(() => BanInitiative(Guid.Empty, 10));
+        Should.Throw<EntityValidationException>(() => NewBan(Author, 10, MembershipStatus.Unknown));
+        Should.Throw<EntityValidationException>(() => NewBan(Guid.Empty, 10));
     }
 
     [Fact]
     public void An_intent_cannot_be_opened_by_the_member_it_is_about()
     {
-        Should.Throw<EntityValidationException>(() => BanInitiative(Target, 10));
+        Should.Throw<EntityValidationException>(() => NewBan(Target, 10));
     }
 
     [Fact]
     public void An_intent_needs_at_least_two_eligible_voters()
     {
-        Should.Throw<EntityValidationException>(() => BanInitiative(Author, 1));
+        Should.Throw<EntityValidationException>(() => NewBan(Author, 1));
     }
 
     [Fact]
     public void Votes_are_hidden_on_a_ban_or_a_mute_but_open_on_a_manager_election()
     {
-        UserTargetingInitiative Of(UserActionKind kind) =>
-            new(kind, new MemberStandingContext(Target, MembershipStatus.Confirmed, MembershipRole.None), Community,
-                Author, 10, "Razlog.");
+        var standing = Standing(Target);
 
-        Of(UserActionKind.Ban).AreVotesPublic.ShouldBeFalse();
-        Of(UserActionKind.Mute).AreVotesPublic.ShouldBeFalse();
-        Of(UserActionKind.ManagerElection).AreVotesPublic.ShouldBeTrue();
+        new BanInitiative(standing, Community, Author, 10, "Razlog.").AreVotesPublic.ShouldBeFalse();
+        new MuteInitiative(standing, Community, Author, 10, "Razlog.").AreVotesPublic.ShouldBeFalse();
+        new ManagerElectionInitiative(standing, Community, Author, 10, "Razlog.").AreVotesPublic.ShouldBeTrue();
     }
 
     [Fact]
     public void A_ban_cannot_be_opened_about_an_already_banned_member()
     {
-        Should.Throw<EntityValidationException>(() => BanInitiative(Author, 10, MembershipStatus.Banned));
+        Should.Throw<EntityValidationException>(() => NewBan(Author, 10, MembershipStatus.Banned));
     }
 
     [Fact]
     public void A_manager_election_cannot_be_opened_about_the_sitting_manager()
     {
-        UserTargetingInitiative ManagerElection() =>
-            new(UserActionKind.ManagerElection,
-                new MemberStandingContext(Target, MembershipStatus.Confirmed, MembershipRole.Manager),
-                Community, Author, 10, "Predlog.");
-
-        Should.Throw<EntityValidationException>(() => ManagerElection());
+        Should.Throw<EntityValidationException>(() => new ManagerElectionInitiative(
+            Standing(Target, MembershipStatus.Confirmed, MembershipRole.Manager), Community, Author, 10, "Predlog."));
     }
 
     [Fact]
     public void Two_initiatives_on_the_same_target_with_the_same_data_are_the_same_value()
     {
-        BanInitiative(Author, 10).ShouldBe(BanInitiative(Author, 10));
-        BanInitiative(Author, 10).ShouldNotBe(BanInitiative(Author, 11));
+        NewBan(Author, 10).ShouldBe(NewBan(Author, 10));
+        NewBan(Author, 10).ShouldNotBe(NewBan(Author, 11));
     }
 
     [Fact]
@@ -126,8 +123,7 @@ public class IntentTests
 
         var replayed = Replay(intent);
 
-        var initiative = replayed.Initiative.ShouldBeOfType<UserTargetingInitiative>();
-        initiative.Kind.ShouldBe(UserActionKind.Ban);
+        var initiative = replayed.Initiative.ShouldBeOfType<BanInitiative>();
         initiative.TargetMembershipId.ShouldBe(Target);
         initiative.KindName.ShouldBe("Ban");
         initiative.ShouldBe(intent.Initiative);
@@ -188,32 +184,28 @@ public class IntentTests
     [Fact]
     public void A_passed_ban_supersedes_every_kind_of_open_intent_about_the_same_member()
     {
-        UserTargetingInitiative About(UserActionKind kind, Guid target) =>
-            new(kind, new MemberStandingContext(target, MembershipStatus.Confirmed, MembershipRole.None), Community,
-                Author, 10, "Razlog.");
+        var ban = new BanInitiative(Standing(Target), Community, Author, 10, "Razlog.");
 
-        var ban = About(UserActionKind.Ban, Target);
-
-        ban.Supersedes(About(UserActionKind.Ban, Target)).ShouldBeTrue();
-        ban.Supersedes(About(UserActionKind.Mute, Target)).ShouldBeTrue();
-        ban.Supersedes(About(UserActionKind.ManagerElection, Target)).ShouldBeTrue();
-        ban.Supersedes(About(UserActionKind.Ban, Guid.NewGuid())).ShouldBeFalse();
+        ban.Supersedes(new BanInitiative(Standing(Target), Community, Author, 10, "Razlog.")).ShouldBeTrue();
+        ban.Supersedes(new MuteInitiative(Standing(Target), Community, Author, 10, "Razlog.")).ShouldBeTrue();
+        ban.Supersedes(new ManagerElectionInitiative(Standing(Target), Community, Author, 10, "Razlog.")).ShouldBeTrue();
+        ban.Supersedes(new BanInitiative(Standing(Guid.NewGuid()), Community, Author, 10, "Razlog.")).ShouldBeFalse();
     }
 
     [Fact]
     public void A_passed_mute_or_election_supersedes_only_open_intents_of_its_own_kind()
     {
-        UserTargetingInitiative About(UserActionKind kind) =>
-            new(kind, new MemberStandingContext(Target, MembershipStatus.Confirmed, MembershipRole.None), Community,
-                Author, 10, "Razlog.");
+        MuteInitiative Mute() => new(Standing(Target), Community, Author, 10, "Razlog.");
+        BanInitiative Banning() => new(Standing(Target), Community, Author, 10, "Razlog.");
+        ManagerElectionInitiative Election() => new(Standing(Target), Community, Author, 10, "Razlog.");
 
-        About(UserActionKind.Mute).Supersedes(About(UserActionKind.Mute)).ShouldBeTrue();
-        About(UserActionKind.Mute).Supersedes(About(UserActionKind.Ban)).ShouldBeFalse();
-        About(UserActionKind.Mute).Supersedes(About(UserActionKind.ManagerElection)).ShouldBeFalse();
+        Mute().Supersedes(Mute()).ShouldBeTrue();
+        Mute().Supersedes(Banning()).ShouldBeFalse();
+        Mute().Supersedes(Election()).ShouldBeFalse();
 
-        About(UserActionKind.ManagerElection).Supersedes(About(UserActionKind.ManagerElection)).ShouldBeTrue();
-        About(UserActionKind.ManagerElection).Supersedes(About(UserActionKind.Ban)).ShouldBeFalse();
-        About(UserActionKind.ManagerElection).Supersedes(About(UserActionKind.Mute)).ShouldBeFalse();
+        Election().Supersedes(Election()).ShouldBeTrue();
+        Election().Supersedes(Banning()).ShouldBeFalse();
+        Election().Supersedes(Mute()).ShouldBeFalse();
     }
 
     [Fact]
@@ -238,7 +230,7 @@ public class IntentTests
         intent.Close(intent.Deadline);
 
         intent.NewEvents.Select(e => e.GetType()).ShouldBe(
-            [typeof(UserTargetingIntentOpened), typeof(VoteCast), typeof(IntentClosed)]);
+            [typeof(BanIntentOpened), typeof(VoteCast), typeof(IntentClosed)]);
         intent.NewEvents.Select(e => e.Sequence).ShouldBe([1, 2, 3]);
         intent.NewEvents.OfType<IntentClosed>().Single().Reason.ShouldBe(ClosureReason.Decision);
     }

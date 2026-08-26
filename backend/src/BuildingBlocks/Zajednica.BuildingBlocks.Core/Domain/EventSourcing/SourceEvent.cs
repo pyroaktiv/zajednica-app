@@ -6,7 +6,7 @@ public abstract class SourceEvent
     public int Sequence { get; private set; }
     public DateTime OccurredAt { get; protected set; }
 
-    internal void PlaceInStream(Guid streamId, int sequence)
+    public void PlaceInStream(Guid streamId, int sequence)
     {
         StreamId = streamId;
         Sequence = sequence;

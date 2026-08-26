@@ -9,8 +9,6 @@ public abstract class EventSourcedAggregateRoot<TEvent> : AggregateRoot where TE
     public int Version { get; private set; }
     public IReadOnlyList<TEvent> NewEvents => _newEvents;
 
-    public void ClearNewEvents() => _newEvents.Clear();
-
     protected void ReplayFromHistory(IReadOnlyList<TEvent> history)
     {
         if (history.Count == 0)

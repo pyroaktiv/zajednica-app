@@ -2,6 +2,7 @@ using Zajednica.BuildingBlocks.Core.Exceptions;
 using Zajednica.Community.Api.Internal;
 using Zajednica.Feed.Api.Dto.Intents;
 using Zajednica.Feed.Api.Public;
+using Zajednica.Feed.Core.Domain;
 using Zajednica.Feed.Core.Domain.Intents;
 using Zajednica.Feed.Core.Domain.Intents.Initiatives;
 using Zajednica.Feed.Core.Domain.Posts;
@@ -28,22 +29,24 @@ public sealed class IntentCommandService(
     {
         var authorMembershipId = requirementsService.RequireUnmutedConfirmed(accountId, communityId);
 
-        return Open(UserActionKind.Ban, communityId, authorMembershipId, requestDto.TargetMembershipId, requestDto.Text);
+        return Open(communityId, authorMembershipId, requestDto.TargetMembershipId,
+            (target, count) => new BanInitiative(target, communityId, authorMembershipId, count, requestDto.Text));
     }
 
     public IntentDetailsDto OpenManagerElection(Guid accountId, Guid communityId, OpenUserTargetingIntentRequestDto requestDto)
     {
         var authorMembershipId = requirementsService.RequireUnmutedConfirmed(accountId, communityId);
 
-        return Open(UserActionKind.ManagerElection, communityId, authorMembershipId, requestDto.TargetMembershipId,
-            requestDto.Text);
+        return Open(communityId, authorMembershipId, requestDto.TargetMembershipId,
+            (target, count) => new ManagerElectionInitiative(target, communityId, authorMembershipId, count, requestDto.Text));
     }
 
     public IntentDetailsDto OpenMute(Guid accountId, Guid communityId, OpenUserTargetingIntentRequestDto requestDto)
     {
         var authorMembershipId = requirementsService.RequireUnmutedConfirmed(accountId, communityId);
 
-        return Open(UserActionKind.Mute, communityId, authorMembershipId, requestDto.TargetMembershipId, requestDto.Text);
+        return Open(communityId, authorMembershipId, requestDto.TargetMembershipId,
+            (target, count) => new MuteInitiative(target, communityId, authorMembershipId, count, requestDto.Text));
     }
 
     public IntentDetailsDto Vote(Guid accountId, Guid communityId, Guid intentId, CastVoteRequestDto requestDto)
@@ -74,7 +77,7 @@ public sealed class IntentCommandService(
         if (intentQueryStore.PostRatingIntentExists(postId))
             throw new EntityValidationException("A community rating for this post has already occurred.");
 
-        var initiative = new PostTargetingInitiative(
+        var initiative = new PostRatingInitiative(
             postId,
             communityId,
             authorMembershipId,
@@ -91,15 +94,12 @@ public sealed class IntentCommandService(
     }
 
     private IntentDetailsDto Open(
-        UserActionKind kind, Guid communityId, Guid authorMembershipId, Guid targetMembershipId, string text)
+        Guid communityId, Guid authorMembershipId, Guid targetMembershipId,
+        Func<MemberStandingContext, int, UserTargetingInitiative> createInitiative)
     {
-        var initiative = new UserTargetingInitiative(
-            kind,
+        var initiative = createInitiative(
             requirementsService.StandingOf(communityId, targetMembershipId),
-            communityId,
-            authorMembershipId,
-            internalAudienceService.GetConfirmedCount(communityId),
-            text);
+            internalAudienceService.GetConfirmedCount(communityId));
 
         var intent = Intent.Open(initiative, DateTime.UtcNow);
 

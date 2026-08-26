@@ -30,19 +30,13 @@ public class IntentView
         CommunityId = intent.Initiative.CommunityId;
         AuthorMembershipId = intent.Initiative.AuthorMembershipId;
         TargetMembershipId = (intent.Initiative as UserTargetingInitiative)?.TargetMembershipId;
-        PostId = (intent.Initiative as PostTargetingInitiative)?.PostId;
+        PostId = (intent.Initiative as PostRatingInitiative)?.PostId;
         Kind = intent.Initiative.KindName;
         Text = intent.Initiative.Description;
         VotesAreVisible = intent.Initiative.AreVotesPublic;
         DateCreated = intent.DateCreated;
         Deadline = intent.Deadline;
         EligibleVoterCount = intent.Initiative.EligibleVoterCount;
-
-        Update(intent);
-    }
-
-    public void Update(Intent intent)
-    {
         Status = intent.Status;
         DateOfClosure = intent.DateOfClosure;
         VotesFor = intent.VotesFor;

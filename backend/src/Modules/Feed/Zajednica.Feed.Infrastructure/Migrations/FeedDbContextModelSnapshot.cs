@@ -174,6 +174,27 @@ namespace Zajednica.Feed.Infrastructure.Migrations
                     b.ToTable("IntentViews", "feed");
                 });
 
+            modelBuilder.Entity("Zajednica.Feed.Core.UseCases.Queries.IntentVoteView", b =>
+                {
+                    b.Property<Guid>("IntentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VoterMembershipId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("InFavor")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("IntentId", "VoterMembershipId");
+
+                    b.HasIndex("IntentId", "OccurredAt");
+
+                    b.ToTable("IntentVoteViews", "feed");
+                });
+
             modelBuilder.Entity("Zajednica.Feed.Core.Domain.Intents.Events.IntentClosed", b =>
                 {
                     b.HasBaseType("Zajednica.Feed.Core.Domain.Intents.Events.IntentEvent");
@@ -189,7 +210,7 @@ namespace Zajednica.Feed.Infrastructure.Migrations
                     b.HasDiscriminator().HasValue("IntentClosed");
                 });
 
-            modelBuilder.Entity("Zajednica.Feed.Core.Domain.Intents.Events.PostTargetingIntentOpened", b =>
+            modelBuilder.Entity("Zajednica.Feed.Core.Domain.Intents.Events.PostRatingIntentOpened", b =>
                 {
                     b.HasBaseType("Zajednica.Feed.Core.Domain.Intents.Events.IntentEvent");
 
@@ -213,7 +234,7 @@ namespace Zajednica.Feed.Infrastructure.Migrations
                     b.Property<Guid>("PostId")
                         .HasColumnType("uuid");
 
-                    b.HasDiscriminator().HasValue("PostTargetingIntentOpened");
+                    b.HasDiscriminator().HasValue("PostRatingIntentOpened");
                 });
 
             modelBuilder.Entity("Zajednica.Feed.Core.Domain.Intents.Events.UserTargetingIntentOpened", b =>
@@ -236,10 +257,6 @@ namespace Zajednica.Feed.Infrastructure.Migrations
                     b.Property<int>("EligibleVoterCount")
                         .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("integer");
-
-                    b.Property<string>("Kind")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<Guid>("TargetMembershipId")
                         .HasColumnType("uuid");
@@ -287,6 +304,27 @@ namespace Zajednica.Feed.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.ToTable("HelpRequests", "feed");
+                });
+
+            modelBuilder.Entity("Zajednica.Feed.Core.Domain.Intents.Events.BanIntentOpened", b =>
+                {
+                    b.HasBaseType("Zajednica.Feed.Core.Domain.Intents.Events.UserTargetingIntentOpened");
+
+                    b.HasDiscriminator().HasValue("BanIntentOpened");
+                });
+
+            modelBuilder.Entity("Zajednica.Feed.Core.Domain.Intents.Events.ManagerElectionIntentOpened", b =>
+                {
+                    b.HasBaseType("Zajednica.Feed.Core.Domain.Intents.Events.UserTargetingIntentOpened");
+
+                    b.HasDiscriminator().HasValue("ManagerElectionIntentOpened");
+                });
+
+            modelBuilder.Entity("Zajednica.Feed.Core.Domain.Intents.Events.MuteIntentOpened", b =>
+                {
+                    b.HasBaseType("Zajednica.Feed.Core.Domain.Intents.Events.UserTargetingIntentOpened");
+
+                    b.HasDiscriminator().HasValue("MuteIntentOpened");
                 });
 
             modelBuilder.Entity("Zajednica.Feed.Core.Domain.Posts.Comment", b =>
