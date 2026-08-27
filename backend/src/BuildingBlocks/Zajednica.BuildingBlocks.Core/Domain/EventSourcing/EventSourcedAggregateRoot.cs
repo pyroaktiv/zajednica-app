@@ -29,7 +29,7 @@ public abstract class EventSourcedAggregateRoot<TEvent> : AggregateRoot where TE
 
     protected void RegisterEvent(TEvent sourceEvent)
     {
-        sourceEvent.PlaceInStream(Id, Version + 1);
+        sourceEvent.Assign(Id, Version + 1);
         ApplyToSelf(sourceEvent);
         Version++;
         _newEvents.Add(sourceEvent);
