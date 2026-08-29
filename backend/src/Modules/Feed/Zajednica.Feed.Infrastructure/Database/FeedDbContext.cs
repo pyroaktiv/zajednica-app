@@ -12,6 +12,7 @@ public class FeedDbContext(DbContextOptions<FeedDbContext> options) : DbContext(
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<IntentEvent> IntentEvents => Set<IntentEvent>();
     public DbSet<IntentView> IntentViews => Set<IntentView>();
+    public DbSet<IntentVoteView> IntentVoteViews => Set<IntentVoteView>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

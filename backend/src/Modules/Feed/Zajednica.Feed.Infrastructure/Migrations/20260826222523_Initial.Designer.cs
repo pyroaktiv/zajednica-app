@@ -12,7 +12,7 @@ using Zajednica.Feed.Infrastructure.Database;
 namespace Zajednica.Feed.Infrastructure.Migrations
 {
     [DbContext(typeof(FeedDbContext))]
-    [Migration("20260811112322_Initial")]
+    [Migration("20260826222523_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -139,6 +139,9 @@ namespace Zajednica.Feed.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("PostId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("QuorumReached")
                         .HasColumnType("boolean");
 
@@ -167,12 +170,32 @@ namespace Zajednica.Feed.Infrastructure.Migrations
                     b.HasIndex("Deadline")
                         .HasFilter("\"Status\" = 'Open'");
 
+                    b.HasIndex("PostId");
+
                     b.HasIndex("CommunityId", "DateCreated");
 
-                    b.HasIndex("CommunityId", "TargetMembershipId")
-                        .HasFilter("\"Status\" = 'Open'");
-
                     b.ToTable("IntentViews", "feed");
+                });
+
+            modelBuilder.Entity("Zajednica.Feed.Core.UseCases.Queries.IntentVoteView", b =>
+                {
+                    b.Property<Guid>("IntentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VoterMembershipId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("InFavor")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("IntentId", "VoterMembershipId");
+
+                    b.HasIndex("IntentId", "OccurredAt");
+
+                    b.ToTable("IntentVoteViews", "feed");
                 });
 
             modelBuilder.Entity("Zajednica.Feed.Core.Domain.Intents.Events.IntentClosed", b =>
@@ -190,26 +213,53 @@ namespace Zajednica.Feed.Infrastructure.Migrations
                     b.HasDiscriminator().HasValue("IntentClosed");
                 });
 
+            modelBuilder.Entity("Zajednica.Feed.Core.Domain.Intents.Events.PostRatingIntentOpened", b =>
+                {
+                    b.HasBaseType("Zajednica.Feed.Core.Domain.Intents.Events.IntentEvent");
+
+                    b.Property<Guid>("AuthorMembershipId")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CommunityId")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("text");
+
+                    b.Property<int>("EligibleVoterCount")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("PostId")
+                        .HasColumnType("uuid");
+
+                    b.HasDiscriminator().HasValue("PostRatingIntentOpened");
+                });
+
             modelBuilder.Entity("Zajednica.Feed.Core.Domain.Intents.Events.UserTargetingIntentOpened", b =>
                 {
                     b.HasBaseType("Zajednica.Feed.Core.Domain.Intents.Events.IntentEvent");
 
                     b.Property<Guid>("AuthorMembershipId")
+                        .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("CommunityId")
+                        .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("uuid");
 
                     b.Property<string>("Description")
                         .IsRequired()
+                        .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("text");
 
                     b.Property<int>("EligibleVoterCount")
+                        .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("integer");
-
-                    b.Property<string>("Kind")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<Guid>("TargetMembershipId")
                         .HasColumnType("uuid");
@@ -257,6 +307,27 @@ namespace Zajednica.Feed.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.ToTable("HelpRequests", "feed");
+                });
+
+            modelBuilder.Entity("Zajednica.Feed.Core.Domain.Intents.Events.BanIntentOpened", b =>
+                {
+                    b.HasBaseType("Zajednica.Feed.Core.Domain.Intents.Events.UserTargetingIntentOpened");
+
+                    b.HasDiscriminator().HasValue("BanIntentOpened");
+                });
+
+            modelBuilder.Entity("Zajednica.Feed.Core.Domain.Intents.Events.ManagerElectionIntentOpened", b =>
+                {
+                    b.HasBaseType("Zajednica.Feed.Core.Domain.Intents.Events.UserTargetingIntentOpened");
+
+                    b.HasDiscriminator().HasValue("ManagerElectionIntentOpened");
+                });
+
+            modelBuilder.Entity("Zajednica.Feed.Core.Domain.Intents.Events.MuteIntentOpened", b =>
+                {
+                    b.HasBaseType("Zajednica.Feed.Core.Domain.Intents.Events.UserTargetingIntentOpened");
+
+                    b.HasDiscriminator().HasValue("MuteIntentOpened");
                 });
 
             modelBuilder.Entity("Zajednica.Feed.Core.Domain.Posts.Comment", b =>
@@ -307,6 +378,34 @@ namespace Zajednica.Feed.Infrastructure.Migrations
                         .HasForeignKey("Zajednica.Feed.Core.Domain.Posts.GeneralTopicPost", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.OwnsOne("Zajednica.Feed.Core.Domain.Posts.CommunityRating", "Rating", b1 =>
+                        {
+                            b1.Property<Guid>("GeneralTopicPostId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<int>("ApprovalPercentage")
+                                .HasColumnType("integer");
+
+                            b1.Property<bool>("Approved")
+                                .HasColumnType("boolean");
+
+                            b1.Property<Guid>("IntentId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Zone")
+                                .IsRequired()
+                                .HasColumnType("text");
+
+                            b1.HasKey("GeneralTopicPostId");
+
+                            b1.ToTable("CommunityRatings", "feed");
+
+                            b1.WithOwner()
+                                .HasForeignKey("GeneralTopicPostId");
+                        });
+
+                    b.Navigation("Rating");
                 });
 
             modelBuilder.Entity("Zajednica.Feed.Core.Domain.Posts.HelpRequest", b =>

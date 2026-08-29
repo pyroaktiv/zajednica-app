@@ -13,8 +13,10 @@ public class IntentEventConfiguration : IEntityTypeConfiguration<IntentEvent>
         builder.HasKey(e => new { e.StreamId, e.Sequence });
 
         builder.HasDiscriminator<string>("Type")
-            .HasValue<UserTargetingIntentOpened>(nameof(UserTargetingIntentOpened))
-            .HasValue<PostTargetingIntentOpened>(nameof(PostTargetingIntentOpened))
+            .HasValue<BanIntentOpened>(nameof(BanIntentOpened))
+            .HasValue<MuteIntentOpened>(nameof(MuteIntentOpened))
+            .HasValue<ManagerElectionIntentOpened>(nameof(ManagerElectionIntentOpened))
+            .HasValue<PostRatingIntentOpened>(nameof(PostRatingIntentOpened))
             .HasValue<VoteCast>(nameof(VoteCast))
             .HasValue<IntentClosed>(nameof(IntentClosed));
     }

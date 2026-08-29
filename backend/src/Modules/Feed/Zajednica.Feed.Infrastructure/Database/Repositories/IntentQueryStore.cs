@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Zajednica.BuildingBlocks.Core.UseCases;
 using Zajednica.Feed.Core.Domain.Intents;
-using Zajednica.Feed.Core.Domain.Intents.Events;
 using Zajednica.Feed.Core.UseCases.Queries;
 
 namespace Zajednica.Feed.Infrastructure.Database.Repositories;
@@ -29,20 +28,17 @@ internal sealed class IntentQueryStore(FeedDbContext db) : IIntentQueryStore
         db.IntentViews.AsNoTracking().FirstOrDefault(v => v.Id == intentId);
 
     public IReadOnlyList<IntentVoteView> GetVotes(Guid intentId) =>
-        db.IntentEvents
+        db.IntentVoteViews
             .AsNoTracking()
-            .OfType<VoteCast>()
-            .Where(e => e.StreamId == intentId)
-            .OrderBy(e => e.Sequence)
-            .Select(e => new IntentVoteView(e.VoterMembershipId, e.InFavor, e.OccurredAt))
+            .Where(v => v.IntentId == intentId)
+            .OrderBy(v => v.OccurredAt)
             .ToList();
 
     public bool? GetVote(Guid intentId, Guid voterMembershipId) =>
-        db.IntentEvents
+        db.IntentVoteViews
             .AsNoTracking()
-            .OfType<VoteCast>()
-            .Where(e => e.StreamId == intentId && e.VoterMembershipId == voterMembershipId)
-            .Select(e => (bool?)e.InFavor)
+            .Where(v => v.IntentId == intentId && v.VoterMembershipId == voterMembershipId)
+            .Select(v => (bool?)v.InFavor)
             .FirstOrDefault();
     
     public bool PostRatingIntentExists(Guid postId) =>

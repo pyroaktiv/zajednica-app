@@ -9,7 +9,6 @@ public class UserTargetingIntentOpenedConfiguration : IEntityTypeConfiguration<U
 {
     public void Configure(EntityTypeBuilder<UserTargetingIntentOpened> builder)
     {
-        builder.Property(e => e.Kind).HasConversion<string>();
         builder.Property(e => e.TargetMembershipStatus).HasConversion<string>();
         builder.Property(e => e.TargetMembershipRole).HasConversion<string>();
     }

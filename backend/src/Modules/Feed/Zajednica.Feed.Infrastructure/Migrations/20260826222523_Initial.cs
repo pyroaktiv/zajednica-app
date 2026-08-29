@@ -24,14 +24,14 @@ namespace Zajednica.Feed.Infrastructure.Migrations
                     Type = table.Column<string>(type: "character varying(34)", maxLength: 34, nullable: false),
                     Status = table.Column<string>(type: "text", nullable: true),
                     Reason = table.Column<string>(type: "text", nullable: true),
-                    Kind = table.Column<string>(type: "text", nullable: true),
-                    TargetMembershipId = table.Column<Guid>(type: "uuid", nullable: true),
-                    TargetMembershipStatus = table.Column<string>(type: "text", nullable: true),
-                    TargetMembershipRole = table.Column<string>(type: "text", nullable: true),
+                    PostId = table.Column<Guid>(type: "uuid", nullable: true),
                     CommunityId = table.Column<Guid>(type: "uuid", nullable: true),
                     AuthorMembershipId = table.Column<Guid>(type: "uuid", nullable: true),
                     Description = table.Column<string>(type: "text", nullable: true),
                     EligibleVoterCount = table.Column<int>(type: "integer", nullable: true),
+                    TargetMembershipId = table.Column<Guid>(type: "uuid", nullable: true),
+                    TargetMembershipStatus = table.Column<string>(type: "text", nullable: true),
+                    TargetMembershipRole = table.Column<string>(type: "text", nullable: true),
                     VoterMembershipId = table.Column<Guid>(type: "uuid", nullable: true),
                     InFavor = table.Column<bool>(type: "boolean", nullable: true),
                     OccurredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -50,6 +50,7 @@ namespace Zajednica.Feed.Infrastructure.Migrations
                     CommunityId = table.Column<Guid>(type: "uuid", nullable: false),
                     AuthorMembershipId = table.Column<Guid>(type: "uuid", nullable: false),
                     TargetMembershipId = table.Column<Guid>(type: "uuid", nullable: true),
+                    PostId = table.Column<Guid>(type: "uuid", nullable: true),
                     Kind = table.Column<string>(type: "text", nullable: false),
                     Text = table.Column<string>(type: "text", nullable: false),
                     DateCreated = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -65,6 +66,21 @@ namespace Zajednica.Feed.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_IntentViews", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "IntentVoteViews",
+                schema: "feed",
+                columns: table => new
+                {
+                    IntentId = table.Column<Guid>(type: "uuid", nullable: false),
+                    VoterMembershipId = table.Column<Guid>(type: "uuid", nullable: false),
+                    InFavor = table.Column<bool>(type: "boolean", nullable: false),
+                    OccurredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_IntentVoteViews", x => new { x.IntentId, x.VoterMembershipId });
                 });
 
             migrationBuilder.CreateTable(
@@ -176,6 +192,29 @@ namespace Zajednica.Feed.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "CommunityRatings",
+                schema: "feed",
+                columns: table => new
+                {
+                    GeneralTopicPostId = table.Column<Guid>(type: "uuid", nullable: false),
+                    IntentId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Approved = table.Column<bool>(type: "boolean", nullable: false),
+                    ApprovalPercentage = table.Column<int>(type: "integer", nullable: false),
+                    Zone = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CommunityRatings", x => x.GeneralTopicPostId);
+                    table.ForeignKey(
+                        name: "FK_CommunityRatings_GeneralTopicPosts_GeneralTopicPostId",
+                        column: x => x.GeneralTopicPostId,
+                        principalSchema: "feed",
+                        principalTable: "GeneralTopicPosts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Comments_ParentCommentId",
                 schema: "feed",
@@ -201,18 +240,23 @@ namespace Zajednica.Feed.Infrastructure.Migrations
                 columns: new[] { "CommunityId", "DateCreated" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_IntentViews_CommunityId_TargetMembershipId",
-                schema: "feed",
-                table: "IntentViews",
-                columns: new[] { "CommunityId", "TargetMembershipId" },
-                filter: "\"Status\" = 'Open'");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_IntentViews_Deadline",
                 schema: "feed",
                 table: "IntentViews",
                 column: "Deadline",
                 filter: "\"Status\" = 'Open'");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IntentViews_PostId",
+                schema: "feed",
+                table: "IntentViews",
+                column: "PostId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_IntentVoteViews_IntentId_OccurredAt",
+                schema: "feed",
+                table: "IntentVoteViews",
+                columns: new[] { "IntentId", "OccurredAt" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Posts_CommunityId_DateCreated",
@@ -229,7 +273,7 @@ namespace Zajednica.Feed.Infrastructure.Migrations
                 schema: "feed");
 
             migrationBuilder.DropTable(
-                name: "GeneralTopicPosts",
+                name: "CommunityRatings",
                 schema: "feed");
 
             migrationBuilder.DropTable(
@@ -246,6 +290,14 @@ namespace Zajednica.Feed.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "IntentViews",
+                schema: "feed");
+
+            migrationBuilder.DropTable(
+                name: "IntentVoteViews",
+                schema: "feed");
+
+            migrationBuilder.DropTable(
+                name: "GeneralTopicPosts",
                 schema: "feed");
 
             migrationBuilder.DropTable(
